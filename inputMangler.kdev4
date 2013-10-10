@@ -1,0 +1,4 @@
+[Project]
+Name=inputMangler
+Manager=KDevCMakeManager
+VersionControl=kdevgit
