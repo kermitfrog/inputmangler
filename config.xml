@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inputmanglerConf>
+	<device name="Keypad" vendor="04b4" product="5202">
+		<signal key="CAPS_LOCK" default="ESC" noconf="1"/>
+		<signal key="#"   default="=" noconf="1"/>
+	</device>
+	<device name="Footswitch" vendor="05f3" product="030c" id="F">
+		<signal key="S"/>
+		<signal key="_"/>
+		<signal key="R"/>
+		<signal key="B"/>
+	</device>
+	<device name="Mouse" vendor="1a7c" product="0068" id="M">
+		<signal key="BTN_EXTRA"/>
+		<signal key="BTN_SIDE"/>
+	</device>
+</inputmanglerConf>
