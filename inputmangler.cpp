@@ -17,6 +17,7 @@
 */
 
 
+#include "imdbusinterface.h"
 #include "inputmangler.h"
 #include "devhandler.h"
 #include <fcntl.h>
@@ -24,6 +25,7 @@
 #include <QtXml>
 #include <signal.h>
 
+// #include "keydefs.h"
 
 
 InputMangler::InputMangler()
@@ -65,6 +67,9 @@ InputMangler::InputMangler()
 		h->start();
 	
 	//QCoreApplication::quit();
+	
+	//set up dbus
+	//QDBusConnection::sessionBus().registerObject("BLA", &dbus);
 
 }
 
@@ -114,6 +119,17 @@ QList< idevs > InputMangler::parseInputDevices()
 	}
 	return l;
 }
+
+void InputMangler::activeWindowChanged()
+{
+	qDebug() << "Active Window is now ";
+}
+
+void InputMangler::activeWindowTitleChanged()
+{
+	activeWindowChanged();
+}
+
 
 void InputMangler::cleanUp()
 {

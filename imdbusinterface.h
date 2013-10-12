@@ -17,26 +17,38 @@
 */
 
 
-#ifndef DEVHANDLER_H
-#define DEVHANDLER_H
+#ifndef IMDBUSINTERFACE_H
+#define IMDBUSINTERFACE_H
 
-#include "abstractinputhandler.h"
-#include <QFile>
+#include <QtDBus>
+#include <QDebug>
 
-class DevHandler : public AbstractInputHandler
+#include <QCoreApplication>
+class imDbusInterface : public QObject
 {
+	Q_OBJECT
+	//Q_CLASSINFO("D-Bus Interface", "org.inputMangler.API.Interface")
+	Q_CLASSINFO("D-Bus Interface", "org.inputMangler.API.Interface")
 
+	
 public:
-    DevHandler(idevs i, shared_data* sd);
-    virtual ~DevHandler();
-	//setTranslations()
+    explicit imDbusInterface(QObject* parent = 0);
+	QDBusInterface *db;
+	
+public slots:
+	Q_NOREPLY void activeWindowChanged() {emit windowChanged();};
+	Q_NOREPLY void activeWindowTitleChanged() {emit windowTitleChanged();};
+//	Q_NOREPLY void Testslot();
+//	void Notify(const QString &message);
+
+signals:
+	void windowChanged();
+	void windowTitleChanged();
 
 private:
-	QString filename;
-	int fd;
-	shared_data *sd;
-	void run();
-	QString id;
+
 };
 
-#endif // DEVHANDLER_H
+
+
+#endif // IMDBUSINTERFACE_H

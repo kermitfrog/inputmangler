@@ -20,27 +20,27 @@
 #include "devhandler.h"
 #include "inputmangler.h"
 #include <poll.h>       //poll
-#include <QDataStream>
 #include <QDebug>
 #include <linux/input.h>
 #include <unistd.h>
+#include <fcntl.h>
+
 
 void DevHandler::run()
 {
-	if(!d.open(QIODevice::ReadOnly|QIODevice::Unbuffered));
+	fd = open(filename.toLatin1(), O_RDONLY);
+	if (fd == -1)
 	{
-		qDebug() << "?could (not?) open " << d.fileName();
-		//return;
+		qDebug() << "?could (not?) open " << filename;
+		return;
 	}
 	struct pollfd p;
-	p.fd = d.handle();
+	p.fd = fd;
 	p.events = POLLIN;
 	p.revents = POLLIN;
 	
 	int ret, n; int testval;
-	QDataStream data(&d);
 
- 	//char buf[80];
 	input_event buf[4];
 
 	while (1)
@@ -48,17 +48,17 @@ void DevHandler::run()
 		ret = poll (&p, 1, 1500);
 		if(sd->terminating)
 		{
-			qDebug() << "terminating" << "btw: sizeof input_event is " << sizeof(input_event);
+			qDebug() << "terminating";
 			break;
 		}
 		if(ret)
 		{
-			//n = d.read((char*)buf, 95);
-			n = read(d.handle(), buf, 96);
-			for (int i = 0; i < n; i++)
-				//qDebug("%d:%d ", n, buf[n]);
-				qDebug("time: %d, type: %d, code: %d, value: %d", buf[n].time, buf[n].type, buf[n].code, buf[n].value );
-			qDebug() << id << ":" << n;
+			n = read(fd, buf, 4*sizeof(input_event));
+			for (int i = 0; i < n/sizeof(input_event); i++)
+			{
+				//qDebug("type: %d, code: %d, value: %d", buf[i].type, buf[i].code, buf[i].value );
+			}
+			//qDebug() << id << ":" << n;
 		}
 	}
 	
@@ -70,7 +70,7 @@ DevHandler::DevHandler(idevs i, shared_data *sd)
 	this->sd = sd;
 	id = i.id;
 	qDebug() << "id is " << i.id;
-	d.setFileName(QString("/dev/input/") + i.event);
+	filename = QString("/dev/input/") + i.event;
 
 }
 

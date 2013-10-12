@@ -19,11 +19,13 @@
 
 #ifndef INPUTMANGLER_H
 #define INPUTMANGLER_H
+#include "keydefs.h"
 
 class AbstractInputHandler;
 
 #include <qobject.h>
 #include "abstractinputhandler.h"
+#include <QtDBus/QtDBus>
 
 struct shared_data
 {
@@ -44,21 +46,48 @@ public:
 	};
 };
 
-
 class InputMangler : public QObject
 {
 	Q_OBJECT
 public:
 	InputMangler();
 	virtual ~InputMangler();
+	QDBusInterface *dbus;
 
 public slots:
 	void cleanUp();
+	void activeWindowChanged();
+	void activeWindowTitleChanged();
 	
 private:
 	shared_data * sd;
 	QList<AbstractInputHandler*> handlers;
 	QList<idevs> parseInputDevices();
+};
+
+class OutEvent
+{
+public:
+	int modifiers;
+// 	__u16 keycode;
+	
+// 	__u16 code() const {return keycode;};
+	
+};
+
+class WindowSettings
+{
+public:
+	OutEvent def;
+	QStringList titles;
+	QVector<OutEvent> events;
+};
+
+class TransformationStructure
+{
+public:
+	OutEvent def;
+	QHash<QString, WindowSettings*> classes;	
 };
 
 #endif // INPUTMANGLER_H

@@ -17,26 +17,15 @@
 */
 
 
-#ifndef DEVHANDLER_H
-#define DEVHANDLER_H
+#include "imdbusinterface.h"
+#include <QDBusConnection>
+#include <QDebug>
 
-#include "abstractinputhandler.h"
-#include <QFile>
-
-class DevHandler : public AbstractInputHandler
+imDbusInterface::imDbusInterface(QObject* parent)
 {
+ 	QDBusConnection::sessionBus().registerService("org.inputManglerInterface");
+ 	QDBusConnection::sessionBus().registerObject("/org/inputMangler/Interface", this, QDBusConnection::ExportAllSlots);
+}
 
-public:
-    DevHandler(idevs i, shared_data* sd);
-    virtual ~DevHandler();
-	//setTranslations()
 
-private:
-	QString filename;
-	int fd;
-	shared_data *sd;
-	void run();
-	QString id;
-};
-
-#endif // DEVHANDLER_H
+// #include "moc_imdbusinterface.cpp"
