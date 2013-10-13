@@ -26,6 +26,7 @@ class AbstractInputHandler;
 #include <qobject.h>
 #include "abstractinputhandler.h"
 #include <QtDBus/QtDBus>
+#include <X11/Xutil.h>
 
 struct shared_data
 {
@@ -53,16 +54,20 @@ public:
 	InputMangler();
 	virtual ~InputMangler();
 	QDBusInterface *dbus;
+	QString getThatStupidWindowTitleFromX(Window* window);
 
 public slots:
 	void cleanUp();
-	void activeWindowChanged();
-	void activeWindowTitleChanged();
+	void activeWindowChanged(QString w);
+	void activeWindowTitleChanged(QString w);
 	
 private:
 	shared_data * sd;
 	QList<AbstractInputHandler*> handlers;
 	QList<idevs> parseInputDevices();
+	Display *display;
+	QString wm_class, wm_title;
+	
 };
 
 class OutEvent

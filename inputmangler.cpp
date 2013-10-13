@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <QtXml>
 #include <signal.h>
-
+#include <X11/Xlib.h>
 // #include "keydefs.h"
 
 
@@ -66,10 +66,9 @@ InputMangler::InputMangler()
 	foreach (AbstractInputHandler *h, handlers)
 		h->start();
 	
-	//QCoreApplication::quit();
-	
-	//set up dbus
-	//QDBusConnection::sessionBus().registerObject("BLA", &dbus);
+	display = XOpenDisplay(NULL);
+	if (!display)
+		qFatal("connection to X Server failed");
 
 }
 
@@ -119,15 +118,86 @@ QList< idevs > InputMangler::parseInputDevices()
 	}
 	return l;
 }
-
-void InputMangler::activeWindowChanged()
+void InputMangler::activeWindowChanged(QString w)
 {
-	qDebug() << "Active Window is now ";
+	Window active;
+	int revert;
+	XClassHint window_class;
+	
+	
+	XGetInputFocus(display, &active, &revert);
+	if (!active)
+		qFatal("could not get Active Window from X");
+	
+	XGetClassHint(display, active, &window_class);
+	wm_class = QString(window_class.res_class);
+	
+	
+	
+	wm_title = w;//getThatStupidWindowTitleFromX(&active);
+	
+	
+	//XFree(window_name);
 }
 
-void InputMangler::activeWindowTitleChanged()
+QString InputMangler::getThatStupidWindowTitleFromX(Window *window)
 {
-	activeWindowChanged();
+/*	Atom netWmName;
+	Atom utf8;
+	Atom actType;
+	int actFormat;
+	unsigned long nItems, bytes;
+	unsigned char **data;
+
+	netWmName = XInternAtom(display, "_NET_WM_NAME", False);
+	utf8 = XInternAtom(display, "UTF8_STRING", False);
+
+	XGetWindowProperty(display, *window, netWmName, 0, 0x77777777, False, utf8, &actType,  &actFormat, &nItems, &bytes, (unsigned char **) &data);
+
+	qDebug() << "argh: " << bytes;
+
+
+	
+	XTextProperty window_name;
+	XGetWMName(display, *window, &window_name);
+	//char *** text;
+	char** text = NULL;
+	int count;
+	qDebug() << "format = " << window_name.format << ", nitems = "<< window_name.nitems;
+	if (window_name.nitems < 1)
+	{
+		qDebug() << "Stupid XTextProperty: nitems = " << window_name.nitems << " wtf???";
+		return "";
+	}
+	switch (window_name.format)
+	{
+		case 8:
+			XmbTextPropertyToTextList(display, &window_name, &text, &count);
+			break;
+		case 16:
+			
+		case 32:
+			
+		default:
+			qDebug() << "Stupid XTextProperty: format != 8|16|32 ... what now?";
+			return "Error: Name in unsupported Format";
+	}
+	if (count != 1)
+	{
+		qDebug() << "Stupid XTextProperty: count = " << count << " wtf???";
+		return "";
+	}
+	QString r(text[0]);
+	if (r == "")
+		qDebug() << "Stupid XTextProperty: empty result... great... >.<";
+	return r;
+	*/
+}
+
+
+void InputMangler::activeWindowTitleChanged(QString w)
+{
+	activeWindowChanged(w);
 }
 
 

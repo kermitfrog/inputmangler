@@ -3,9 +3,10 @@ cmake_minimum_required(VERSION 2.8.8)
 find_package(Qt5Core)
 find_package(Qt5Xml)
 find_package(Qt5DBus)
+find_package(X11)
 #find_package(Qt5Widgets)
-SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
-SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
+SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-lX11")
+SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-lX11")
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

@@ -9,8 +9,8 @@ int main(int argc, char **argv) {
 	imDbusInterface dbus;
 	InputMangler im;
 	QtSignalHandler s;
-	QObject::connect(&dbus, SIGNAL(windowChanged()), &im, SLOT(activeWindowChanged()));
-	QObject::connect(&dbus, SIGNAL(windowTitleChanged()), &im, SLOT(activeWindowTitleChanged()));
+	QObject::connect(&dbus, SIGNAL(windowChanged(QString)), &im, SLOT(activeWindowChanged(QString)));
+	QObject::connect(&dbus, SIGNAL(windowTitleChanged(QString)), &im, SLOT(activeWindowTitleChanged(QString)));
 	QObject::connect(&a, SIGNAL(aboutToQuit()), &im, SLOT(cleanUp()));
 	a.exec();
     return 0;
