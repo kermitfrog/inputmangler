@@ -25,7 +25,7 @@
 #include <QtXml>
 #include <signal.h>
 #include <X11/Xlib.h>
-// #include "keydefs.h"
+#include "keydefs.h"
 
 
 InputMangler::InputMangler()
@@ -35,26 +35,39 @@ InputMangler::InputMangler()
 	sd->fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
 	sd->terminating = false;
 	
-	
+	//parsing config
 	QFile f("/home/arek/projects/inputMangler/config.xml");
 	QDomDocument conf;
+	QDomNodeList nodes;
 	conf.setContent(&f);
 	
 	QList<idevs> availableDevices = parseInputDevices();
-	QDomNodeList nodes = conf.elementsByTagName("device");
+	/// Devices
+	nodes = conf.elementsByTagName("device");
 	for (int i = 0; i < nodes.length(); i++)
 	{
 		idevs d;
 		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
 		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
 		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
-		qDebug() << "id for " << i << " is " << d.id;
+		
+		
 		while (availableDevices.count(d))
 		{
 			int idx = availableDevices.indexOf(d);
 			d.event = availableDevices.at(idx).event;
 			handlers.append(new DevHandler(d, sd));
 			availableDevices.removeAt(idx);
+				QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
+				for (int j = 0; j < codes.length(); j++)
+				{
+					QString key = codes.at(j).attributes().namedItem("key").nodeValue();
+					QString def = codes.at(j).attributes().namedItem("default").nodeValue();
+					if (def == "")
+						handlers.last()->addInputCode(keymap[key]);
+					else
+						handlers.last()->addInputCode(keymap[key], OutEvent(def));
+				}
 		}
 	}
 	if (handlers.count() == 0)
@@ -63,15 +76,62 @@ InputMangler::InputMangler()
 		exit(1);
 	}
 	
-	foreach (AbstractInputHandler *h, handlers)
-		h->start();
+	/// Window-specific settings
+	QStringList ids;
+	foreach(AbstractInputHandler *a, handlers)
+		if (a->id() != "")
+		{
+			QVector<OutEvent> o = a->getOutputs();
+			wsets[a->id()].def = o;
+			ids.append(a->id());
+		}
+	ids.removeDuplicates();
+	foreach(QString i, ids)
+		wsets.insert(i, TransformationStructure());
+	
+	nodes = conf.elementsByTagName("window");
+	for (int i = 0; i < nodes.length(); i++) //for each window
+	{
+		QDomElement e = nodes.at(i).toElement();
+		foreach(QString id, ids) // where id = M|F|? -> for each id
+		{
+			qDebug() << ":::" << id;
+			if (!e.hasAttribute(id)) //FIXME: aborts if there are title-tags, but no F|M|?
+				continue;
+			QStringList l = e.attribute(id).split(",");
+			WindowSettings *w = wsets[id].window(e.attribute("class"), true);
+			foreach(QString s, l)
+				w->def.append(OutEvent(s));
+			QDomNodeList titles = e.elementsByTagName("title");
+			for (int k = 0; k < nodes.length(); k++)
+			{
+				QDomElement e = nodes.at(k).toElement();
+				qDebug() << "title:: " << e.attribute("regex");
+				foreach(QString id, ids)
+				{
+					if (!e.hasAttribute(id))
+						continue;
+					w->titles.append(new QRegularExpression(QString("^") + e.attribute("regex") + "$"));
+					QStringList l = e.attribute(id).split(",");
+					QVector<OutEvent> o;
+					foreach(QString s, l)
+						o.append(OutEvent(s));
+					w->events.append(o);
+				}
+			}
+		}	
+	}
 	
 	display = XOpenDisplay(NULL);
 	if (!display)
 		qFatal("connection to X Server failed");
+	activeWindowTitleChanged("");
+	foreach (AbstractInputHandler *h, handlers)
+		h->start();
 
 }
 
+/* parses /proc/bus/input/devices for relevant information*/
 QList< idevs > InputMangler::parseInputDevices()
 {
 	QFile d("/proc/bus/input/devices");
@@ -131,69 +191,16 @@ void InputMangler::activeWindowChanged(QString w)
 	
 	XGetClassHint(display, active, &window_class);
 	wm_class = QString(window_class.res_class);
+// 	wm_class = QString(window_class.res_name);
+	wm_title = w;
 	
+	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;
 	
+	//update handlers
+	foreach (AbstractInputHandler *a, handlers)
+		a->setOutputs(wsets[a->id()].getOutputs(wm_class, wm_title));
 	
-	wm_title = w;//getThatStupidWindowTitleFromX(&active);
-	
-	
-	//XFree(window_name);
 }
-
-QString InputMangler::getThatStupidWindowTitleFromX(Window *window)
-{
-/*	Atom netWmName;
-	Atom utf8;
-	Atom actType;
-	int actFormat;
-	unsigned long nItems, bytes;
-	unsigned char **data;
-
-	netWmName = XInternAtom(display, "_NET_WM_NAME", False);
-	utf8 = XInternAtom(display, "UTF8_STRING", False);
-
-	XGetWindowProperty(display, *window, netWmName, 0, 0x77777777, False, utf8, &actType,  &actFormat, &nItems, &bytes, (unsigned char **) &data);
-
-	qDebug() << "argh: " << bytes;
-
-
-	
-	XTextProperty window_name;
-	XGetWMName(display, *window, &window_name);
-	//char *** text;
-	char** text = NULL;
-	int count;
-	qDebug() << "format = " << window_name.format << ", nitems = "<< window_name.nitems;
-	if (window_name.nitems < 1)
-	{
-		qDebug() << "Stupid XTextProperty: nitems = " << window_name.nitems << " wtf???";
-		return "";
-	}
-	switch (window_name.format)
-	{
-		case 8:
-			XmbTextPropertyToTextList(display, &window_name, &text, &count);
-			break;
-		case 16:
-			
-		case 32:
-			
-		default:
-			qDebug() << "Stupid XTextProperty: format != 8|16|32 ... what now?";
-			return "Error: Name in unsupported Format";
-	}
-	if (count != 1)
-	{
-		qDebug() << "Stupid XTextProperty: count = " << count << " wtf???";
-		return "";
-	}
-	QString r(text[0]);
-	if (r == "")
-		qDebug() << "Stupid XTextProperty: empty result... great... >.<";
-	return r;
-	*/
-}
-
 
 void InputMangler::activeWindowTitleChanged(QString w)
 {
@@ -219,5 +226,90 @@ InputMangler::~InputMangler()
 	close(sd->fd_mouse);
 	foreach (AbstractInputHandler *h, handlers)
 		delete h;
+	delete sd;
+	XFree(display); // is that right?
 }
+
+OutEvent::OutEvent(QString s)
+{
+	keycode = 0;
+	QStringList l = s.split("+");
+	if (l.empty())
+		return;
+	keycode = keymap[l[0]];
+	if (l.length() > 1)
+	{
+		if(l[1].contains("S"))
+			modifiers.append(keymap["S"]);
+		if(l[1].contains("A"))
+			modifiers.append(keymap["A"]);
+		if(l[1].contains("C"))
+			modifiers.append(keymap["C"]);
+		if(l[1].contains("M"))
+			modifiers.append(keymap["M"]);
+		if(l[1].contains("G") || l[1].contains("3"))
+			modifiers.append(keymap["RIGHTALT"]);
+		/*if(l[1].contains("~"))
+			modifiers = modifiers | MOD_REPEAT;
+		if(l[1].contains("@"))
+			modifiers = modifiers | MOD_MACRO;*/
+	}
+}
+
+WindowSettings* TransformationStructure::window(QString w, bool create)
+{
+	if (create)
+	{
+		if(!classes.contains(w))
+			classes.insert(w, new WindowSettings());
+		return classes.value(w);
+	}
+	if (!classes.contains(w))
+		return NULL;
+	return classes.value(w);
+}
+
+
+QVector< OutEvent > TransformationStructure::getOutputs(QString c, QString n)
+{
+	qDebug() << "getOutputs(" << c << ", " << n << ")";
+	WindowSettings *w = window(c);
+	if (w == NULL)
+		return def;
+	qDebug() << "Window found with " << w->titles.size() << "titles";
+	int idx;
+	for (int i = 0; i < w->titles.size(); i++)
+	{
+		qDebug() << "Title: " << w->titles.at(i)->pattern();
+		QRegularExpressionMatch m = w->titles.at(i)->match(n);
+		if(m.hasMatch())
+			return w->events.at(i);
+	}
+	return w->def;
+}
+
+WindowSettings::~WindowSettings()
+{
+	foreach (QRegularExpression* r, titles)
+		delete r;
+}
+
+TransformationStructure::~TransformationStructure()
+{
+	foreach (WindowSettings * w, classes)
+		delete w;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 

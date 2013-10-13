@@ -5,6 +5,7 @@
 #include <QHash>
 #include <QString>
 
+const int NUM_MOD = 5;
 
 extern QHash<QString, int> keymap;
 

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inputmanglerConf>
 	<device name="Keypad" vendor="04b4" product="5202">
-		<signal key="CAPS_LOCK" default="ESC" noconf="1"/>
-		<signal key="#"   default="=" noconf="1"/>
+		<signal key="CAPS_LOCK" default="ESC" />
+		<signal key="#"   default="=" />
 	</device>
 	<device name="Footswitch" vendor="05f3" product="030c" id="F">
 		<signal key="S"/>
@@ -14,4 +14,10 @@
 		<signal key="BTN_EXTRA"/>
 		<signal key="BTN_SIDE"/>
 	</device>
+	<window class="Kdevelop" F="S,_+C,R,S" M="LEFT+A,RIGHT+A"/>
+	<window class="Konqueror" F="S,C,R,B"  M="LEFT+A,RIGHT+A">
+		<title regex=".*Presentation.*Konqueror" F="_,_,j,k"/>
+		<title regex=".*pdf.*Konqueror" F="_,_,j,k"/>
+	</window>
 </inputmanglerConf>
+

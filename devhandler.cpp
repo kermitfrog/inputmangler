@@ -42,7 +42,7 @@ void DevHandler::run()
 	int ret, n; int testval;
 
 	input_event buf[4];
-
+	VEvent e[NUM_MOD*2+2];
 	while (1)
 	{
 		ret = poll (&p, 1, 1500);
@@ -56,6 +56,51 @@ void DevHandler::run()
 			n = read(fd, buf, 4*sizeof(input_event));
 			for (int i = 0; i < n/sizeof(input_event); i++)
 			{
+				for(int j = 0; j < outputs.size(); j++)
+					if (buf[i].code == outputs.at(j).keycode)
+					{
+						// Combo Event
+						if(outputs.at(j).modifiers.size())
+						{
+							QVector<__u16> m = outputs.at(j).modifiers;
+							int offset = 2 + m.size(), k = 0;
+							for (; k < m.size(); k++)
+							{
+								e[k].type = EV_KEY;
+								e[k].code = m.at(k);
+								e[k].value = 1;
+								e[k+offset].type = EV_KEY;
+								e[k+offset].code = m.at(k);
+								e[k+offset].value = 0;
+							}
+							e[k].type = EV_KEY;
+							e[k].code = outputs.at(j).keycode;
+							e[k].value = 1;
+							e[k+1].type = EV_KEY;
+							e[k+1].code = outputs.at(j).keycode;
+							e[k+1].value = 0;
+							if (e[k].code >= BTN_MISC)
+							{
+								sendKbdEvent(e, m.size());
+								sendMouseEvent(&e[m.size()], 2);
+								sendKbdEvent(&e[m.size()+2], m.size());
+							}
+							else
+								sendKbdEvent(e, m.size() * 2);
+						}
+						// Raw Event
+						else
+						{
+							e[0].type = buf[i].value;
+							e[0].code = outputs.at(j).code();
+							e[0].value = buf[i].value;
+							if (e[0].code >= BTN_MISC)
+								sendMouseEvent(e);
+							else
+								sendKbdEvent(e);
+						}
+						//TODO: Autofire, Macros
+					}
 				//qDebug("type: %d, code: %d, value: %d", buf[i].type, buf[i].code, buf[i].value );
 			}
 			//qDebug() << id << ":" << n;
@@ -64,11 +109,17 @@ void DevHandler::run()
 	
 }
 
+void DevHandler::createEvent(OutEvent* out, input_event* buf)
+{
+
+}
+
+
 
 DevHandler::DevHandler(idevs i, shared_data *sd)
 {
 	this->sd = sd;
-	id = i.id;
+	_id = i.id;
 	qDebug() << "id is " << i.id;
 	filename = QString("/dev/input/") + i.event;
 

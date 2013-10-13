@@ -18,6 +18,8 @@
 
 
 #include "abstractinputhandler.h"
+#include <unistd.h>
+
 
 // AbstractInputHandler::AbstractInputHandler(shared_data *sd, QObject *parent)
 // {
@@ -26,6 +28,37 @@
 
 AbstractInputHandler::~AbstractInputHandler()
 {
-
 }
+
+int AbstractInputHandler::addInputCode(__u16 in)
+{
+	inputs.append(in);
+	return inputs.size();
+}
+
+
+int AbstractInputHandler::addInputCode(__u16 in, OutEvent def)
+{
+	inputs.append(in);
+	outputs.append(def);
+	return inputs.size();
+}
+
+void AbstractInputHandler::sendKbdEvent(VEvent* e, int num)
+{
+	write(sd->fd_kbd, e, num*sizeof(VEvent));
+}
+
+void AbstractInputHandler::sendMouseEvent(VEvent* e, int num)
+{
+	write(sd->fd_mouse, e, num*sizeof(VEvent));
+}
+
+void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
+{
+	outputs = o;
+	if (o.size() > 0)
+		qDebug() << "keycode of " << id() << " is " << outputs[0].keycode;
+}
+
 

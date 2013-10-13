@@ -1,7 +1,7 @@
 #include "keydefs.h"
 
 QHash<QString, int> keymap;
-void setUpKeymap()
+void setUpKeymap() //TODO make it configurable
 {
 keymap[""]  = 0;
 keymap["~"] = 0; 

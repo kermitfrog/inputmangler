@@ -34,9 +34,8 @@ public:
 private:
 	QString filename;
 	int fd;
-	shared_data *sd;
 	void run();
-	QString id;
+    void createEvent(OutEvent *out, input_event *buf);
 };
 
 #endif // DEVHANDLER_H

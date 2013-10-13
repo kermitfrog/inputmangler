@@ -27,6 +27,7 @@ class AbstractInputHandler;
 #include "abstractinputhandler.h"
 #include <QtDBus/QtDBus>
 #include <X11/Xutil.h>
+#include <linux/input.h> //__u16...
 
 struct shared_data
 {
@@ -53,8 +54,8 @@ class InputMangler : public QObject
 public:
 	InputMangler();
 	virtual ~InputMangler();
-	QDBusInterface *dbus;
-	QString getThatStupidWindowTitleFromX(Window* window);
+	//QDBusInterface *dbus;
+	//QString getThatStupidWindowTitleFromX(Window* window);
 
 public slots:
 	void cleanUp();
@@ -67,31 +68,39 @@ private:
 	QList<idevs> parseInputDevices();
 	Display *display;
 	QString wm_class, wm_title;
+	QMap<QString, TransformationStructure> wsets;
 	
 };
 
-class OutEvent
+class OutEvent // 
 {
 public:
-	int modifiers;
-// 	__u16 keycode;
-	
-// 	__u16 code() const {return keycode;};
+	OutEvent() {};
+	OutEvent(QString s);
+	QVector<__u16> modifiers;
+ 	__u16 keycode;
+ 	__u16 code() const {return keycode;};
 	
 };
 
-class WindowSettings
+class WindowSettings // 1/Window class in TransformationStructure
 {
 public:
-	OutEvent def;
-	QStringList titles;
-	QVector<OutEvent> events;
+	WindowSettings(){};
+	~WindowSettings();
+	QVector<OutEvent> def;
+	QVector<QRegularExpression*> titles;
+	QVector< QVector<OutEvent> > events;
 };
 
-class TransformationStructure
+class TransformationStructure // 1/id
 {
 public:
-	OutEvent def;
+	TransformationStructure(){};
+	~TransformationStructure();
+	QVector<OutEvent> getOutputs(QString c, QString n);
+	WindowSettings *window(QString w, bool create = false);
+	QVector<OutEvent> def;
 	QHash<QString, WindowSettings*> classes;	
 };
 
