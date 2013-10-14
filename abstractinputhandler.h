@@ -44,6 +44,15 @@ struct VEvent
 	__s32 value;
 };
 
+class TEvent
+{
+public:
+	TEvent(){TEvent(0);};
+	TEvent(__s32 c, bool s = false, bool a = false, bool C = false);
+	QVector<__u16> modifiers;
+	__s32 code;
+};
+
 class AbstractInputHandler : public QThread
 {
 	Q_OBJECT
@@ -61,6 +70,7 @@ public:
 		{write(sd->fd_kbd, e, num*sizeof(VEvent));};
 	inline void sendMouseEvent(VEvent *e, int num = 1)
 		{write(sd->fd_mouse, e, num*sizeof(VEvent));}
+	void sendTextEvent(TEvent *t);
 	
 protected:
 	QString _id;

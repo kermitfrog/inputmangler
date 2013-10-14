@@ -16,10 +16,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "imdbusinterface.h"
 #include "inputmangler.h"
 #include "devhandler.h"
+#include "nethandler.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <QtXml>
@@ -31,6 +31,8 @@
 InputMangler::InputMangler()
 {
 	setUpKeymap();
+	setUpCMap();
+	setUpSMap();
 	
 	sd = new shared_data;
 	sd->fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
@@ -75,6 +77,18 @@ InputMangler::InputMangler()
 	}
 	
 	/// TODO: initialise netstuff here
+	nodes = conf.elementsByTagName("net");
+	NetHandler *n;
+	for (int i = 0; i < nodes.length(); i++)
+	{
+	n = new NetHandler(	sd,
+						nodes.at(i).attributes().namedItem("addr").nodeValue(),
+						nodes.at(i).attributes().namedItem("port").nodeValue().toInt() );
+	handlers.append(n);
+	}
+	
+	
+	
 	
 	if (handlers.count() == 0)
 	{
@@ -218,7 +232,7 @@ void InputMangler::cleanUp()
 	sd->terminating = true;
 	qDebug() << "waiting for Threads to finish";
 	foreach (AbstractInputHandler *h, handlers)
-		h->wait(2500);
+		h->wait(5000);
 	qDebug() << "waited long enough";
 	
 }

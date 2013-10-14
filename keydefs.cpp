@@ -1,6 +1,11 @@
 #include "keydefs.h"
+#include "abstractinputhandler.h"
 
 QHash<QString, int> keymap;
+QHash<char, TEvent> charmap;
+QHash<QString, TEvent> specialmap;
+
+
 void setUpKeymap() //TODO make it configurable
 {
 keymap[""]  = 0;
@@ -8,7 +13,7 @@ keymap["~"] = 0;
 keymap["RESERVED"]      = KEY_RESERVED;
 keymap["CAPS_LOCK"]     = KEY_ESC;
 keymap["$"]     = KEY_GRAVE;
-keymap["&"]     = KEY_1;
+keymap["AND"]   = KEY_1;
 keymap["["]     = KEY_2;
 keymap["{"]     = KEY_3;
 keymap["}"]     = KEY_4;
@@ -386,4 +391,140 @@ keymap["BRL_DOT5"]      = KEY_BRL_DOT5;
 keymap["BRL_DOT6"]      = KEY_BRL_DOT6;
 keymap["BRL_DOT7"]      = KEY_BRL_DOT7;
 keymap["BRL_DOT8"]      = KEY_BRL_DOT8;
+}
+
+void setUpCMap()
+{
+charmap['~'] = TEvent(0); 
+charmap['@']     = TEvent(KEY_RIGHTBRACE);
+charmap['\n']        = TEvent(KEY_ENTER);
+charmap['\r']        = TEvent(KEY_ENTER);
+charmap['$']     = TEvent(KEY_GRAVE);
+charmap['&']   = TEvent(KEY_1);
+charmap['[']     = TEvent(KEY_2);
+charmap['{']     = TEvent(KEY_3);
+charmap['}']     = TEvent(KEY_4);
+charmap['(']     = TEvent(KEY_5);
+charmap['=']		= TEvent(KEY_6);
+charmap['*']     = TEvent(KEY_7);
+charmap[')']     = TEvent(KEY_8);
+charmap['+']  = TEvent(KEY_9);
+charmap[']']     = TEvent(KEY_0);
+charmap['!']     = TEvent(KEY_MINUS);
+charmap['#']     = TEvent(KEY_EQUAL);
+charmap['\b']     = TEvent(KEY_BACKSPACE);
+charmap['\t']   = TEvent(KEY_TAB);
+charmap[';']     = TEvent(KEY_Q);
+charmap[','] = TEvent(KEY_W);
+charmap['.']     = TEvent(KEY_E);
+charmap['p']     = TEvent(KEY_R);
+charmap['y']     = TEvent(KEY_T);
+charmap['f']     = TEvent(KEY_Y);
+charmap['g']     = TEvent(KEY_U);
+charmap['c']     = TEvent(KEY_I);
+charmap['r']     = TEvent(KEY_O);
+charmap['l']     = TEvent(KEY_P);
+charmap['/']     = TEvent(KEY_LEFTBRACE);
+charmap['a']     = TEvent(KEY_A);
+charmap['o']     = TEvent(KEY_S);
+charmap['e']     = TEvent(KEY_D);
+charmap['u']     = TEvent(KEY_F);
+charmap['i']     = TEvent(KEY_G);
+charmap['d']     = TEvent(KEY_H);
+charmap['h']     = TEvent(KEY_J);
+charmap['t']     = TEvent(KEY_K);
+charmap['n']     = TEvent(KEY_L);
+charmap['s']     = TEvent(KEY_SEMICOLON);
+charmap['-']     = TEvent(KEY_GRAVE);
+charmap['\\']    = TEvent(KEY_BACKSLASH);
+charmap['<']     = TEvent(KEY_102ND);
+charmap['\'']     = TEvent(KEY_Z);
+charmap['q']     = TEvent(KEY_X);
+charmap['j']     = TEvent(KEY_C);
+charmap['k']     = TEvent(KEY_V);
+charmap['x']     = TEvent(KEY_B);
+charmap['b']     = TEvent(KEY_N);
+charmap['m']     = TEvent(KEY_M);
+charmap['w']     = TEvent(KEY_COMMA);
+charmap['v']     = TEvent(KEY_DOT);
+charmap['z']     = TEvent(KEY_SLASH);
+charmap[' ']     = TEvent(KEY_SPACE);
+
+charmap['^']     = TEvent(KEY_RIGHTBRACE, true);
+charmap['~']     = TEvent(KEY_GRAVE, true);
+charmap['%']   = TEvent(KEY_1, true);
+charmap['7']     = TEvent(KEY_2, true);
+charmap['5']     = TEvent(KEY_3, true);
+charmap['3']     = TEvent(KEY_4, true);
+charmap['1']     = TEvent(KEY_5, true);
+charmap['9']		= TEvent(KEY_6, true);
+charmap['0']     = TEvent(KEY_7, true);
+charmap['2']     = TEvent(KEY_8, true);
+charmap['4']  = TEvent(KEY_9, true);
+charmap['6']     = TEvent(KEY_0, true);
+charmap['8']     = TEvent(KEY_MINUS, true);
+charmap['`']     = TEvent(KEY_EQUAL, true);
+charmap[':']     = TEvent(KEY_Q, true);
+charmap['<'] = TEvent(KEY_W, true);
+charmap['>']     = TEvent(KEY_E, true);
+charmap['P']     = TEvent(KEY_R, true);
+charmap['Y']     = TEvent(KEY_T, true);
+charmap['F']     = TEvent(KEY_Y, true);
+charmap['G']     = TEvent(KEY_U, true);
+charmap['C']     = TEvent(KEY_I, true);
+charmap['R']     = TEvent(KEY_O, true);
+charmap['L']     = TEvent(KEY_P, true);
+charmap['?']     = TEvent(KEY_LEFTBRACE, true);
+charmap['A']     = TEvent(KEY_A, true);
+charmap['O']     = TEvent(KEY_S, true);
+charmap['E']     = TEvent(KEY_D, true);
+charmap['U']     = TEvent(KEY_F, true);
+charmap['I']     = TEvent(KEY_G, true);
+charmap['D']     = TEvent(KEY_H, true);
+charmap['H']     = TEvent(KEY_J, true);
+charmap['T']     = TEvent(KEY_K, true);
+charmap['N']     = TEvent(KEY_L, true);
+charmap['S']     = TEvent(KEY_SEMICOLON, true);
+charmap['_']     = TEvent(KEY_GRAVE, true);
+charmap['|']    = TEvent(KEY_BACKSLASH, true);
+charmap['>']     = TEvent(KEY_102ND, true);
+charmap['\"']     = TEvent(KEY_Z, true);
+charmap['Q']     = TEvent(KEY_X, true);
+charmap['J']     = TEvent(KEY_C, true);
+charmap['K']     = TEvent(KEY_V, true);
+charmap['X']     = TEvent(KEY_B, true);
+charmap['B']     = TEvent(KEY_N, true);
+charmap['M']     = TEvent(KEY_M, true);
+charmap['W']     = TEvent(KEY_COMMA, true);
+charmap['V']     = TEvent(KEY_DOT, true);
+charmap['Z']     = TEvent(KEY_SLASH, true);
+
+charmap['\x0e4']     = TEvent(KEY_A, false, true);
+charmap['\x0f6']     = TEvent(KEY_S, false, true);
+charmap['\x0fc']     = TEvent(KEY_F, false, true);
+charmap['\x0df']     = TEvent(KEY_SEMICOLON, false, true);
+
+charmap['\x0c4']     = TEvent(KEY_A, true, true);
+charmap['\x0d6']     = TEvent(KEY_S, true, true);
+charmap['\x0dc']     = TEvent(KEY_F, true, true);
+}
+
+void setUpSMap()
+{
+// specialmap["\x01b\x05b\x044"]	= TEvent(KEY_LEFT);
+// specialmap["\x01b\x05b\x043"]	= TEvent(KEY_RIGHT);
+specialmap["^^"]     	= TEvent(KEY_RIGHTBRACE, true);
+specialmap["^E"] 	 	= TEvent(KEY_END, false, false, true);
+specialmap["^p"]  		= TEvent(KEY_HOME, false, false, true);
+specialmap["^L"]      	= TEvent(KEY_LEFT, false, false, true);
+specialmap["^R"]      	= TEvent(KEY_RIGHT, false, false, true);
+specialmap["^z"]       	= TEvent(KEY_SLASH, false, false, true);
+specialmap["^d"]        = TEvent(KEY_DOWN);
+specialmap["^e"]        = TEvent(KEY_END);
+specialmap["^D"]        = TEvent(KEY_PAGEDOWN);
+specialmap["^U"]        = TEvent(KEY_PAGEUP);
+specialmap["^l"]        = TEvent(KEY_LEFT, true);
+specialmap["^r"]        = TEvent(KEY_RIGHT, true);
+specialmap["^u"]        = TEvent(KEY_UP);
+specialmap["^c"]        = TEvent(KEY_C, false, false, true);
 }

@@ -19,7 +19,7 @@
 
 #include "abstractinputhandler.h"
 #include "inputmangler.h"
-
+#include <QDebug>
 
 // AbstractInputHandler::AbstractInputHandler(shared_data *sd, QObject *parent)
 // {
@@ -49,5 +49,43 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 {
 	outputs = o;
 }
+
+void AbstractInputHandler::sendTextEvent(TEvent* t)
+{
+	VEvent e[NUM_MOD*2+2];
+	QVector<__u16> m = t->modifiers;
+	int offset = 2 + m.size(), k = 0;
+	for (; k < m.size(); k++)
+	{
+		e[k].type = EV_KEY;
+		e[k].code = m.at(k);
+		e[k].value = 1;
+		e[k+offset].type = EV_KEY;
+		e[k+offset].code = m.at(k);
+		e[k+offset].value = 0;
+	}
+	e[k].type = EV_KEY;
+	e[k].code = t->code;
+	e[k].value = 1;
+	e[k+1].type = EV_KEY;
+	e[k+1].code = t->code;
+	e[k+1].value = 0;
+	
+// 	for (int i = 0; i < m.size() * 2 + 2; i++)
+// 		qDebug() << e[i].type << " " << e[i].code << " " << e[i].value << " L= " << m.size()*2+2;
+	sendKbdEvent(e, m.size() * 2 + 2);
+}
+
+TEvent::TEvent(__s32 c, bool s, bool a, bool C)
+{
+	if (s)
+		modifiers.append(KEY_LEFTSHIFT);
+	if (a)
+		modifiers.append(KEY_RIGHTALT);
+	if (C)
+		modifiers.append(KEY_LEFTCTRL);
+	code = c;
+}
+
 
 
