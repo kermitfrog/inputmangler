@@ -38,7 +38,7 @@ InputMangler::InputMangler()
 	sd->terminating = false;
 	
 	//parsing config
-	QFile f("/home/arek/projects/inputMangler/config.xml");
+	QFile f(QDir::homePath() + "/.config/inputMangler/config.xml");
 	QDomDocument conf;
 	QDomNodeList nodes;
 	conf.setContent(&f);
