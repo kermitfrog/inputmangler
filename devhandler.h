@@ -25,6 +25,7 @@
 
 class DevHandler : public AbstractInputHandler
 {
+	enum DType{Keyboard, Mouse};
 
 public:
     DevHandler(idevs i, shared_data* sd);
@@ -34,6 +35,7 @@ public:
 private:
 	QString filename;
 	int fd;
+	DType devtype;
 	void run();
     void createEvent(OutEvent *out, input_event *buf);
 };

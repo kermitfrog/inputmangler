@@ -21,12 +21,19 @@
 #define ABSTRACTINPUTHANDLER_H
 class OutEvent;
 class TransformationStructure;
-struct shared_data;
 
 #include <QThread>
 #include "inputmangler.h"
 #include <linux/input.h>
 #include <QVector>
+#include <unistd.h>
+
+struct shared_data
+{
+	int fd_kbd;
+	int fd_mouse;
+	bool terminating;
+};
 
 struct VEvent
 {
@@ -50,8 +57,10 @@ public:
 	virtual QVector<OutEvent> getOutputs() const {return outputs;};
 	virtual int addInputCode(__u16 in);
 	virtual int addInputCode(__u16 in, OutEvent def);
-	virtual void sendKbdEvent(VEvent *e, int num = 1);
-	virtual void sendMouseEvent(VEvent *e, int num = 1);
+	inline void sendKbdEvent(VEvent *e, int num = 1)
+		{write(sd->fd_kbd, e, num*sizeof(VEvent));};
+	inline void sendMouseEvent(VEvent *e, int num = 1)
+		{write(sd->fd_mouse, e, num*sizeof(VEvent));}
 	
 protected:
 	QString _id;

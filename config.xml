@@ -19,5 +19,6 @@
 		<title regex=".*Presentation.*Konqueror" F="_,_,j,k"/>
 		<title regex=".*pdf.*Konqueror" F="_,_,j,k"/>
 	</window>
+	<window class="0;b" F="B,_,s+C,S"/> 
 </inputmanglerConf>
 

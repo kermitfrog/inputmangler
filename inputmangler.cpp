@@ -30,6 +30,8 @@
 
 InputMangler::InputMangler()
 {
+	setUpKeymap();
+	
 	sd = new shared_data;
 	sd->fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
 	sd->fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
@@ -56,6 +58,7 @@ InputMangler::InputMangler()
 		{
 			int idx = availableDevices.indexOf(d);
 			d.event = availableDevices.at(idx).event;
+			d.mouse = availableDevices.at(idx).mouse;
 			handlers.append(new DevHandler(d, sd));
 			availableDevices.removeAt(idx);
 				QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
@@ -70,21 +73,25 @@ InputMangler::InputMangler()
 				}
 		}
 	}
+	
+	/// TODO: initialise netstuff here
+	
 	if (handlers.count() == 0)
 	{
 		qDebug() << "no input Handlers loaded!";
 		exit(1);
 	}
 	
+	
 	/// Window-specific settings
 	QStringList ids;
 	foreach(AbstractInputHandler *a, handlers)
+	{
+		QVector<OutEvent> o = a->getOutputs();
+		wsets[a->id()].def = o;
 		if (a->id() != "")
-		{
-			QVector<OutEvent> o = a->getOutputs();
-			wsets[a->id()].def = o;
 			ids.append(a->id());
-		}
+	}
 	ids.removeDuplicates();
 	foreach(QString i, ids)
 		wsets.insert(i, TransformationStructure());
@@ -95,29 +102,26 @@ InputMangler::InputMangler()
 		QDomElement e = nodes.at(i).toElement();
 		foreach(QString id, ids) // where id = M|F|? -> for each id
 		{
-			qDebug() << ":::" << id;
 			if (!e.hasAttribute(id)) //FIXME: aborts if there are title-tags, but no F|M|?
 				continue;
 			QStringList l = e.attribute(id).split(",");
 			WindowSettings *w = wsets[id].window(e.attribute("class"), true);
 			foreach(QString s, l)
 				w->def.append(OutEvent(s));
+			
+			//title
 			QDomNodeList titles = e.elementsByTagName("title");
-			for (int k = 0; k < nodes.length(); k++)
+			for (int k = 0; k < titles.length(); k++)
 			{
-				QDomElement e = nodes.at(k).toElement();
-				qDebug() << "title:: " << e.attribute("regex");
-				foreach(QString id, ids)
-				{
-					if (!e.hasAttribute(id))
-						continue;
-					w->titles.append(new QRegularExpression(QString("^") + e.attribute("regex") + "$"));
-					QStringList l = e.attribute(id).split(",");
-					QVector<OutEvent> o;
-					foreach(QString s, l)
-						o.append(OutEvent(s));
-					w->events.append(o);
-				}
+				QDomElement t = titles.at(k).toElement();
+				if (!t.hasAttribute(id))
+					continue;
+				w->titles.append(new QRegularExpression(QString("^") + t.attribute("regex") + "$"));
+				QStringList l = t.attribute(id).split(",");
+				QVector<OutEvent> o;
+				foreach(QString s, l)
+					o.append(OutEvent(s));
+				w->events.append(o);
 			}
 		}	
 	}
@@ -171,6 +175,7 @@ QList< idevs > InputMangler::parseInputDevices()
 			tmp = (*li).split(QRegExp("[\\s=]"));
 			idx = tmp.indexOf(QRegExp("event.*"));
 			i.event = tmp.at(idx);
+			i.mouse = (tmp.indexOf(QRegExp("mouse.*")) != -1);
 			++li;
 			break;
 		}
@@ -194,7 +199,7 @@ void InputMangler::activeWindowChanged(QString w)
 // 	wm_class = QString(window_class.res_name);
 	wm_title = w;
 	
-	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;
+	//qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;
 	
 	//update handlers
 	foreach (AbstractInputHandler *a, handlers)
@@ -272,15 +277,15 @@ WindowSettings* TransformationStructure::window(QString w, bool create)
 
 QVector< OutEvent > TransformationStructure::getOutputs(QString c, QString n)
 {
-	qDebug() << "getOutputs(" << c << ", " << n << ")";
+	//qDebug() << "getOutputs(" << c << ", " << n << ")";
 	WindowSettings *w = window(c);
 	if (w == NULL)
 		return def;
-	qDebug() << "Window found with " << w->titles.size() << "titles";
+	//qDebug() << "Window found with " << w->titles.size() << "titles";
 	int idx;
 	for (int i = 0; i < w->titles.size(); i++)
 	{
-		qDebug() << "Title: " << w->titles.at(i)->pattern();
+		//qDebug() << "Title: " << w->titles.at(i)->pattern();
 		QRegularExpressionMatch m = w->titles.at(i)->match(n);
 		if(m.hasMatch())
 			return w->events.at(i);

@@ -29,12 +29,7 @@ class AbstractInputHandler;
 #include <X11/Xutil.h>
 #include <linux/input.h> //__u16...
 
-struct shared_data
-{
-	int fd_kbd;
-	int fd_mouse;
-	bool terminating;
-};
+struct shared_data;
 
 class idevs 
 {
@@ -43,6 +38,7 @@ public:
 	QString product;
 	QString event;
 	QString id;
+	bool mouse;
 	bool operator==(idevs o) const{
 		return (vendor == o.vendor && product == o.product);
 	};
