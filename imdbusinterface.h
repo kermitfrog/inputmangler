@@ -37,14 +37,14 @@ public:
 	
 public slots:
 	Q_NOREPLY void activeWindowChanged(QString w) {
-		qDebug() << "a";
+// 		qDebug() << "a";
 		emit windowChanged(w);
-		qDebug() << "b";
+// 		qDebug() << "b";
 	};
 	Q_NOREPLY void activeWindowTitleChanged(QString w) {
-		qDebug() << "c";
+// 		qDebug() << "c";
 		emit windowTitleChanged(w);
-		qDebug() << "d";
+// 		qDebug() << "d";
 	};
 //	Q_NOREPLY void Testslot();
 //	void Notify(const QString &message);

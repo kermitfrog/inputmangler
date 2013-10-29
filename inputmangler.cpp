@@ -217,10 +217,10 @@ QList< idevs > InputMangler::parseInputDevices()
 
 void InputMangler::activeWindowChanged(QString w)
 {
-	qDebug() << "entered activeWindowChanged";
-	sleep(1);
 	if (sd->terminating)
 		return;
+	//Window active;
+	//int revert;
 	Window active;
 	int revert;
 	XClassHint window_class;
@@ -230,13 +230,19 @@ void InputMangler::activeWindowChanged(QString w)
 	if (!active)
 		qFatal("could not get Active Window from X");
 	
-	XGetClassHint(display, active, &window_class);
+	if (!XGetClassHint(display, active, &window_class)) {
+		qDebug() << "Could not get Window Class, mhere title is " << w;
+		return;
+	}
+		
 //	wm_class = QString(window_class.res_class);
  	wm_class = QString(window_class.res_name);
 	wm_title = w;
 	
-	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title << "wm_class2: " << window_class.res_class;
+	//qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;// << "wm_class2: " << window_class.res_class;
 	
+	XFree(window_class.res_class);
+	XFree(window_class.res_name);
 	//update handlers
 // 	qDebug() << "update handlers: in";
 	foreach (AbstractInputHandler *a, handlers)
