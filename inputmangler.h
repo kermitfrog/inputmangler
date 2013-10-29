@@ -57,6 +57,7 @@ public slots:
 	void cleanUp();
 	void activeWindowChanged(QString w);
 	void activeWindowTitleChanged(QString w);
+	void reReadConfig();
 	
 private:
 	shared_data * sd;
@@ -65,6 +66,8 @@ private:
 	Display *display;
 	QString wm_class, wm_title;
 	QMap<QString, TransformationStructure> wsets;
+	bool readConf();
+// 	void stopHandlers();
 	
 };
 
@@ -72,6 +75,7 @@ class OutEvent //
 {
 public:
 	OutEvent() {};
+	OutEvent(int c) {keycode = c;};
 	OutEvent(QString s);
 	QVector<__u16> modifiers;
  	__u16 keycode;
@@ -96,6 +100,7 @@ public:
 	~TransformationStructure();
 	QVector<OutEvent> getOutputs(QString c, QString n);
 	WindowSettings *window(QString w, bool create = false);
+	bool sanityCheck(int s, QString id);
 	QVector<OutEvent> def;
 	QHash<QString, WindowSettings*> classes;	
 };

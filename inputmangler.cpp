@@ -34,10 +34,18 @@ InputMangler::InputMangler()
 	setUpCMap();
 	setUpSMap();
 	
+	
+	display = XOpenDisplay(NULL);
+	if (!display)
+		qFatal("connection to X Server failed");
+	readConf();
+}
+
+bool InputMangler::readConf()
+{
 	sd = new shared_data;
 	sd->fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
 	sd->fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
-	sd->terminating = false;
 	
 	//parsing config
 	QFile f(QDir::homePath() + "/.config/inputMangler/config.xml");
@@ -96,7 +104,6 @@ InputMangler::InputMangler()
 		exit(1);
 	}
 	
-	
 	/// Window-specific settings
 	QStringList ids;
 	foreach(AbstractInputHandler *a, handlers)
@@ -107,8 +114,6 @@ InputMangler::InputMangler()
 			ids.append(a->id());
 	}
 	ids.removeDuplicates();
-	foreach(QString i, ids)
-		wsets.insert(i, TransformationStructure());
 	
 	nodes = conf.elementsByTagName("window");
 	for (int i = 0; i < nodes.length(); i++) //for each window
@@ -139,15 +144,27 @@ InputMangler::InputMangler()
 			}
 		}	
 	}
+	sd->terminating = false;
 	
-	display = XOpenDisplay(NULL);
-	if (!display)
-		qFatal("connection to X Server failed");
 	activeWindowTitleChanged("");
+	bool sane = false;
 	foreach (AbstractInputHandler *h, handlers)
-		h->start();
+	{
+		if(h->getId() == "___NET")
+			sane = true;
+		else if (h->getId() == "" && h->getNumInputs() == h->getNumOutputs() && h->getNumInputs())
+			sane = true;
+		else 
+			sane = wsets[h->id()].sanityCheck(h->getNumInputs(), h->getId());
+		
+		if (sane)
+			h->start();
+	}
+	
+	f.close();
 
 }
+
 
 /* parses /proc/bus/input/devices for relevant information*/
 QList< idevs > InputMangler::parseInputDevices()
@@ -197,8 +214,13 @@ QList< idevs > InputMangler::parseInputDevices()
 	}
 	return l;
 }
+
 void InputMangler::activeWindowChanged(QString w)
 {
+	qDebug() << "entered activeWindowChanged";
+	sleep(1);
+	if (sd->terminating)
+		return;
 	Window active;
 	int revert;
 	XClassHint window_class;
@@ -209,15 +231,17 @@ void InputMangler::activeWindowChanged(QString w)
 		qFatal("could not get Active Window from X");
 	
 	XGetClassHint(display, active, &window_class);
-	wm_class = QString(window_class.res_class);
-// 	wm_class = QString(window_class.res_name);
+//	wm_class = QString(window_class.res_class);
+ 	wm_class = QString(window_class.res_name);
 	wm_title = w;
 	
-	//qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;
+	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title << "wm_class2: " << window_class.res_class;
 	
 	//update handlers
+// 	qDebug() << "update handlers: in";
 	foreach (AbstractInputHandler *a, handlers)
 		a->setOutputs(wsets[a->id()].getOutputs(wm_class, wm_title));
+// 	qDebug() << "update handlers: out";
 	
 }
 
@@ -233,19 +257,18 @@ void InputMangler::cleanUp()
 	qDebug() << "waiting for Threads to finish";
 	foreach (AbstractInputHandler *h, handlers)
 		h->wait(5000);
-	qDebug() << "waited long enough";
-	
-}
-
-
-InputMangler::~InputMangler()
-{
-	//TODO wait for threads to finish
 	close(sd->fd_kbd);
 	close(sd->fd_mouse);
 	foreach (AbstractInputHandler *h, handlers)
 		delete h;
 	delete sd;
+	handlers.clear();
+	wsets.clear();
+}
+
+
+InputMangler::~InputMangler()
+{
 	XFree(display); // is that right?
 }
 
@@ -319,16 +342,48 @@ TransformationStructure::~TransformationStructure()
 		delete w;
 }
 
+void InputMangler::reReadConfig()
+{
+	cleanUp();
+	readConf();
+}
 
-
-
-
-
-
-
-
-
-
-
-
+bool TransformationStructure::sanityCheck(int s, QString id)
+{
+	bool result = true;
+	qDebug() << "checking " << id << " with size " << s;
+	if (this->def.size() != s)
+	{
+		qDebug() << "TransformationStructure.def is " << this->def.size();
+		result = false;
+	}
+	QList<WindowSettings*> wlist = classes.values();
+	foreach (WindowSettings *w, wlist)
+	{
+		if (w->def.size() != s)
+		{
+			qDebug() << "WindowSettings.def for " << classes.key(w) << " is " << def.size();
+			result = false;
+		}
+		if (w->events.size() != w->titles.size())
+		{
+			qDebug() << "WindowSettings.titles = " << w->titles.size() 
+					 << " events = " << w->events.size() << " for " << classes.key(w);
+			result = false;
+		}
+		for(int i = 0; i < w->events.size(); i++)
+		{
+			if (w->events.at(i).size() != s)
+			{
+				qDebug() << "WindowSettings for " << classes.key(w) << ":" 
+						 << "Regex = \"" << w->titles.at(i)->pattern() << "\", size = " 
+						 << w->events.at(i).size();
+				result = false;
+			}
+		}
+	}
+	if (!result)
+		qDebug() << id << " failed SanityCheck!!!";
+	return result;
+}
 

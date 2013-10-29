@@ -97,6 +97,7 @@ void QtSignalHandler::handleSigHup()
 	::read(sighupFd[1], &tmp, sizeof(tmp));
 
 	// do Qt stuff
+	emit hupReceived();
 
 	snHup->setEnabled(true);
 }

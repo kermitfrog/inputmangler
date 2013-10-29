@@ -49,6 +49,9 @@ Q_OBJECT
 
      QSocketNotifier *snHup;
      QSocketNotifier *snTerm;
+	 
+signals:
+    void hupReceived();
 };
 
 

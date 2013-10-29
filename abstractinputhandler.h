@@ -71,6 +71,9 @@ public:
 	inline void sendMouseEvent(VEvent *e, int num = 1)
 		{write(sd->fd_mouse, e, num*sizeof(VEvent));}
 	void sendTextEvent(TEvent *t);
+	QString getId() const {return _id;};
+	int getNumInputs() const {return inputs.size();};
+	int getNumOutputs() const {return outputs.size();};
 	
 protected:
 	QString _id;

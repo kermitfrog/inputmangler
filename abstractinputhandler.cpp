@@ -33,6 +33,7 @@ AbstractInputHandler::~AbstractInputHandler()
 int AbstractInputHandler::addInputCode(__u16 in)
 {
 	inputs.append(in);
+	outputs.append(OutEvent(in));
 	return inputs.size();
 }
 
@@ -47,6 +48,14 @@ int AbstractInputHandler::addInputCode(__u16 in, OutEvent def)
 
 void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 {
+	if (o.size() != inputs.size())
+	{
+		qDebug() << "setOutputs: in|out sizes do not match ";
+		for (int i = 0; i < inputs.size(); i++)
+			qDebug() << "inputs[" << i << "].code = " << inputs.at(i);
+		for (int i = 0; i < o.size(); i++)
+			qDebug() << "outputs[" << i << "].code = " << o.at(i).code();
+	}	
 	outputs = o;
 }
 

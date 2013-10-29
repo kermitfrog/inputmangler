@@ -36,8 +36,16 @@ public:
 	QDBusInterface *db;
 	
 public slots:
-	Q_NOREPLY void activeWindowChanged(QString w) {emit windowChanged(w);};
-	Q_NOREPLY void activeWindowTitleChanged(QString w) {emit windowTitleChanged(w);};
+	Q_NOREPLY void activeWindowChanged(QString w) {
+		qDebug() << "a";
+		emit windowChanged(w);
+		qDebug() << "b";
+	};
+	Q_NOREPLY void activeWindowTitleChanged(QString w) {
+		qDebug() << "c";
+		emit windowTitleChanged(w);
+		qDebug() << "d";
+	};
 //	Q_NOREPLY void Testslot();
 //	void Notify(const QString &message);
 

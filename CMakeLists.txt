@@ -1,9 +1,13 @@
 project(inputmangler)
 cmake_minimum_required(VERSION 2.8.8)
+
+set(CMAKE_PREFIX_PATH /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Core/*)
+
 find_package(Qt5Core)
 find_package(Qt5Xml)
 find_package(Qt5DBus)
 find_package(Qt5Network)
+find_package(Qt5Test)
 find_package(X11)
 #find_package(Qt5Widgets)
 SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-lX11")
@@ -20,4 +24,4 @@ add_executable(inputmangler ${INPUTMANGLER_SRCS})
 
 install(TARGETS inputmangler RUNTIME DESTINATION bin)
 
-qt5_use_modules(inputmangler Core Xml DBus Network)
+qt5_use_modules(inputmangler Core Xml DBus Network Test)

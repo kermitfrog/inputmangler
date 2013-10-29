@@ -144,8 +144,6 @@ void DevHandler::createEvent(OutEvent* out, input_event* buf)
 	
 }
 
-
-
 DevHandler::DevHandler(idevs i, shared_data *sd)
 {
 	this->sd = sd;

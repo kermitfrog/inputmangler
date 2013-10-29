@@ -11,6 +11,7 @@ int main(int argc, char **argv) {
 	QtSignalHandler s;		//handles TERM and HUP
 	QObject::connect(&dbus, SIGNAL(windowChanged(QString)), &im, SLOT(activeWindowChanged(QString)));
 	QObject::connect(&dbus, SIGNAL(windowTitleChanged(QString)), &im, SLOT(activeWindowTitleChanged(QString)));
+	QObject::connect(&s, SIGNAL(hupReceived()), &im, SLOT(reReadConfig()));
 	QObject::connect(&a, SIGNAL(aboutToQuit()), &im, SLOT(cleanUp()));
 	a.exec();
     return 0;

@@ -22,6 +22,7 @@
 #include <QTcpSocket>
 #include <QString>
 #include "keydefs.h"
+#include <QTest>
 
 NetHandler::NetHandler(shared_data *sd, QString a, int port)
 {
@@ -31,6 +32,7 @@ NetHandler::NetHandler(shared_data *sd, QString a, int port)
 	l = TEvent(KEY_LEFT);
 	r = TEvent(KEY_RIGHT);
 	dot = TEvent(KEY_E);
+	_id = "___NET";
 }
 
 void NetHandler::run()
@@ -96,13 +98,13 @@ void NetHandler::actOnData(char* b, int n)
 {
 	QString s = buffer + QString::fromLatin1(b, n);
 	buffer = "";
-//	qDebug() << "Buffer: " << buffer << " S: " << s;
+	qDebug() << "Buffer: " << buffer << " S: " << s << "Hex:" << QTest::toHexRepresentation(b, n);
 // 	bool shift = false, altGr = false;
 	for (int i = 0; i < n; i++)
 	{
-		if (s[i] == '\x055')
+		if (s[i] == '\x085') //'...'
 		{
-			int dc = 2;
+			int dc = 3;
 			while(dc--)
 				sendTextEvent(&dot);
 			continue;
