@@ -225,24 +225,34 @@ void InputMangler::activeWindowChanged(QString w)
 	int revert;
 	XClassHint window_class;
 	
-	
-	XGetInputFocus(display, &active, &revert);
-	if (!active)
-		qFatal("could not get Active Window from X");
+	qDebug() << "preBadWindow";
+	if (XGetInputFocus(display, &active, &revert) == BadWindow)
+		qDebug() << "BadWindow";
+	qDebug() << "postBadWindow";
+	if (active == None || active == PointerRoot)
+		return;
 	
 	if (!XGetClassHint(display, active, &window_class)) {
-		qDebug() << "Could not get Window Class, mhere title is " << w;
-		return;
-	}
+		qDebug() << "Could not get Window Class, where title is " << w;
+		//return;
+		//HACK:: this problem seems to occur only with Opera, so..
 		
-//	wm_class = QString(window_class.res_class);
- 	wm_class = QString(window_class.res_name);
-	wm_title = w;
+		wm_class = "Opera";
+		
+	} else {
+		
+	//	wm_class = QString(window_class.res_class);
+		wm_class = QString(window_class.res_name);
+		
+		
+		XFree(window_class.res_class);
+		XFree(window_class.res_name);
+	}
+		wm_title = w;
+		
 	
-	//qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;// << "wm_class2: " << window_class.res_class;
+	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;// << "wm_class2: " << window_class.res_class;
 	
-	XFree(window_class.res_class);
-	XFree(window_class.res_name);
 	//update handlers
 // 	qDebug() << "update handlers: in";
 	foreach (AbstractInputHandler *a, handlers)
