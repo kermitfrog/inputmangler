@@ -111,7 +111,7 @@ void NetHandler::actOnData(char* b, int n)
 		}	
 		if (s[i] == '\x01b')
 		{
-			if (s.length() < 3)
+			if (s.length() - i < 3)
 			{
 				buffer = s;
 				return;
@@ -125,17 +125,22 @@ void NetHandler::actOnData(char* b, int n)
 		}
  		if (s[i] == '^')
 		{
-			if (s.length() < 2)
+			if (s.length() - i < 2) 
 			{
 				buffer = s;
 				return;
 			}
+#ifdef DEBUGME
+			if (s[i+1] == 'c')
+				qDebug () << "Copy";
+#endif
 			sendTextEvent(&specialmap[s.mid(i,2)]);
 			i++;
 			continue;
 		}
 		//qDebug() << "Data: " << s[i];
 		sendTextEvent(&(charmap[s[i].toLatin1()]));
+		
 	}
 }
 

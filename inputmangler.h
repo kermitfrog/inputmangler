@@ -80,6 +80,9 @@ public:
 	QVector<__u16> modifiers;
  	__u16 keycode;
  	__u16 code() const {return keycode;};
+#ifdef DEBUGME
+	QString initString;
+#endif
 	
 };
 

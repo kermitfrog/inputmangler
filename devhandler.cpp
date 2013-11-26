@@ -70,6 +70,9 @@ void DevHandler::run()
 						if (buf[i].code == inputs[j])
 						{
 							matches = true;
+#ifdef DEBUGME
+							qDebug() << "Output : " << outputs.at(j).initString;
+#endif
 							// Combo Event
 							if(outputs.at(j).modifiers.size())
 							{

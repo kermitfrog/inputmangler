@@ -45,10 +45,19 @@ bool InputMangler::readConf()
 {
 	sd = new shared_data;
 	sd->fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
+	//sd->fd_kbd = open("/tmp/virtual_kbd", O_WRONLY|O_APPEND);
 	sd->fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
+#ifdef DEBUGME	
+	qDebug() << "kbd: " << sd->fd_kbd << ", mouse: " << sd->fd_mouse;
+#endif
 	
 	//parsing config
-	QFile f(QDir::homePath() + "/.config/inputMangler/config.xml");
+	QString confPath;
+	if (QCoreApplication::arguments().count() < 2)
+		confPath = QDir::homePath() + "/.config/inputMangler/config.xml";
+	else
+		confPath = QCoreApplication::arguments().at(1);
+	QFile f(confPath);
 	QDomDocument conf;
 	QDomNodeList nodes;
 	conf.setContent(&f);
@@ -144,6 +153,8 @@ bool InputMangler::readConf()
 			}
 		}	
 	}
+	
+	// prepare and actualy start threads, also roll a sanity check
 	sd->terminating = false;
 	
 	activeWindowTitleChanged("");
@@ -239,8 +250,8 @@ void InputMangler::activeWindowChanged(QString w)
 		
 	} else {
 		
-	//	wm_class = QString(window_class.res_class);
-		wm_class = QString(window_class.res_name);
+		wm_class = QString(window_class.res_class);
+	//	wm_class = QString(window_class.res_name);
 		
 		
 		XFree(window_class.res_class);
@@ -249,7 +260,7 @@ void InputMangler::activeWindowChanged(QString w)
 		wm_title = w;
 		
 	
-	//qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;// << "wm_class2: " << window_class.res_class;
+	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;// << "wm_class2: " << window_class.res_class;
 	
 	//update handlers
 // 	qDebug() << "update handlers: in";
@@ -288,6 +299,9 @@ InputMangler::~InputMangler()
 
 OutEvent::OutEvent(QString s)
 {
+#ifdef DEBUGME
+	initString = s;
+#endif
 	keycode = 0;
 	QStringList l = s.split("+");
 	if (l.empty())
@@ -374,6 +388,9 @@ bool TransformationStructure::sanityCheck(int s, QString id)
 	QList<WindowSettings*> wlist = classes.values();
 	foreach (WindowSettings *w, wlist)
 	{
+#ifdef DEBUGME 
+		qDebug() << "Settings found for Window = \"" << classes.key(w) << "\"";
+#endif
 		if (w->def.size() != s)
 		{
 			qDebug() << "WindowSettings.def for " << classes.key(w) << " is " << def.size();
@@ -387,6 +404,9 @@ bool TransformationStructure::sanityCheck(int s, QString id)
 		}
 		for(int i = 0; i < w->events.size(); i++)
 		{
+#ifdef DEBUGME
+			qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
+#endif
 			if (w->events.at(i).size() != s)
 			{
 				qDebug() << "WindowSettings for " << classes.key(w) << ":" 

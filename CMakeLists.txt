@@ -1,7 +1,12 @@
 project(inputmangler)
 cmake_minimum_required(VERSION 2.8.8)
 
-set(CMAKE_PREFIX_PATH /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Core/*)
+set(CMAKE_PREFIX_PATH /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/*/*)
+set(Qt5DBus_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5DBus)
+set(Qt5Core_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Core)
+set(Qt5Xml_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Xml)
+set(Qt5Network_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Network)
+set(Qt5Test_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Test)
 
 find_package(Qt5Core)
 find_package(Qt5Xml)
@@ -25,3 +30,5 @@ add_executable(inputmangler ${INPUTMANGLER_SRCS})
 install(TARGETS inputmangler RUNTIME DESTINATION bin)
 
 qt5_use_modules(inputmangler Core Xml DBus Network Test)
+
+add_definitions( -DDEBUGME )

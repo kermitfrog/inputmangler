@@ -66,10 +66,8 @@ public:
 	virtual QVector<OutEvent> getOutputs() const {return outputs;};
 	virtual int addInputCode(__u16 in);
 	virtual int addInputCode(__u16 in, OutEvent def);
-	inline void sendKbdEvent(VEvent *e, int num = 1)
-		{write(sd->fd_kbd, e, num*sizeof(VEvent));};
-	inline void sendMouseEvent(VEvent *e, int num = 1)
-		{write(sd->fd_mouse, e, num*sizeof(VEvent));}
+	void sendMouseEvent(VEvent *e, int num = 1);
+	void sendKbdEvent(VEvent *e, int num = 1);
 	void sendTextEvent(TEvent *t);
 	QString getId() const {return _id;};
 	int getNumInputs() const {return inputs.size();};
