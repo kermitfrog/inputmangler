@@ -31,4 +31,4 @@ install(TARGETS inputmangler RUNTIME DESTINATION bin)
 
 qt5_use_modules(inputmangler Core Xml DBus Network Test)
 
-add_definitions( -DDEBUGME )
+#add_definitions( -DDEBUGME )

@@ -37,6 +37,7 @@ NetHandler::NetHandler(shared_data *sd, QString a, int port)
 
 void NetHandler::run()
 {
+// 	unsigned long dc = 0;
 	s = new QTcpServer();
 	if (!s->listen(QHostAddress(addr), port))
 		qDebug() << "listening on " << addr.toString() << ":" << port << " failed";
@@ -46,7 +47,7 @@ void NetHandler::run()
 	QTcpSocket *t = NULL;
 	while (1)
 	{
-		state = s->waitForNewConnection(1500);
+		state = s->waitForNewConnection(1000);
 		if (sd->terminating)
 		{
 			if (t)
@@ -65,7 +66,7 @@ void NetHandler::run()
 		
 		while(1)
 		{
-			state = t->waitForReadyRead(1500);
+			state = t->waitForReadyRead(1000);
 			if (sd->terminating)
 			{
 				t->disconnectFromHost();
@@ -84,9 +85,11 @@ void NetHandler::run()
 				else
 					continue;
 			
-			while (n = t->bytesAvailable())
+			while (t->bytesAvailable())
 			{
-				t->read(b, 1016);
+				n = t->read(b, 1016);
+// 				dc += n;
+// 				qDebug("read %i bytes, now at %li", n, dc);
 				actOnData(b, n);
 			}	
 		}
@@ -98,9 +101,9 @@ void NetHandler::actOnData(char* b, int n)
 {
 	QString s = buffer + QString::fromLatin1(b, n);
 	buffer = "";
-	qDebug() << "Buffer: " << buffer << " S: " << s << "Hex:" << QTest::toHexRepresentation(b, n);
+// 	qDebug() << "Buffer: " << buffer << " S: " << s << "Hex:" << QTest::toHexRepresentation(b, n);
 // 	bool shift = false, altGr = false;
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < s.length(); i++)
 	{
 		if (s[i] == '\x085') //'...'
 		{
@@ -109,11 +112,11 @@ void NetHandler::actOnData(char* b, int n)
 				sendTextEvent(&dot);
 			continue;
 		}	
-		if (s[i] == '\x01b')
+		if (s[i] == '\x01b') // Escaped ^[C (Cursor Right), or ^[D (Cursor Left)
 		{
 			if (s.length() - i < 3)
 			{
-				buffer = s;
+				buffer = s.mid(i);
 				return;
 			}
 			i+=2;
@@ -127,13 +130,9 @@ void NetHandler::actOnData(char* b, int n)
 		{
 			if (s.length() - i < 2) 
 			{
-				buffer = s;
+				buffer = s.mid(i);
 				return;
 			}
-#ifdef DEBUGME
-			if (s[i+1] == 'c')
-				qDebug () << "Copy";
-#endif
 			sendTextEvent(&specialmap[s.mid(i,2)]);
 			i++;
 			continue;

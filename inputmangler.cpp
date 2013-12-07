@@ -260,7 +260,7 @@ void InputMangler::activeWindowChanged(QString w)
 		wm_title = w;
 		
 	
-	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;// << "wm_class2: " << window_class.res_class;
+// 	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;// << "wm_class2: " << window_class.res_class;
 	
 	//update handlers
 // 	qDebug() << "update handlers: in";
