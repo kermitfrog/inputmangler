@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv) {
 	QCoreApplication a(argc,argv);
-	imDbusInterface dbus;	//has, for some reason, to be constructed in main
+	imDbusInterface dbus;	//for some unknown reason it has to be constructed in main...
 	InputMangler im;
 	QtSignalHandler s;		//handles TERM and HUP
 	QObject::connect(&dbus, SIGNAL(windowChanged(QString)), &im, SLOT(activeWindowChanged(QString)));

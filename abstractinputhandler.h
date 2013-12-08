@@ -28,6 +28,7 @@ class TransformationStructure;
 #include <QVector>
 #include <unistd.h>
 
+// Data shared by all Handlers
 struct shared_data
 {
 	int fd_kbd;
@@ -35,6 +36,8 @@ struct shared_data
 	bool terminating;
 };
 
+// Data that wil be sent to inputdummy, aka low level input event
+// See linux/input.h for Details on Variables
 struct VEvent
 {
 //	__u16 type; //should be 16... TODO: fix in inputdummy
@@ -44,15 +47,18 @@ struct VEvent
 	__s32 value;
 };
 
+// TextEvent, or high level keyboard event.
+// Multiple VEvents are generated from this
 class TEvent
 {
 public:
 	TEvent(){TEvent(0);};
-	TEvent(__s32 c, bool s = false, bool a = false, bool C = false);
+	TEvent(__s32 code, bool shift = false, bool alt = false, bool ctrl = false); 
 	QVector<__u16> modifiers;
 	__s32 code;
 };
 
+//base class for event transformation
 class AbstractInputHandler : public QThread
 {
 	Q_OBJECT
@@ -76,8 +82,8 @@ public:
 protected:
 	QString _id;
 	shared_data *sd;
-	QVector<__u16> inputs;
-	QVector<OutEvent> outputs;
+	QVector<__u16> inputs;		// codes of the keys to be transformed
+	QVector<OutEvent> outputs;	// current target events
 };
 
 #endif // ABSTRACTINPUTHANDLER_H

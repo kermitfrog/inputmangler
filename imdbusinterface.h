@@ -21,13 +21,11 @@
 #define IMDBUSINTERFACE_H
 
 #include <QtDBus>
-#include <QDebug>
 
 #include <QCoreApplication>
 class imDbusInterface : public QObject
 {
 	Q_OBJECT
-	//Q_CLASSINFO("D-Bus Interface", "org.inputMangler.API.Interface")
 	Q_CLASSINFO("D-Bus Interface", "org.inputMangler.API.Interface")
 
 	
@@ -37,17 +35,11 @@ public:
 	
 public slots:
 	Q_NOREPLY void activeWindowChanged(QString w) {
-// 		qDebug() << "a";
 		emit windowChanged(w);
-// 		qDebug() << "b";
 	};
 	Q_NOREPLY void activeWindowTitleChanged(QString w) {
-// 		qDebug() << "c";
 		emit windowTitleChanged(w);
-// 		qDebug() << "d";
 	};
-//	Q_NOREPLY void Testslot();
-//	void Notify(const QString &message);
 
 signals:
 	void windowChanged(QString w);

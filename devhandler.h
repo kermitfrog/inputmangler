@@ -25,6 +25,8 @@
 
 class DevHandler : public AbstractInputHandler
 {
+	// does this handle a mouse or a keyboard?
+	// for devices that do both, 2 instances are created
 	enum DType{Keyboard, Mouse};
 
 public:

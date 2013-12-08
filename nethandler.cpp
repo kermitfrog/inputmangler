@@ -35,25 +35,36 @@ NetHandler::NetHandler(shared_data *sd, QString a, int port)
 	_id = "___NET";
 }
 
+/*
+ * this thread will read text (and a few editing/movement commands) from the Network
+ * and create events to write that text
+ * it is intended to be used with speech recognition running in a virtual machine,
+ * piping its output through hyperterminal with a few macros set..
+ */
+
 void NetHandler::run()
 {
-// 	unsigned long dc = 0;
 	s = new QTcpServer();
 	if (!s->listen(QHostAddress(addr), port))
+	{
 		qDebug() << "listening on " << addr.toString() << ":" << port << " failed";
-	char b[1024];
-	int n;
+		delete s;
+		return;
+	}
+	char b[1024]; // buffer
+	int n;        // bytes read
 	bool state;
-	QTcpSocket *t = NULL;
+	QTcpSocket *socket = NULL;
 	while (1)
 	{
 		state = s->waitForNewConnection(1000);
+		// check if we should stop the loop
 		if (sd->terminating)
 		{
-			if (t)
+			if (socket)
 			{
-				t->disconnectFromHost();
-				t->close();
+				socket->disconnectFromHost();
+				socket->close();
 			}
 			s->close();
 			return;
@@ -61,23 +72,24 @@ void NetHandler::run()
 		if (!state)
 			continue;
 		
-		t = s->nextPendingConnection();
+		socket = s->nextPendingConnection();
 		qDebug() << "Yay! Someone connected";
 		
 		while(1)
 		{
-			state = t->waitForReadyRead(1000);
+			state = socket->waitForReadyRead(1000);
+			// check if we should stop the loop
 			if (sd->terminating)
 			{
-				t->disconnectFromHost();
-				t->close();
 				s->close();
-				delete t;
+				socket->disconnectFromHost();
+				socket->close();
+				delete socket;
 				delete s;
 				return;
 			}
 			if (!state)
-				if (t->state() == QAbstractSocket::UnconnectedState)
+				if (socket->state() == QAbstractSocket::UnconnectedState)
 				{
 					qDebug() << "Nay! Someone disconnected";
 					break;
@@ -85,24 +97,22 @@ void NetHandler::run()
 				else
 					continue;
 			
-			while (t->bytesAvailable())
+			while (socket->bytesAvailable())
 			{
-				n = t->read(b, 1016);
-// 				dc += n;
-// 				qDebug("read %i bytes, now at %li", n, dc);
+				n = socket->read(b, 1016);
 				actOnData(b, n);
 			}	
 		}
-		delete t;
+		delete socket;
 	}
 }
 
 void NetHandler::actOnData(char* b, int n)
 {
+	// we need a buffer for split multi-char commands
 	QString s = buffer + QString::fromLatin1(b, n);
 	buffer = "";
 // 	qDebug() << "Buffer: " << buffer << " S: " << s << "Hex:" << QTest::toHexRepresentation(b, n);
-// 	bool shift = false, altGr = false;
 	for (int i = 0; i < s.length(); i++)
 	{
 		if (s[i] == '\x085') //'...'
@@ -121,12 +131,12 @@ void NetHandler::actOnData(char* b, int n)
 			}
 			i+=2;
 			if(s[i] == '\x044')
-				sendTextEvent(&l);
+				sendTextEvent(&l); // left
 			else
-				sendTextEvent(&r);
+				sendTextEvent(&r); // right
 			continue;
 		}
- 		if (s[i] == '^')
+ 		if (s[i] == '^') // custom commands
 		{
 			if (s.length() - i < 2) 
 			{

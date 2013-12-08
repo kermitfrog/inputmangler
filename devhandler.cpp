@@ -26,14 +26,22 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
+/*
+ * this thread will read from one input device and transform input
+ * events according to previosly set rules
+ */
+
 void DevHandler::run()
 {
+	//TODO toLatin1 works... always? why not UTF-8?
 	fd = open(filename.toLatin1(), O_RDONLY);
 	if (fd == -1)
 	{
 		qDebug() << "?could (not?) open " << filename;
 		return;
 	}
+	
+	// grab the device, otherwise there will be double events
 	ioctl(fd, EVIOCGRAB, 1);
 	
 	
@@ -49,12 +57,16 @@ void DevHandler::run()
 	VEvent e[NUM_MOD*2+2];
 	while (1)
 	{
+		//wait until there is data
 		ret = poll (&p, 1, 1500);
+		
+		//break the loop if we want to stop
 		if(sd->terminating)
 		{
 			qDebug() << "terminating";
 			break;
 		}
+		//if we did not wake up due to timeout...
 		if(ret)
 		{
 			n = read(fd, buf, 4*sizeof(input_event));
@@ -63,7 +75,10 @@ void DevHandler::run()
 				//if (id() == "")// && buf[i].type == EV_REL && buf[i].code > 1 )
 				//	qDebug()<< "yup " << buf[i].type << " " << buf[i].code << " " << buf[i].value;
 				matches = false;
-				if(buf[i].type == EV_KEY)
+				// Key/Button events only
+				// We do not yet handle mouse moves and
+				// certainly not misc and sync events
+				if(buf[i].type == EV_KEY) 
 					for(int j = 0; j < outputs.size(); j++)
 					{	
 	// 					qDebug() << j << " of " << outputs.size() << " in " << id();
@@ -73,7 +88,7 @@ void DevHandler::run()
 #ifdef DEBUGME
 							qDebug() << "Output : " << outputs.at(j).initString;
 #endif
-							// Combo Event
+							// Combo Event ( see TEvent )
 							if(outputs.at(j).modifiers.size())
 							{
 								if (buf[i].value == 0)
@@ -139,11 +154,6 @@ void DevHandler::run()
 	// unlock & close
 	ioctl(fd, EVIOCGRAB, 0);
 	close(fd);
-	
-}
-
-void DevHandler::createEvent(OutEvent* out, input_event* buf)
-{
 	
 }
 

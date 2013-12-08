@@ -30,22 +30,23 @@
 
 InputMangler::InputMangler()
 {
-	setUpKeymap();
-	setUpCMap();
-	setUpSMap();
+	// set up key definitions
+	setUpKeymap(); // keys 
+	setUpCMap();   // char mappings (nethandler)
+	setUpSMap();   // multi-char commands (nethandler)
 	
-	
+	// open X Display. we need it only to get the window class
 	display = XOpenDisplay(NULL);
 	if (!display)
 		qFatal("connection to X Server failed");
 	readConf();
 }
 
+// this function is very messy and will be rewritten soon
 bool InputMangler::readConf()
 {
 	sd = new shared_data;
 	sd->fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
-	//sd->fd_kbd = open("/tmp/virtual_kbd", O_WRONLY|O_APPEND);
 	sd->fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
 #ifdef DEBUGME	
 	qDebug() << "kbd: " << sd->fd_kbd << ", mouse: " << sd->fd_mouse;
@@ -177,7 +178,11 @@ bool InputMangler::readConf()
 }
 
 
-/* parses /proc/bus/input/devices for relevant information*/
+/* 
+ * parses /proc/bus/input/devices for relevant information, where relevant is:
+ * I: Vendor=1395 Product=0020
+ * H: Handlers=kbd event9     <-- kbd or mouse? which event file in /dev/input/ is it?
+ */
 QList< idevs > InputMangler::parseInputDevices()
 {
 	QFile d("/proc/bus/input/devices");
@@ -188,7 +193,8 @@ QList< idevs > InputMangler::parseInputDevices()
 		return QList<idevs>();
 	}
 	QTextStream t(&d);
-	QStringList devs = t.readAll().split("\n");
+	// we read it line by line
+	QStringList devs = t.readAll().split("\n"); 
 	QList<idevs> l;
 	idevs i;
 	QStringList tmp;
@@ -197,6 +203,8 @@ QList< idevs > InputMangler::parseInputDevices()
 	QList<QString>::iterator li = devs.begin();
 	while (li != devs.end())
 	{
+		// "I:" marks the beginning of a new section
+		// and also contains information we want
 		if(!(*li).startsWith("I"))
 		{
 			++li;
@@ -209,6 +217,7 @@ QList< idevs > InputMangler::parseInputDevices()
 		i.product = tmp.at(idx).right(4);
 		while (li != devs.end())
 		{
+			// "H:" marks the line with the rest
 			if(!(*li).startsWith("H"))
 			{
 				++li;
@@ -226,12 +235,16 @@ QList< idevs > InputMangler::parseInputDevices()
 	return l;
 }
 
+/*
+ * this is called when the active window changes
+ * so far it gets the new window *title* as parameter
+ * this will probably change as soon as the kwin-scripting api
+ * offers a way to get the window class
+ */
 void InputMangler::activeWindowChanged(QString w)
 {
 	if (sd->terminating)
 		return;
-	//Window active;
-	//int revert;
 	Window active;
 	int revert;
 	XClassHint window_class;
@@ -245,7 +258,6 @@ void InputMangler::activeWindowChanged(QString w)
 		qDebug() << "Could not get Window Class, where title is " << w;
 		//return;
 		//HACK:: this problem seems to occur only with Opera, so..
-		
 		wm_class = "Opera";
 		
 	} else {
@@ -270,18 +282,26 @@ void InputMangler::activeWindowChanged(QString w)
 	
 }
 
+/*
+ * this is called when the title of the active window changes
+ * for now it just calls activeWindowChanged
+ * this will probably change as soon as the kwin-scripting api
+ * offers a way to get the window class
+ */
 void InputMangler::activeWindowTitleChanged(QString w)
 {
 	activeWindowChanged(w);
 }
 
-
+/*
+ * end threads and close all devices
+ */
 void InputMangler::cleanUp()
 {
 	sd->terminating = true;
 	qDebug() << "waiting for Threads to finish";
 	foreach (AbstractInputHandler *h, handlers)
-		h->wait(5000);
+		h->wait(4000);
 	close(sd->fd_kbd);
 	close(sd->fd_mouse);
 	foreach (AbstractInputHandler *h, handlers)
@@ -294,9 +314,10 @@ void InputMangler::cleanUp()
 
 InputMangler::~InputMangler()
 {
-	XFree(display); // is that right?
+	XFree(display); // is that the right way to close the connection with X?
 }
 
+// Constructs an output event from a config string
 OutEvent::OutEvent(QString s)
 {
 #ifdef DEBUGME
@@ -321,11 +342,13 @@ OutEvent::OutEvent(QString s)
 			modifiers.append(keymap["RIGHTALT"]);
 		/*if(l[1].contains("~"))
 			modifiers = modifiers | MOD_REPEAT;
-		if(l[1].contains("@"))
+		if(l[1].contains(""))
 			modifiers = modifiers | MOD_MACRO;*/
 	}
 }
 
+// get the window structure for window w
+// if create is true: create a new window, when none is found
 WindowSettings* TransformationStructure::window(QString w, bool create)
 {
 	if (create)
@@ -339,11 +362,11 @@ WindowSettings* TransformationStructure::window(QString w, bool create)
 	return classes.value(w);
 }
 
-
-QVector< OutEvent > TransformationStructure::getOutputs(QString c, QString n)
+// get output events for a given window and window title
+QVector< OutEvent > TransformationStructure::getOutputs(QString window_class, QString window_name)
 {
 	//qDebug() << "getOutputs(" << c << ", " << n << ")";
-	WindowSettings *w = window(c);
+	WindowSettings *w = window(window_class);
 	if (w == NULL)
 		return def;
 	//qDebug() << "Window found with " << w->titles.size() << "titles";
@@ -351,7 +374,7 @@ QVector< OutEvent > TransformationStructure::getOutputs(QString c, QString n)
 	for (int i = 0; i < w->titles.size(); i++)
 	{
 		//qDebug() << "Title: " << w->titles.at(i)->pattern();
-		QRegularExpressionMatch m = w->titles.at(i)->match(n);
+		QRegularExpressionMatch m = w->titles.at(i)->match(window_name);
 		if(m.hasMatch())
 			return w->events.at(i);
 	}
@@ -376,6 +399,7 @@ void InputMangler::reReadConfig()
 	readConf();
 }
 
+// check a TransformationStructure for configuration errors
 bool TransformationStructure::sanityCheck(int s, QString id)
 {
 	bool result = true;

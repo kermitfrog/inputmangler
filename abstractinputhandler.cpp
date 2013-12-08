@@ -22,11 +22,6 @@
 #include <QDebug>
 #include <QTest>
 
-// AbstractInputHandler::AbstractInputHandler(shared_data *sd, QObject *parent)
-// {
-// 
-// }
-
 AbstractInputHandler::~AbstractInputHandler()
 {
 }
@@ -60,6 +55,11 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 	outputs = o;
 }
 
+// TEvent -> send VEvent[]:
+// Example: (Ctrl+Shift+C) 
+// 1: Shift down,           ,       ,     ,        , Shift up
+// 2: Shift down, Ctrl down ,       ,     , Ctrl up, Shift up
+// 3: Shift down, Ctrl down , C down, C up, Ctrl up, Shift up
 void AbstractInputHandler::sendTextEvent(TEvent* t)
 {
 	VEvent e[NUM_MOD*2+2];
@@ -86,15 +86,15 @@ void AbstractInputHandler::sendTextEvent(TEvent* t)
 	usleep(5000); // wait x * 0.000001 seconds
 }
 
-TEvent::TEvent(__s32 c, bool s, bool a, bool C)
+TEvent::TEvent(__s32 code, bool shift, bool alt, bool ctrl)
 {
-	if (s)
+	if (shift)
 		modifiers.append(KEY_LEFTSHIFT);
-	if (a)
+	if (alt)
 		modifiers.append(KEY_RIGHTALT);
-	if (C)
+	if (ctrl)
 		modifiers.append(KEY_LEFTCTRL);
-	code = c;
+	this->code = code;
 }
 
 //FIXME: should be inline, but then code does not link -> WTF???

@@ -31,6 +31,8 @@ class AbstractInputHandler;
 
 struct shared_data;
 
+// structure with information on input devices as read
+// from /proc/bus/input/devices
 class idevs 
 {
 public:
@@ -50,7 +52,6 @@ class InputMangler : public QObject
 public:
 	InputMangler();
 	virtual ~InputMangler();
-	//QDBusInterface *dbus;
 	//QString getThatStupidWindowTitleFromX(Window* window);
 
 public slots:
@@ -71,41 +72,57 @@ private:
 	
 };
 
-class OutEvent // 
+/*
+ * an output event, e.g: 
+ * "S" for press shift
+ * "g" for press g
+ * "d+C" for press Ctrl-D
+ */
+class OutEvent 
 {
 public:
 	OutEvent() {};
 	OutEvent(int c) {keycode = c;};
 	OutEvent(QString s);
 	QVector<__u16> modifiers;
- 	__u16 keycode;
- 	__u16 code() const {return keycode;};
+	__u16 keycode;
+	__u16 code() const {return keycode;};
 #ifdef DEBUGME
 	QString initString;
 #endif
 	
 };
 
-class WindowSettings // 1/Window class in TransformationStructure
+/*
+ * 1/Window class in TransformationStructure, e.g:
+ * <window class="Konsole" F="S,n+C,R,B" M="LEFT+S,RIGHT+S"/> (no title-matching)
+ * <window class="Opera" F="S,_,R,B">  (with title-matching)
+ *     <title regex="Dude and Zombies.*" F="S,ESC,BTN_LEFT,_"/>
+ * <window/>
+ */
+class WindowSettings 
 {
 public:
 	WindowSettings(){};
 	~WindowSettings();
-	QVector<OutEvent> def;
-	QVector<QRegularExpression*> titles;
-	QVector< QVector<OutEvent> > events;
+	QVector<OutEvent> def;                // value when no title matches
+	QVector<QRegularExpression*> titles;  // list of title regexes
+	QVector< QVector<OutEvent> > events;  // events are matched to titles via index
 };
 
-class TransformationStructure // 1/id
+/*
+ * 1/id - holds all window-specific settings for a given id
+ */
+class TransformationStructure 
 {
 public:
 	TransformationStructure(){};
 	~TransformationStructure();
-	QVector<OutEvent> getOutputs(QString c, QString n);
+	QVector<OutEvent> getOutputs(QString window_class, QString window_name);
 	WindowSettings *window(QString w, bool create = false);
 	bool sanityCheck(int s, QString id);
 	QVector<OutEvent> def;
-	QHash<QString, WindowSettings*> classes;	
+	QHash<QString, WindowSettings*> classes;
 };
 
 #endif // INPUTMANGLER_H
