@@ -42,9 +42,10 @@ InputMangler::InputMangler()
 	readConf();
 }
 
-// this function is very messy and will be rewritten soon
+// Reads the Config and actually starts the handler threads, too
 bool InputMangler::readConf()
 {
+	// set up shared data
 	sd = new shared_data;
 	sd->fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
 	sd->fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
@@ -63,38 +64,59 @@ bool InputMangler::readConf()
 	QDomNodeList nodes;
 	conf.setContent(&f);
 	
+	// get a list of available devices from /proc/bus/input/devices
 	QList<idevs> availableDevices = parseInputDevices();
 	/// Devices
 	nodes = conf.elementsByTagName("device");
+	// for every configured <device...>
 	for (int i = 0; i < nodes.length(); i++)
 	{
+		/*
+		 * create an idevs structure for the configured device
+		 * vendor and product are set to match the devices in /proc/bus/...
+		 * id is the config-id 
+		 */
 		idevs d;
 		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
 		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
 		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
 		
-		
+		// create a devhandler for every device that matches vendor and product
+		// of the configured device,
 		while (availableDevices.count(d))
 		{
 			int idx = availableDevices.indexOf(d);
+			// copy information obtained from /proc/bus/input/devices to complete
+			// the data in the idevs object used to construct the DevHandler
 			d.event = availableDevices.at(idx).event;
 			d.mouse = availableDevices.at(idx).mouse;
 			handlers.append(new DevHandler(d, sd));
 			availableDevices.removeAt(idx);
-				QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
-				for (int j = 0; j < codes.length(); j++)
-				{
-					QString key = codes.at(j).attributes().namedItem("key").nodeValue();
-					QString def = codes.at(j).attributes().namedItem("default").nodeValue();
-					if (def == "")
-						handlers.last()->addInputCode(keymap[key]);
-					else
-						handlers.last()->addInputCode(keymap[key], OutEvent(def));
-				}
+			
+			/*
+			 * read the <signal> entries.
+			 * [key] will be the input event, that will be transformed
+			 * [default] will be the current output device, this is 
+			 * transformed to. If no [default] is set, the current output will
+			 * be the same as the input.
+			 * For DevHandlers with window specific settings, the current output
+			 * becomes the default output when the TransformationStructure is
+			 * constructed, otherwise it won't ever change anyway...
+			 */
+			QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
+			for (int j = 0; j < codes.length(); j++)
+			{
+				QString key = codes.at(j).attributes().namedItem("key").nodeValue();
+				QString def = codes.at(j).attributes().namedItem("default").nodeValue();
+				if (def == "")
+					handlers.last()->addInputCode(keymap[key]);
+				else
+					handlers.last()->addInputCode(keymap[key], OutEvent(def));
+			}
 		}
 	}
 	
-	/// TODO: initialise netstuff here
+	/// netfhandler
 	nodes = conf.elementsByTagName("net");
 	NetHandler *n;
 	for (int i = 0; i < nodes.length(); i++)
@@ -105,9 +127,7 @@ bool InputMangler::readConf()
 	handlers.append(n);
 	}
 	
-	
-	
-	
+	/// check if there is a reason to continue at all...
 	if (handlers.count() == 0)
 	{
 		qDebug() << "no input Handlers loaded!";
@@ -118,28 +138,64 @@ bool InputMangler::readConf()
 	QStringList ids;
 	foreach(AbstractInputHandler *a, handlers)
 	{
+		if (!a->hasWindowSpecificSettings)
+			continue;
+		// make current outputs the default
+		// if nessecary, a new TransformationStructure is created on demand by QMap,
 		QVector<OutEvent> o = a->getOutputs();
 		wsets[a->id()].def = o;
-		if (a->id() != "")
-			ids.append(a->id());
+		ids.append(a->id());
 	}
 	ids.removeDuplicates();
 	
 	nodes = conf.elementsByTagName("window");
-	for (int i = 0; i < nodes.length(); i++) //for each window
+	// for each <window>
+	for (int i = 0; i < nodes.length(); i++) 
 	{
 		QDomElement e = nodes.at(i).toElement();
 		foreach(QString id, ids) // where id = M|F|? -> for each id
 		{
-			if (!e.hasAttribute(id)) //FIXME: aborts if there are title-tags, but no F|M|?
-				continue;
-			QStringList l = e.attribute(id).split(",");
-			WindowSettings *w = wsets[id].window(e.attribute("class"), true);
-			foreach(QString s, l)
-				w->def.append(OutEvent(s));
-			
-			//title
+			/*
+			 * if the <window> has no default settings for the id,
+			 * it is still possible, there are are settings for 
+			 * special titles.
+			 * We need to check that to decide if a WindowSettings
+			 * object needs to be created.
+			 */
+			bool hasNoIdInWindowButTitlesWithId = false;
 			QDomNodeList titles = e.elementsByTagName("title");
+			if (!e.hasAttribute(id))
+			{
+				for (int k = 0; k < titles.length(); k++)
+				{
+					QDomElement t = titles.at(k).toElement();
+					if (t.hasAttribute(id))
+					{
+						hasNoIdInWindowButTitlesWithId = true;
+						break;
+					}
+				}
+				if (!hasNoIdInWindowButTitlesWithId)
+					continue;
+			}
+				
+			// create WindowSettings
+			WindowSettings *w = wsets[id].window(e.attribute("class"), true);
+			/*
+			 * set default outputs for that window class.
+			 * in the special case mentioned above, the window default output
+			 * events are same as the id default.
+			 */
+			if (hasNoIdInWindowButTitlesWithId)
+				w->def = wsets[id].def;
+			else
+			{
+				QStringList l = e.attribute(id).split(",");
+				foreach(QString s, l)
+					w->def.append(OutEvent(s));
+			}
+
+			// for each <title> inside the current <window>
 			for (int k = 0; k < titles.length(); k++)
 			{
 				QDomElement t = titles.at(k).toElement();
@@ -155,16 +211,17 @@ bool InputMangler::readConf()
 		}	
 	}
 	
-	// prepare and actualy start threads, also roll a sanity check
+	// prepare and actualy start threads. also roll a sanity check
 	sd->terminating = false;
 	
 	activeWindowTitleChanged("");
-	bool sane = false;
+	bool sane;
 	foreach (AbstractInputHandler *h, handlers)
 	{
-		if(h->getId() == "___NET")
+		sane = false;
+		if (h->getId() == "" && h->getNumInputs() == h->getNumOutputs() && h->getNumInputs())
 			sane = true;
-		else if (h->getId() == "" && h->getNumInputs() == h->getNumOutputs() && h->getNumInputs())
+		else if(!h->hasWindowSpecificSettings )
 			sane = true;
 		else 
 			sane = wsets[h->id()].sanityCheck(h->getNumInputs(), h->getId());
@@ -174,7 +231,6 @@ bool InputMangler::readConf()
 	}
 	
 	f.close();
-
 }
 
 
@@ -277,7 +333,8 @@ void InputMangler::activeWindowChanged(QString w)
 	//update handlers
 // 	qDebug() << "update handlers: in";
 	foreach (AbstractInputHandler *a, handlers)
-		a->setOutputs(wsets[a->id()].getOutputs(wm_class, wm_title));
+		if (a->hasWindowSpecificSettings)
+			a->setOutputs(wsets[a->id()].getOutputs(wm_class, wm_title));
 // 	qDebug() << "update handlers: out";
 	
 }

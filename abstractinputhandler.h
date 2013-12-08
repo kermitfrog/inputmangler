@@ -78,6 +78,7 @@ public:
 	QString getId() const {return _id;};
 	int getNumInputs() const {return inputs.size();};
 	int getNumOutputs() const {return outputs.size();};
+	bool hasWindowSpecificSettings;
 	
 protected:
 	QString _id;

@@ -161,6 +161,7 @@ DevHandler::DevHandler(idevs i, shared_data *sd)
 {
 	this->sd = sd;
 	_id = i.id;
+	hasWindowSpecificSettings = _id != "";
 	filename = QString("/dev/input/") + i.event;
 	if (i.mouse)
 		devtype = Mouse;

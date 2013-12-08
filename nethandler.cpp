@@ -33,6 +33,7 @@ NetHandler::NetHandler(shared_data *sd, QString a, int port)
 	r = TEvent(KEY_RIGHT);
 	dot = TEvent(KEY_E);
 	_id = "___NET";
+	hasWindowSpecificSettings = false;
 }
 
 /*

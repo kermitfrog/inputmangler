@@ -46,7 +46,7 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 {
 	if (o.size() != inputs.size())
 	{
-		qDebug() << "setOutputs: in|out sizes do not match ";
+		qDebug() << "setOutputs: in|out sizes do not match in " << id();
 		for (int i = 0; i < inputs.size(); i++)
 			qDebug() << "inputs[" << i << "].code = " << inputs.at(i);
 		for (int i = 0; i < o.size(); i++)
