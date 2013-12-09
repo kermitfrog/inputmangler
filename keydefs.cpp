@@ -2,529 +2,128 @@
 #include "abstractinputhandler.h"
 
 QHash<QString, int> keymap;
-QHash<char, TEvent> charmap;
-QHash<QString, TEvent> specialmap;
+QHash<char, OutEvent> charmap;
+QHash<QString, OutEvent> specialmap;
 
-
-void setUpKeymap() //TODO make it configurable
+void setUpKeymaps()
 {
-keymap[""]  = 0;
-keymap["~"] = 0; 
-keymap["RESERVED"]      = KEY_RESERVED;
-keymap["CAPS_LOCK"]     = KEY_ESC;
-keymap["$"]     = KEY_GRAVE;
-keymap["AND"]   = KEY_1;
-keymap["["]     = KEY_2;
-keymap["{"]     = KEY_3;
-keymap["}"]     = KEY_4;
-keymap["("]     = KEY_5;
-keymap["="]     = KEY_6;
-keymap["*"]     = KEY_7;
-keymap[")"]     = KEY_8;
-keymap["PLUS"]  = KEY_9;
-keymap["]"]     = KEY_0;
-keymap["!"]     = KEY_MINUS;
-keymap["#"]     = KEY_EQUAL;
-keymap["BACKSPACE"]     = KEY_BACKSPACE;
-keymap["B"]     = KEY_BACKSPACE;
-keymap["TAB"]   = KEY_TAB;
-keymap[";"]     = KEY_Q;
-keymap["COMMA"] = KEY_W;
-keymap["."]     = KEY_E;
-keymap["p"]     = KEY_R;
-keymap["y"]     = KEY_T;
-keymap["f"]     = KEY_Y;
-keymap["g"]     = KEY_U;
-keymap["c"]     = KEY_I;
-keymap["r"]     = KEY_O;
-keymap["l"]     = KEY_P;
-keymap["/"]     = KEY_LEFTBRACE;
-keymap["@"]     = KEY_RIGHTBRACE;
-keymap["RETURN"]        = KEY_ENTER;
-keymap["R"]     = KEY_ENTER;
-keymap["LEFTCTRL"]      = KEY_LEFTCTRL;
-keymap["C"]     = KEY_LEFTCTRL;
-keymap["a"]     = KEY_A;
-keymap["o"]     = KEY_S;
-keymap["e"]     = KEY_D;
-keymap["u"]     = KEY_F;
-keymap["i"]     = KEY_G;
-keymap["d"]     = KEY_H;
-keymap["h"]     = KEY_J;
-keymap["t"]     = KEY_K;
-keymap["n"]     = KEY_L;
-keymap["s"]     = KEY_SEMICOLON;
-keymap["-"]     = KEY_APOSTROPHE;
-keymap["LEFTSHIFT"]     = KEY_LEFTSHIFT;
-keymap["S"]     = KEY_LEFTSHIFT;
-keymap["\\"]    = KEY_BACKSLASH;
-keymap["<"]     = KEY_102ND;
-keymap["'"]     = KEY_Z;
-keymap["q"]     = KEY_X;
-keymap["j"]     = KEY_C;
-keymap["k"]     = KEY_V;
-keymap["x"]     = KEY_B;
-keymap["b"]     = KEY_N;
-keymap["m"]     = KEY_M;
-keymap["w"]     = KEY_COMMA;
-keymap["v"]     = KEY_DOT;
-keymap["z"]     = KEY_SLASH;
-keymap["RIGHTSHIFT"]    = KEY_KPASTERISK;
-keymap["LEFTALT"]       = KEY_LEFTALT;
-keymap["A"]     = KEY_LEFTALT;
-keymap["SPACE"] = KEY_SPACE;
-keymap["_"]     = KEY_SPACE;
-keymap["ESC"]   = KEY_CAPSLOCK;
-keymap["F1"]    = KEY_F1;
-keymap["F2"]    = KEY_F2;
-keymap["F3"]    = KEY_F3;
-keymap["F4"]    = KEY_F4;
-keymap["F5"]    = KEY_F5;
-keymap["F6"]    = KEY_F6;
-keymap["F7"]    = KEY_F7;
-keymap["F8"]    = KEY_F8;
-keymap["F9"]    = KEY_F9;
-keymap["F10"]   = KEY_F10;
-keymap["NUMLOCK"]       = KEY_NUMLOCK;
-keymap["SCROLLLOCK"]    = KEY_KP7;
-keymap["KP8"]   = KEY_KP8;
-keymap["KP9"]   = KEY_KP9;
-keymap["KPMINUS"]       = KEY_KPMINUS;
-keymap["KP4"]   = KEY_KP4;
-keymap["KP5"]   = KEY_KP5;
-keymap["KP6"]   = KEY_KP6;
-keymap["KPPLUS"]        = KEY_KPPLUS;
-keymap["KP1"]   = KEY_KP1;
-keymap["KP2"]   = KEY_KP2;
-keymap["KP3"]   = KEY_KP3;
-keymap["KP0"]   = KEY_KP0;
-keymap["KPDOT"] = KEY_KPDOT;
-keymap["ZENKAKUHANKAKU"]        = KEY_102ND;
-keymap["F11"]   = KEY_F11;
-keymap["F12"]   = KEY_F12;
-keymap["RO"]    = KEY_RO;
-keymap["KATAKANA"]      = KEY_KATAKANA;
-keymap["HIRAGANA"]      = KEY_HIRAGANA;
-keymap["HENKAN"]        = KEY_HENKAN;
-keymap["KATAKANAHIRAGANA"]      = KEY_MUHENKAN;
-keymap["KPJPCOMMA"]     = KEY_KPJPCOMMA;
-keymap["KPENTER"]       = KEY_KPENTER;
-keymap["RIGHTCTRL"]     = KEY_RIGHTCTRL;
-keymap["KPSLASH"]       = KEY_KPSLASH;
-keymap["SYSRQ"] = KEY_SYSRQ;
-keymap["RIGHTALT"]      = KEY_RIGHTALT;
-keymap["LINEFEED"]      = KEY_LINEFEED;
-keymap["HOME"]  = KEY_HOME;
-keymap["UP"]    = KEY_UP;
-keymap["PAGEUP"]        = KEY_PAGEUP;
-keymap["LEFT"]  = KEY_LEFT;
-keymap["RIGHT"] = KEY_RIGHT;
-keymap["END"]   = KEY_END;
-keymap["DOWN"]  = KEY_DOWN;
-keymap["PAGEDOWN"]      = KEY_PAGEDOWN;
-keymap["INSERT"]        = KEY_INSERT;
-keymap["DELETE"]        = KEY_DELETE;
-keymap["MACRO"] = KEY_MACRO;
-keymap["MUTE"]  = KEY_MUTE;
-keymap["VOLUMEDOWN"]    = KEY_VOLUMEUP;
-keymap["POWER"] = KEY_POWER;
-keymap["KPEQUAL"]       = KEY_KPEQUAL;
-keymap["KPPLUSMINUS"]   = KEY_PAUSE;
-keymap["KPCOMMA"]       = KEY_KPCOMMA;
-keymap["HANGEUL"]       = KEY_HANGEUL;
-keymap["HANJA"] = KEY_HANJA;
-keymap["YEN"]   = KEY_YEN;
-keymap["M"]     = KEY_LEFTMETA;
-keymap["LEFTMETA"]      = KEY_LEFTMETA;
-keymap["RIGHTMETA"]     = KEY_RIGHTMETA;
-keymap["COMPOSE"]       = KEY_COMPOSE;
-keymap["STOP"]  = KEY_STOP;
-keymap["AGAIN"] = KEY_AGAIN;
-keymap["PROPS"] = KEY_PROPS;
-keymap["UNDO"]  = KEY_UNDO;
-keymap["FRONT"] = KEY_FRONT;
-keymap["COPY"]  = KEY_COPY;
-keymap["OPEN"]  = KEY_OPEN;
-keymap["PASTE"] = KEY_PASTE;
-keymap["FIND"]  = KEY_FIND;
-keymap["CUT"]   = KEY_CUT;
-keymap["HELP"]  = KEY_HELP;
-keymap["MENU"]  = KEY_MENU;
-keymap["CALC"]  = KEY_CALC;
-keymap["SETUP"] = KEY_SETUP;
-keymap["SLEEP"] = KEY_SLEEP;
-keymap["WAKEUP"]        = KEY_WAKEUP;
-keymap["FILE"]  = KEY_FILE;
-keymap["SENDFILE"]      = KEY_SENDFILE;
-keymap["PROG1"] = KEY_PROG1;
-keymap["PROG2"] = KEY_PROG2;
-keymap["WWW"]   = KEY_WWW;
-keymap["MSDOS"] = KEY_MSDOS;
-keymap["COFFEE"]        = KEY_COFFEE;
-keymap["DIRECTION"]     = KEY_DIRECTION;
-keymap["CYCLEWINDOWS"]  = KEY_MAIL;
-keymap["BOOKMARKS"]     = KEY_BOOKMARKS;
-keymap["COMPUTER"]      = KEY_COMPUTER;
-keymap["BACK"]  = KEY_BACK;
-keymap["FORWARD"]       = KEY_FORWARD;
-keymap["CLOSECD"]       = KEY_CLOSECD;
-keymap["EJECTCD"]       = KEY_EJECTCD;
-keymap["EJECTCLOSECD"]  = KEY_NEXTSONG;
-keymap["PLAYPAUSE"]     = KEY_PLAYPAUSE;
-keymap["PREVIOUSSONG"]  = KEY_STOPCD;
-keymap["RECORD"]        = KEY_RECORD;
-keymap["REWIND"]        = KEY_REWIND;
-keymap["PHONE"] = KEY_PHONE;
-keymap["ISO"]   = KEY_ISO;
-keymap["CONFIG"]        = KEY_CONFIG;
-keymap["HOMEPAGE"]      = KEY_HOMEPAGE;
-keymap["REFRESH"]       = KEY_REFRESH;
-keymap["EXIT"]  = KEY_EXIT;
-keymap["MOVE"]  = KEY_MOVE;
-keymap["EDIT"]  = KEY_EDIT;
-keymap["SCROLLUP"]      = KEY_SCROLLUP;
-keymap["SCROLLDOWN"]    = KEY_KPLEFTPAREN;
-keymap["KPRIGHTPAREN"]  = KEY_NEW;
-keymap["REDO"]  = KEY_REDO;
-keymap["F13"]   = KEY_F13;
-keymap["F14"]   = KEY_F14;
-keymap["F15"]   = KEY_F15;
-keymap["F16"]   = KEY_F16;
-keymap["F17"]   = KEY_F17;
-keymap["F18"]   = KEY_F18;
-keymap["F19"]   = KEY_F19;
-keymap["F20"]   = KEY_F20;
-keymap["F21"]   = KEY_F21;
-keymap["F22"]   = KEY_F22;
-keymap["F23"]   = KEY_F23;
-keymap["F24"]   = KEY_F24;
-keymap["PLAYCD"]        = KEY_PLAYCD;
-keymap["PAUSECD"]       = KEY_PAUSECD;
-keymap["PROG3"] = KEY_PROG3;
-keymap["PROG4"] = KEY_PROG4;
-keymap["SUSPEND"]       = KEY_SUSPEND;
-keymap["CLOSE"] = KEY_CLOSE;
-keymap["PLAY"]  = KEY_PLAY;
-keymap["FASTFORWARD"]   = KEY_BASSBOOST;
-keymap["PRINT"] = KEY_PRINT;
-keymap["HP"]    = KEY_HP;
-keymap["CAMERA"]        = KEY_CAMERA;
-keymap["SOUND"] = KEY_SOUND;
-keymap["QUESTION"]      = KEY_QUESTION;
-keymap["EMAIL"] = KEY_EMAIL;
-keymap["CHAT"]  = KEY_CHAT;
-keymap["SEARCH"]        = KEY_SEARCH;
-keymap["CONNECT"]       = KEY_CONNECT;
-keymap["FINANCE"]       = KEY_FINANCE;
-keymap["SPORT"] = KEY_SPORT;
-keymap["SHOP"]  = KEY_SHOP;
-keymap["ALTERASE"]      = KEY_ALTERASE;
-keymap["CANCEL"]        = KEY_CANCEL;
-keymap["BRIGHTNESSDOWN"]        = KEY_BRIGHTNESSUP;
-keymap["MEDIA"] = KEY_MEDIA;
-keymap["SWITCHVIDEOMODE"]       = KEY_KBDILLUMTOGGLE;
-keymap["KBDILLUMDOWN"]  = KEY_KBDILLUMUP;
-keymap["SEND"]  = KEY_SEND;
-keymap["REPLY"] = KEY_REPLY;
-keymap["FORWARDMAIL"]   = KEY_SAVE;
-keymap["DOCUMENTS"]     = KEY_DOCUMENTS;
-keymap["BATTERY"]       = KEY_BATTERY;
-keymap["BLUETOOTH"]     = KEY_BLUETOOTH;
-keymap["WLAN"]  = KEY_WLAN;
-keymap["UNKNOWN"]       = KEY_UNKNOWN;
-keymap["BTN_MISC"]      = BTN_MISC;
-keymap["BTN_0"] = BTN_0;
-keymap["BTN_1"] = BTN_1;
-keymap["BTN_2"] = BTN_2;
-keymap["BTN_3"] = BTN_3;
-keymap["BTN_4"] = BTN_4;
-keymap["BTN_5"] = BTN_5;
-keymap["BTN_6"] = BTN_6;
-keymap["BTN_7"] = BTN_7;
-keymap["BTN_8"] = BTN_8;
-keymap["BTN_9"] = BTN_9;
-keymap["BTN_MOUSE"]     = BTN_MOUSE;
-keymap["BTN_LEFT"]      = BTN_LEFT;
-keymap["BTN_RIGHT"]     = BTN_RIGHT;
-keymap["BTN_MIDDLE"]    = BTN_MIDDLE;
-keymap["BTN_SIDE"]      = BTN_SIDE;
-keymap["BTN_EXTRA"]     = BTN_EXTRA;
-keymap["BTN_FORWARD"]   = BTN_FORWARD;
-keymap["BTN_BACK"]      = BTN_BACK;
-keymap["BTN_TASK"]      = BTN_TASK;
-keymap["BTN_JOYSTICK"]  = BTN_JOYSTICK;
-keymap["BTN_TRIGGER"]   = BTN_TRIGGER;
-keymap["BTN_THUMB"]     = BTN_THUMB;
-keymap["BTN_THUMB2"]    = BTN_THUMB2;
-keymap["BTN_TOP"]       = BTN_TOP;
-keymap["BTN_TOP2"]      = BTN_TOP2;
-keymap["BTN_PINKIE"]    = BTN_PINKIE;
-keymap["BTN_BASE"]      = BTN_BASE;
-keymap["BTN_BASE2"]     = BTN_BASE2;
-keymap["BTN_BASE3"]     = BTN_BASE3;
-keymap["BTN_BASE4"]     = BTN_BASE4;
-keymap["BTN_BASE5"]     = BTN_BASE5;
-keymap["BTN_BASE6"]     = BTN_BASE6;
-keymap["BTN_DEAD"]      = BTN_DEAD;
-keymap["BTN_GAMEPAD"]   = BTN_GAMEPAD;
-keymap["BTN_A"] = BTN_A;
-keymap["BTN_B"] = BTN_B;
-keymap["BTN_C"] = BTN_C;
-keymap["BTN_X"] = BTN_X;
-keymap["BTN_Y"] = BTN_Y;
-keymap["BTN_Z"] = BTN_Z;
-keymap["BTN_TL"]        = BTN_TL;
-keymap["BTN_TR"]        = BTN_TR;
-keymap["BTN_TL2"]       = BTN_TL2;
-keymap["BTN_TR2"]       = BTN_TR2;
-keymap["BTN_SELECT"]    = BTN_SELECT;
-keymap["BTN_START"]     = BTN_START;
-keymap["BTN_MODE"]      = BTN_MODE;
-keymap["BTN_THUMBL"]    = BTN_THUMBL;
-keymap["BTN_THUMBR"]    = BTN_THUMBR;
-keymap["BTN_DIGI"]      = BTN_DIGI;
-keymap["BTN_TOOL_PEN"]  = BTN_TOOL_PEN;
-keymap["BTN_TOOL_RUBBER"]       = BTN_TOOL_BRUSH;
-keymap["BTN_TOOL_PENCIL"]       = BTN_TOOL_AIRBRUSH;
-keymap["BTN_TOOL_FINGER"]       = BTN_TOOL_MOUSE;
-keymap["BTN_TOOL_LENS"] = BTN_TOOL_LENS;
-keymap["BTN_TOUCH"]     = BTN_TOUCH;
-keymap["BTN_STYLUS"]    = BTN_STYLUS;
-keymap["BTN_STYLUS2"]   = BTN_STYLUS2;
-keymap["BTN_TOOL_DOUBLETAP"]    = BTN_TOOL_TRIPLETAP;
-keymap["BTN_WHEEL"]     = BTN_WHEEL;
-keymap["BTN_GEAR_DOWN"] = BTN_GEAR_DOWN;
-keymap["BTN_GEAR_UP"]   = BTN_GEAR_UP;
-keymap["OK"]    = KEY_OK;
-keymap["SELECT"]        = KEY_SELECT;
-keymap["GOTO"]  = KEY_GOTO;
-keymap["CLEAR"] = KEY_CLEAR;
-keymap["POWER2"]        = KEY_POWER2;
-keymap["OPTION"]        = KEY_OPTION;
-keymap["INFO"]  = KEY_INFO;
-keymap["TIME"]  = KEY_TIME;
-keymap["VENDOR"]        = KEY_VENDOR;
-keymap["ARCHIVE"]       = KEY_ARCHIVE;
-keymap["PROGRAM"]       = KEY_PROGRAM;
-keymap["CHANNEL"]       = KEY_CHANNEL;
-keymap["FAVORITES"]     = KEY_FAVORITES;
-keymap["EPG"]   = KEY_EPG;
-keymap["PVR"]   = KEY_PVR;
-keymap["MHP"]   = KEY_MHP;
-keymap["LANGUAGE"]      = KEY_LANGUAGE;
-keymap["TITLE"] = KEY_TITLE;
-keymap["SUBTITLE"]      = KEY_SUBTITLE;
-keymap["ANGLE"] = KEY_ANGLE;
-keymap["ZOOM"]  = KEY_ZOOM;
-keymap["MODE"]  = KEY_MODE;
-keymap["KEYBOARD"]      = KEY_KEYBOARD;
-keymap["SCREEN"]        = KEY_SCREEN;
-keymap["PC"]    = KEY_PC;
-keymap["TV"]    = KEY_TV;
-keymap["TV2"]   = KEY_TV2;
-keymap["VCR"]   = KEY_VCR;
-keymap["VCR2"]  = KEY_VCR2;
-keymap["SAT"]   = KEY_SAT;
-keymap["SAT2"]  = KEY_SAT2;
-keymap["CD"]    = KEY_CD;
-keymap["TAPE"]  = KEY_TAPE;
-keymap["RADIO"] = KEY_RADIO;
-keymap["TUNER"] = KEY_TUNER;
-keymap["PLAYER"]        = KEY_PLAYER;
-keymap["TEXT"]  = KEY_TEXT;
-keymap["DVD"]   = KEY_DVD;
-keymap["AUX"]   = KEY_AUX;
-keymap["MP3"]   = KEY_MP3;
-keymap["AUDIO"] = KEY_AUDIO;
-keymap["VIDEO"] = KEY_VIDEO;
-keymap["DIRECTORY"]     = KEY_DIRECTORY;
-keymap["LIST"]  = KEY_LIST;
-keymap["MEMO"]  = KEY_MEMO;
-keymap["CALENDAR"]      = KEY_CALENDAR;
-keymap["RED"]   = KEY_RED;
-keymap["GREEN"] = KEY_GREEN;
-keymap["YELLOW"]        = KEY_YELLOW;
-keymap["BLUE"]  = KEY_BLUE;
-keymap["CHANNELUP"]     = KEY_CHANNELUP;
-keymap["CHANNELDOWN"]   = KEY_FIRST;
-keymap["LAST"]  = KEY_LAST;
-keymap["AB"]    = KEY_AB;
-keymap["NEXT"]  = KEY_NEXT;
-keymap["RESTART"]       = KEY_RESTART;
-keymap["SLOW"]  = KEY_SLOW;
-keymap["SHUFFLE"]       = KEY_SHUFFLE;
-keymap["BREAK"] = KEY_BREAK;
-keymap["PREVIOUS"]      = KEY_PREVIOUS;
-keymap["DIGITS"]        = KEY_DIGITS;
-keymap["TEEN"]  = KEY_TEEN;
-keymap["TWEN"]  = KEY_TWEN;
-keymap["DEL_EOL"]       = KEY_DEL_EOL;
-keymap["DEL_EOS"]       = KEY_DEL_EOS;
-keymap["INS_LINE"]      = KEY_INS_LINE;
-keymap["DEL_LINE"]      = KEY_DEL_LINE;
-keymap["FN"]    = KEY_FN;
-keymap["FN_ESC"]        = KEY_FN_ESC;
-keymap["FN_F1"] = KEY_FN_F1;
-keymap["FN_F2"] = KEY_FN_F2;
-keymap["FN_F3"] = KEY_FN_F3;
-keymap["FN_F4"] = KEY_FN_F4;
-keymap["FN_F5"] = KEY_FN_F5;
-keymap["FN_F6"] = KEY_FN_F6;
-keymap["FN_F7"] = KEY_FN_F7;
-keymap["FN_F8"] = KEY_FN_F8;
-keymap["FN_F9"] = KEY_FN_F9;
-keymap["FN_F10"]        = KEY_FN_F10;
-keymap["FN_F11"]        = KEY_FN_F11;
-keymap["FN_F12"]        = KEY_FN_F12;
-keymap["FN_1"]  = KEY_FN_1;
-keymap["FN_2"]  = KEY_FN_2;
-keymap["FN_D"]  = KEY_FN_D;
-keymap["FN_E"]  = KEY_FN_E;
-keymap["FN_F"]  = KEY_FN_F;
-keymap["FN_S"]  = KEY_FN_S;
-keymap["FN_B"]  = KEY_FN_B;
-keymap["BRL_DOT1"]      = KEY_BRL_DOT1;
-keymap["BRL_DOT2"]      = KEY_BRL_DOT2;
-keymap["BRL_DOT3"]      = KEY_BRL_DOT3;
-keymap["BRL_DOT4"]      = KEY_BRL_DOT4;
-keymap["BRL_DOT5"]      = KEY_BRL_DOT5;
-keymap["BRL_DOT6"]      = KEY_BRL_DOT6;
-keymap["BRL_DOT7"]      = KEY_BRL_DOT7;
-keymap["BRL_DOT8"]      = KEY_BRL_DOT8;
-}
+	QMap<QString, int> in;
+	QFile input_h_file("/usr/include/linux/input.h");
+	if (!input_h_file.open(QIODevice::ReadOnly))
+	{
+		qDebug() << "could not load keysyms from " << input_h_file.fileName();
+		return;
+	}
+	QTextStream input_h_stream(&input_h_file);
+	QStringList input_h = input_h_stream.readAll().split("\n"); 
+// 	input_h_file.close();
+	QStringList tmp;
+	
+	QList<QString>::iterator li = input_h.begin();
+	while (li != input_h.end())
+	{
+		tmp = (*li).split(QRegExp("\\s"), QString::SkipEmptyParts);
+		if (tmp.size() >= 3)
+			if (tmp[0] == "#define")
+			{
+				int code;
+				bool ok;
+				if (tmp[2].startsWith("0x"))
+					code = tmp[2].toInt(&ok, 16);
+				else 
+					code = tmp[2].toInt(&ok, 10);
+				if (ok)
+					in[tmp[1]] = code;
+			}
+		li++;
+	}
+	
+	QString confPath = QDir::homePath() + "/.config/inputMangler/keymap";
+	QFile keymap_file(confPath);
+	if (!keymap_file.open(QIODevice::ReadOnly))
+	{
+		qDebug() << "could not load keysyms from " << keymap_file.fileName();
+		return;
+	}
+	QTextStream keymap_stream(&keymap_file);
+	QStringList keymap_text = keymap_stream.readAll().split("\n"); 
+// 	input_h_file.close();
+	
+	li = keymap_text.begin();
+	while (li != keymap_text.end())
+	{
+		tmp = (*li).split(QRegExp("\\s"), QString::SkipEmptyParts);
+		if (tmp.size() >= 2)
+		{
+			int code;
+			if (QRegExp("\\D").exactMatch(tmp[0].left(1)) )
+				code = in[tmp[0]];
+			else 
+				code = tmp[0].toInt();
+			keymap[tmp[1]] = code;
+		}
+		li++;
+	}
+	
+	charmap['\n']        = OutEvent(KEY_ENTER);
+	charmap['\r']        = OutEvent(KEY_ENTER);
+	charmap['\b']     = OutEvent(KEY_BACKSPACE);
+	charmap['\t']   = OutEvent(KEY_TAB);
+	charmap[' ']     = OutEvent(KEY_SPACE);
+	
+	confPath = QDir::homePath() + "/.config/inputMangler/charmap";
+	QFile charmap_file(confPath);
+	if (!charmap_file.open(QIODevice::ReadOnly))
+	{
+		qDebug() << "could not load keysyms from " << charmap_file.fileName();
+		return;
+	}
+	QTextStream charmap_stream(&charmap_file);
+	QStringList charmap_text = charmap_stream.readAll().split("\n"); 
+	
+	li = charmap_text.begin();
+	while (li != charmap_text.end())
+	{
+		tmp = (*li).split(QRegExp("\\s"), QString::SkipEmptyParts);
+		if (tmp.size() == 0)
+		{
+			li++;
+			continue;
+		}
+		if (tmp.size() == 1)
+		{
+			charmap[tmp[0][0].toLatin1()] = OutEvent(keymap[tmp[0]]);
+#ifdef DEBUGME
+			qDebug() << tmp[0] << "=" << tmp[0] << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
+#endif
+		}
+		else if(tmp[0].size() == 1)
+		{
+			charmap[tmp[0][0].toLatin1()] = OutEvent(tmp[1]);
+#ifdef DEBUGME
+			qDebug() << tmp[0] << "=" << tmp[1] << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
+#endif
+		}
+		else 
+		{
+			specialmap[tmp[0]] = OutEvent(tmp[1]);
+#ifdef DEBUGME
+			qDebug() << tmp[0] << "=" << tmp[0] << " --> " << specialmap[tmp[0]].print() ;
+#endif
+		}
+		li++;
+	}
+	
+	
+/*	
+	charmap['\x0e4']     = TEvent(KEY_A, false, true);
+	charmap['\x0f6']     = TEvent(KEY_S, false, true);
+	charmap['\x0fc']     = TEvent(KEY_F, false, true);
+	charmap['\x0df']     = TEvent(KEY_SEMICOLON, false, true);
 
-void setUpCMap()
-{
-charmap['~'] = TEvent(0); 
-charmap['@']     = TEvent(KEY_RIGHTBRACE);
-charmap['\n']        = TEvent(KEY_ENTER);
-charmap['\r']        = TEvent(KEY_ENTER);
-charmap['$']     = TEvent(KEY_GRAVE);
-charmap['&']   = TEvent(KEY_1);
-charmap['[']     = TEvent(KEY_2);
-charmap['{']     = TEvent(KEY_3);
-charmap['}']     = TEvent(KEY_4);
-charmap['(']     = TEvent(KEY_5);
-charmap['=']		= TEvent(KEY_6);
-charmap['*']     = TEvent(KEY_7);
-charmap[')']     = TEvent(KEY_8);
-charmap['+']  = TEvent(KEY_9);
-charmap[']']     = TEvent(KEY_0);
-charmap['!']     = TEvent(KEY_MINUS);
-charmap['#']     = TEvent(KEY_EQUAL);
-charmap['\b']     = TEvent(KEY_BACKSPACE);
-charmap['\t']   = TEvent(KEY_TAB);
-charmap[';']     = TEvent(KEY_Q);
-charmap[','] = TEvent(KEY_W);
-charmap['.']     = TEvent(KEY_E);
-charmap['p']     = TEvent(KEY_R);
-charmap['y']     = TEvent(KEY_T);
-charmap['f']     = TEvent(KEY_Y);
-charmap['g']     = TEvent(KEY_U);
-charmap['c']     = TEvent(KEY_I);
-charmap['r']     = TEvent(KEY_O);
-charmap['l']     = TEvent(KEY_P);
-charmap['/']     = TEvent(KEY_LEFTBRACE);
-charmap['a']     = TEvent(KEY_A);
-charmap['o']     = TEvent(KEY_S);
-charmap['e']     = TEvent(KEY_D);
-charmap['u']     = TEvent(KEY_F);
-charmap['i']     = TEvent(KEY_G);
-charmap['d']     = TEvent(KEY_H);
-charmap['h']     = TEvent(KEY_J);
-charmap['t']     = TEvent(KEY_K);
-charmap['n']     = TEvent(KEY_L);
-charmap['s']     = TEvent(KEY_SEMICOLON);
-charmap['-']     = TEvent(KEY_APOSTROPHE);
-charmap['\\']    = TEvent(KEY_BACKSLASH);
-charmap['<']     = TEvent(KEY_102ND);
-charmap['\'']     = TEvent(KEY_Z);
-charmap['q']     = TEvent(KEY_X);
-charmap['j']     = TEvent(KEY_C);
-charmap['k']     = TEvent(KEY_V);
-charmap['x']     = TEvent(KEY_B);
-charmap['b']     = TEvent(KEY_N);
-charmap['m']     = TEvent(KEY_M);
-charmap['w']     = TEvent(KEY_COMMA);
-charmap['v']     = TEvent(KEY_DOT);
-charmap['z']     = TEvent(KEY_SLASH);
-charmap[' ']     = TEvent(KEY_SPACE);
+	charmap['\x0c4']     = TEvent(KEY_A, true, true);
+	charmap['\x0d6']     = TEvent(KEY_S, true, true);
+	charmap['\x0dc']     = TEvent(KEY_F, true, true);
+*/
 
-charmap['^']     = TEvent(KEY_RIGHTBRACE, true);
-charmap['~']     = TEvent(KEY_GRAVE, true);
-charmap['%']   = TEvent(KEY_1, true);
-charmap['7']     = TEvent(KEY_2, true);
-charmap['5']     = TEvent(KEY_3, true);
-charmap['3']     = TEvent(KEY_4, true);
-charmap['1']     = TEvent(KEY_5, true);
-charmap['9']		= TEvent(KEY_6, true);
-charmap['0']     = TEvent(KEY_7, true);
-charmap['2']     = TEvent(KEY_8, true);
-charmap['4']  = TEvent(KEY_9, true);
-charmap['6']     = TEvent(KEY_0, true);
-charmap['8']     = TEvent(KEY_MINUS, true);
-charmap['`']     = TEvent(KEY_EQUAL, true);
-charmap[':']     = TEvent(KEY_Q, true);
-charmap['<'] = TEvent(KEY_W, true);
-charmap['>']     = TEvent(KEY_E, true);
-charmap['P']     = TEvent(KEY_R, true);
-charmap['Y']     = TEvent(KEY_T, true);
-charmap['F']     = TEvent(KEY_Y, true);
-charmap['G']     = TEvent(KEY_U, true);
-charmap['C']     = TEvent(KEY_I, true);
-charmap['R']     = TEvent(KEY_O, true);
-charmap['L']     = TEvent(KEY_P, true);
-charmap['?']     = TEvent(KEY_LEFTBRACE, true);
-charmap['A']     = TEvent(KEY_A, true);
-charmap['O']     = TEvent(KEY_S, true);
-charmap['E']     = TEvent(KEY_D, true);
-charmap['U']     = TEvent(KEY_F, true);
-charmap['I']     = TEvent(KEY_G, true);
-charmap['D']     = TEvent(KEY_H, true);
-charmap['H']     = TEvent(KEY_J, true);
-charmap['T']     = TEvent(KEY_K, true);
-charmap['N']     = TEvent(KEY_L, true);
-charmap['S']     = TEvent(KEY_SEMICOLON, true);
-charmap['_']     = TEvent(KEY_APOSTROPHE, true);
-charmap['|']    = TEvent(KEY_BACKSLASH, true);
-charmap['>']     = TEvent(KEY_102ND, true);
-charmap['\"']     = TEvent(KEY_Z, true);
-charmap['Q']     = TEvent(KEY_X, true);
-charmap['J']     = TEvent(KEY_C, true);
-charmap['K']     = TEvent(KEY_V, true);
-charmap['X']     = TEvent(KEY_B, true);
-charmap['B']     = TEvent(KEY_N, true);
-charmap['M']     = TEvent(KEY_M, true);
-charmap['W']     = TEvent(KEY_COMMA, true);
-charmap['V']     = TEvent(KEY_DOT, true);
-charmap['Z']     = TEvent(KEY_SLASH, true);
-
-charmap['\x0e4']     = TEvent(KEY_A, false, true);
-charmap['\x0f6']     = TEvent(KEY_S, false, true);
-charmap['\x0fc']     = TEvent(KEY_F, false, true);
-charmap['\x0df']     = TEvent(KEY_SEMICOLON, false, true);
-
-charmap['\x0c4']     = TEvent(KEY_A, true, true);
-charmap['\x0d6']     = TEvent(KEY_S, true, true);
-charmap['\x0dc']     = TEvent(KEY_F, true, true);
-}
-
-void setUpSMap()
-{
-// specialmap["\x01b\x05b\x044"]	= TEvent(KEY_LEFT);
-// specialmap["\x01b\x05b\x043"]	= TEvent(KEY_RIGHT);
-specialmap["^^"]     	= TEvent(KEY_RIGHTBRACE, true);
-specialmap["^E"] 	 	= TEvent(KEY_END, false, false, true);
-specialmap["^p"]  		= TEvent(KEY_HOME, false, false, true);
-specialmap["^L"]      	= TEvent(KEY_LEFT, false, false, true);
-specialmap["^R"]      	= TEvent(KEY_RIGHT, false, false, true);
-specialmap["^z"]       	= TEvent(KEY_SLASH, false, false, true);
-specialmap["^d"]        = TEvent(KEY_DOWN);
-specialmap["^e"]        = TEvent(KEY_END);
-specialmap["^D"]        = TEvent(KEY_PAGEDOWN);
-specialmap["^U"]        = TEvent(KEY_PAGEUP);
-specialmap["^l"]        = TEvent(KEY_LEFT, true);
-specialmap["^r"]        = TEvent(KEY_RIGHT, true);
-specialmap["^u"]        = TEvent(KEY_UP);
-specialmap["^c"]        = TEvent(KEY_C, false, false, true);
 }

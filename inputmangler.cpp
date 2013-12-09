@@ -31,9 +31,7 @@
 InputMangler::InputMangler()
 {
 	// set up key definitions
-	setUpKeymap(); // keys 
-	setUpCMap();   // char mappings (nethandler)
-	setUpSMap();   // multi-char commands (nethandler)
+	setUpKeymaps(); // keys as well as char mappings and multi-char commands (nethandler)
 	
 	// open X Display. we need it only to get the window class
 	display = XOpenDisplay(NULL);
@@ -502,3 +500,13 @@ bool TransformationStructure::sanityCheck(int s, QString id)
 	return result;
 }
 
+OutEvent::OutEvent(__s32 code, bool shift, bool alt, bool ctrl)
+{
+	if (shift)
+		modifiers.append(KEY_LEFTSHIFT);
+	if (alt)
+		modifiers.append(KEY_RIGHTALT);
+	if (ctrl)
+		modifiers.append(KEY_LEFTCTRL);
+	this->keycode = code;
+}

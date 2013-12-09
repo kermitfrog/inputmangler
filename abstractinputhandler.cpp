@@ -60,7 +60,7 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 // 1: Shift down,           ,       ,     ,        , Shift up
 // 2: Shift down, Ctrl down ,       ,     , Ctrl up, Shift up
 // 3: Shift down, Ctrl down , C down, C up, Ctrl up, Shift up
-void AbstractInputHandler::sendTextEvent(TEvent* t)
+void AbstractInputHandler::sendOutEvent(OutEvent* t)
 {
 	VEvent e[NUM_MOD*2+2];
 	QVector<__u16> m = t->modifiers;
@@ -75,26 +75,15 @@ void AbstractInputHandler::sendTextEvent(TEvent* t)
 		e[k+offset].value = 0;
 	}
 	e[k].type = EV_KEY;
-	e[k].code = t->code;
+	e[k].code = t->keycode;
 	e[k].value = 1;
 	e[k+1].type = EV_KEY;
-	e[k+1].code = t->code;
+	e[k+1].code = t->keycode;
 	e[k+1].value = 0;
 // 	for (int i = 0; i < m.size() * 2 + 2; i++)
 // 		qDebug() << e[i].type << " " << e[i].code << " " << e[i].value << " L= " << m.size()*2+2;
 	sendKbdEvent(e, m.size() * 2 + 2);
 	usleep(5000); // wait x * 0.000001 seconds
-}
-
-TEvent::TEvent(__s32 code, bool shift, bool alt, bool ctrl)
-{
-	if (shift)
-		modifiers.append(KEY_LEFTSHIFT);
-	if (alt)
-		modifiers.append(KEY_RIGHTALT);
-	if (ctrl)
-		modifiers.append(KEY_LEFTCTRL);
-	this->code = code;
 }
 
 //FIXME: should be inline, but then code does not link -> WTF???

@@ -84,6 +84,14 @@ public:
 	OutEvent() {};
 	OutEvent(int c) {keycode = c;};
 	OutEvent(QString s);
+	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false); 
+	QString print()
+	{
+		QString s = QString::number(keycode) + " [";
+		for(int i = 0; i < modifiers.count(); i++)
+			s += QString::number(modifiers[i]) + ", ";
+		return s + "]";
+	};
 	QVector<__u16> modifiers;
 	__u16 keycode;
 	__u16 code() const {return keycode;};

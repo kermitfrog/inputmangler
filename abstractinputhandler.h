@@ -47,17 +47,6 @@ struct VEvent
 	__s32 value;
 };
 
-// TextEvent, or high level keyboard event.
-// Multiple VEvents are generated from this
-class TEvent
-{
-public:
-	TEvent(){TEvent(0);};
-	TEvent(__s32 code, bool shift = false, bool alt = false, bool ctrl = false); 
-	QVector<__u16> modifiers;
-	__s32 code;
-};
-
 //base class for event transformation
 class AbstractInputHandler : public QThread
 {
@@ -74,7 +63,7 @@ public:
 	virtual int addInputCode(__u16 in, OutEvent def);
 	void sendMouseEvent(VEvent *e, int num = 1);
 	void sendKbdEvent(VEvent *e, int num = 1);
-	void sendTextEvent(TEvent *t);
+	void sendOutEvent(OutEvent *t);
 	QString getId() const {return _id;};
 	int getNumInputs() const {return inputs.size();};
 	int getNumOutputs() const {return outputs.size();};

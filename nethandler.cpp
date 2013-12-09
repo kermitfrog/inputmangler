@@ -29,9 +29,9 @@ NetHandler::NetHandler(shared_data *sd, QString a, int port)
 	addr = QHostAddress(a);
 	this->port = port;
 	this->sd = sd;
-	l = TEvent(KEY_LEFT);
-	r = TEvent(KEY_RIGHT);
-	dot = TEvent(KEY_E);
+	l = OutEvent(KEY_LEFT);
+	r = OutEvent(KEY_RIGHT);
+	dot = OutEvent(KEY_E);
 	_id = "___NET";
 	hasWindowSpecificSettings = false;
 }
@@ -120,7 +120,7 @@ void NetHandler::actOnData(char* b, int n)
 		{
 			int dc = 3;
 			while(dc--)
-				sendTextEvent(&dot);
+				sendOutEvent(&dot);
 			continue;
 		}	
 		if (s[i] == '\x01b') // Escaped ^[C (Cursor Right), or ^[D (Cursor Left)
@@ -132,9 +132,9 @@ void NetHandler::actOnData(char* b, int n)
 			}
 			i+=2;
 			if(s[i] == '\x044')
-				sendTextEvent(&l); // left
+				sendOutEvent(&l); // left
 			else
-				sendTextEvent(&r); // right
+				sendOutEvent(&r); // right
 			continue;
 		}
  		if (s[i] == '^') // custom commands
@@ -144,12 +144,12 @@ void NetHandler::actOnData(char* b, int n)
 				buffer = s.mid(i);
 				return;
 			}
-			sendTextEvent(&specialmap[s.mid(i,2)]);
+			sendOutEvent(&specialmap[s.mid(i,2)]);
 			i++;
 			continue;
 		}
 		//qDebug() << "Data: " << s[i];
-		sendTextEvent(&(charmap[s[i].toLatin1()]));
+		sendOutEvent(&(charmap[s[i].toLatin1()]));
 		
 	}
 }

@@ -38,7 +38,7 @@ private:
 	QHostAddress addr;
 	int port;
 	QString buffer;
-	TEvent l, r, dot; //cursor left, cursor right, '.'
+	OutEvent l, r, dot; //cursor left, cursor right, '.'
 };
 
 #endif // NETHANDLER_H

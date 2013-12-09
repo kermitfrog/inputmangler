@@ -4,17 +4,15 @@
 #include <linux/input.h>
 #include <QHash>
 #include <QString>
-class TEvent;
+class OutEvent;
 
 const int NUM_MOD = 5;
 
 extern QHash<QString, int> keymap;
-extern QHash<char, TEvent> charmap;
-extern QHash<QString, TEvent> specialmap;
+extern QHash<char, OutEvent> charmap;
+extern QHash<QString, OutEvent> specialmap;
 
-void setUpKeymap();
-void setUpCMap();
-void setUpSMap();
+void setUpKeymaps();
 
 // Flags
 
