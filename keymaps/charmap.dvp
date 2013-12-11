@@ -1,0 +1,126 @@
+@
+$
+& AND
+[
+{
+}
+(
+=
+*
+)
++ PLUS
+]
+!
+#
+;
+, COMMA
+.
+p
+y
+f
+g
+c
+r
+l
+/
+a
+o
+e
+u
+i
+d
+h
+t
+n
+s
+-
+\
+<
+'
+q
+j
+k
+x
+b
+m
+w
+v
+z
+
+^ @+S
+~ $+S
+% AND+S
+7 [+S
+5 {+S
+3 }+S
+1 (+S
+9 =+S
+0 *+S
+2 )+S
+4 PLUS+S
+6 ]+S
+8 !+S
+` #+S
+: ;+S
+< COMMA+S
+> .+S
+P p+S
+Y y+S
+F f+S
+G g+S
+C c+S
+R r+S
+L l+S
+? /+S
+A a+S
+O o+S
+E e+S
+U u+S
+I i+S
+D d+S
+H h+S
+T t+S
+N n+S
+S s+S
+_ -+S
+| \+S
+> <+S
+" '+S
+Q q+S
+J j+S
+K k+S
+X x+S
+B b+S
+M m+S
+W w+S
+V v+S
+Z z+S
+
+ä a+G
+ß s+G
+ö o+G
+ü u+G
+Ä a+SG
+Ö o+SG
+Ü u+SG
+
+^^ @+S
+^E END+C
+^p HOME+C
+^L LEFT+C
+^R RIGHT+C
+^z z+C
+^d DOWN
+^e END
+^D PAGEDOWN
+^U PAGEUP
+^l LEFT+S
+^r RIGHT+S
+^u UP
+^c c+C
+
+
+
+
+
+

@@ -1,0 +1,111 @@
+`
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0
+-
+=
+q
+w
+e
+r
+t
+y
+u
+i
+o
+p
+[
+]
+a
+s
+d
+f
+g
+h
+j
+k
+l
+;
+'
+\
+z
+x
+c
+v
+b
+n
+m
+, COMMA
+.
+/
+
+~ `+S
+! 1+S
+@ 2+S
+# 3+S
+$ 4+S
+% 5+S
+^ 6+S
+& 7+S
+* 8+S
+( 9+S
+) 0+S
+_ -+S
++ =+S
+Q q+S
+W w+S
+E e+S
+R r+S
+T t+S
+Y y+S
+U u+S
+I i+S
+O o+S
+P p+S
+{ [+S
+} ]+S
+A a+S
+S s+S
+D d+S
+F f+S
+G g+S
+H h+S
+J j+S
+K k+S
+L l+S
+: ;+S
+" '+S
+| \+S
+Z z+S
+X x+S
+C c+S
+V v+S
+B b+S
+N n+S
+M m+S
+< COMMA+S 
+> .+S
+? /+S
+
+^^ @+S
+^E END+C
+^p HOME+C
+^L LEFT+C
+^R RIGHT+C
+^z z+C
+^d DOWN
+^e END
+^D PAGEDOWN
+^U PAGEUP
+^l LEFT+S
+^r RIGHT+S
+^u UP
+^c c+C
+
