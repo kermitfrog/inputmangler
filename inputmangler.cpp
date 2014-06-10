@@ -20,11 +20,12 @@
 #include "inputmangler.h"
 #include "devhandler.h"
 #include "nethandler.h"
+#include "debughandler.h"
+#include "xwatcher.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <QtXml>
 #include <signal.h>
-#include <X11/Xlib.h>
 #include "keydefs.h"
 
 
@@ -33,10 +34,6 @@ InputMangler::InputMangler()
 	// set up key definitions
 	setUpKeymaps(); // keys as well as char mappings and multi-char commands (nethandler)
 	
-	// open X Display. we need it only to get the window class
-	display = XOpenDisplay(NULL);
-	if (!display)
-		qFatal("connection to X Server failed");
 	readConf();
 }
 
@@ -114,6 +111,30 @@ bool InputMangler::readConf()
 		}
 	}
 	
+	/// debug dump, aka keylogger
+	nodes = conf.elementsByTagName("debug");
+	DebugHandler *dh;
+	for (int i = 0; i < nodes.length(); i++)
+	{
+		idevs d;
+		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
+		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
+		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
+		while (availableDevices.count(d))
+		{
+			int idx = availableDevices.indexOf(d);
+			// copy information obtained from /proc/bus/input/devices to complete
+			// the data in the idevs object used to construct the DevHandler
+			d.event = availableDevices.at(idx).event;
+			d.mouse = availableDevices.at(idx).mouse;
+			handlers.append(new DebugHandler ( d, sd,
+							nodes.at(i).attributes().namedItem("log").nodeValue(), 
+						    nodes.at(i).attributes().namedItem("grab").nodeValue().toInt()
+											 ));
+			availableDevices.removeAt(idx);
+		}
+	}
+	
 	/// netfhandler
 	nodes = conf.elementsByTagName("net");
 	NetHandler *n;
@@ -123,6 +144,15 @@ bool InputMangler::readConf()
 						nodes.at(i).attributes().namedItem("addr").nodeValue(),
 						nodes.at(i).attributes().namedItem("port").nodeValue().toInt() );
 	handlers.append(n);
+	}
+	
+	/// xwatcher
+	nodes = conf.elementsByTagName("xwatcher");
+	if (nodes.length())
+	{
+		XWatcher *xw;
+		xw = new XWatcher( sd );
+		handlers.append(n);
 	}
 	
 	/// check if there is a reason to continue at all...
@@ -291,61 +321,32 @@ QList< idevs > InputMangler::parseInputDevices()
 
 /*
  * this is called when the active window changes
- * so far it gets the new window *title* as parameter
- * this will probably change as soon as the kwin-scripting api
- * offers a way to get the window class
+ * it updates the Outputs of all handlers
  */
-void InputMangler::activeWindowChanged(QString w)
+void InputMangler::activeWindowChanged(QString wclass, QString title)
 {
+//	qDebug() << "InputMangler::activeWindowChanged(" << wclass << ", " << title << ")";
 	if (sd->terminating)
 		return;
-	Window active;
-	int revert;
-	XClassHint window_class;
+		
+	wm_class = wclass;
+	wm_title = title;
 	
-	if (XGetInputFocus(display, &active, &revert) == BadWindow)
-		qDebug() << "BadWindow";
-	if (active == None || active == PointerRoot)
-		return;
-	
-	if (!XGetClassHint(display, active, &window_class)) {
-		qDebug() << "Could not get Window Class, where title is " << w;
-		//return;
-		//HACK:: this problem seems to occur only with Opera, so..
-		wm_class = "Opera";
-		
-	} else {
-		
-		wm_class = QString(window_class.res_class);
-	//	wm_class = QString(window_class.res_name);
-		
-		
-		XFree(window_class.res_class);
-		XFree(window_class.res_name);
-	}
-		wm_title = w;
-		
-	
-// 	qDebug() << "wm_class = " << wm_class << "; wm_title = " << wm_title;// << "wm_class2: " << window_class.res_class;
-	
-	//update handlers
-// 	qDebug() << "update handlers: in";
 	foreach (AbstractInputHandler *a, handlers)
 		if (a->hasWindowSpecificSettings)
 			a->setOutputs(wsets[a->id()].getOutputs(wm_class, wm_title));
-// 	qDebug() << "update handlers: out";
 	
 }
 
 /*
  * this is called when the title of the active window changes
- * for now it just calls activeWindowChanged
- * this will probably change as soon as the kwin-scripting api
- * offers a way to get the window class
+ * it just calls activeWindowChanged with the current class
+ * and the new title
  */
-void InputMangler::activeWindowTitleChanged(QString w)
+void InputMangler::activeWindowTitleChanged(QString title)
 {
-	activeWindowChanged(w);
+//	qDebug() << "InputMangler::activeWindowTitleChanged(" << title << ")";
+	activeWindowChanged(wm_class, title);
 }
 
 /*
@@ -366,10 +367,13 @@ void InputMangler::cleanUp()
 	wsets.clear();
 }
 
+void InputMangler::printWinInfo()
+{
+	qDebug() << "Class = " << wm_class << ", Title = " << wm_title;
+}
 
 InputMangler::~InputMangler()
 {
-	XFree(display); // is that the right way to close the connection with X?
 }
 
 // Constructs an output event from a config string

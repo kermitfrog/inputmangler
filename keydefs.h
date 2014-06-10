@@ -3,6 +3,7 @@
 
 #include <linux/input.h>
 #include <QHash>
+#include <QMap>
 #include <QString>
 class OutEvent;
 
@@ -11,6 +12,8 @@ const int NUM_MOD = 5;
 extern QHash<QString, int> keymap;
 extern QHash<char, OutEvent> charmap;
 extern QHash<QString, OutEvent> specialmap;
+
+extern QMap<int, QString> keymap_reverse;
 
 void setUpKeymaps();
 

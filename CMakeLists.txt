@@ -1,12 +1,12 @@
 project(inputmangler)
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 2.8.11)
 
-set(CMAKE_PREFIX_PATH /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/*/*)
-set(Qt5DBus_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5DBus)
-set(Qt5Core_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Core)
-set(Qt5Xml_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Xml)
-set(Qt5Network_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Network)
-set(Qt5Test_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Test)
+#set(CMAKE_PREFIX_PATH /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/*/*)
+#set(Qt5DBus_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5DBus)
+#set(Qt5Core_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Core)
+#set(Qt5Xml_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Xml)
+#set(Qt5Network_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Network)
+#set(Qt5Test_DIR /home/arek/progs/Qt5.1.1/5.1.1/gcc_64/lib/cmake/Qt5Test)
 
 find_package(Qt5Core)
 find_package(Qt5Xml)
@@ -23,7 +23,17 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
 
-set(INPUTMANGLER_SRCS main.cpp inputmangler.cpp abstractinputhandler.cpp devhandler.cpp qtsignalhandler.cpp imdbusinterface.cpp keydefs.cpp nethandler.cpp)
+set(INPUTMANGLER_SRCS 
+						debughandler.cpp
+						xwatcher.cpp 
+						main.cpp
+						inputmangler.cpp 
+						abstractinputhandler.cpp
+						devhandler.cpp 
+						qtsignalhandler.cpp 
+						imdbusinterface.cpp 
+						keydefs.cpp 
+						nethandler.cpp)
 
 add_executable(inputmangler ${INPUTMANGLER_SRCS})
 

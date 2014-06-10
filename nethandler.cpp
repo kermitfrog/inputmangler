@@ -62,12 +62,8 @@ void NetHandler::run()
 		// check if we should stop the loop
 		if (sd->terminating)
 		{
-			if (socket)
-			{
-				socket->disconnectFromHost();
-				socket->close();
-			}
 			s->close();
+			delete s;
 			return;
 		}
 		if (!state)
@@ -83,8 +79,8 @@ void NetHandler::run()
 			if (sd->terminating)
 			{
 				s->close();
-				socket->disconnectFromHost();
-				socket->close();
+// 				socket->disconnectFromHost();
+// 				socket->close();
 				delete socket;
 				delete s;
 				return;

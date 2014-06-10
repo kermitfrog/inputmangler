@@ -34,16 +34,16 @@ public:
 	QDBusInterface *db;
 	
 public slots:
-	Q_NOREPLY void activeWindowChanged(QString w) {
-		emit windowChanged(w);
+	Q_NOREPLY void activeWindowChanged(QByteArray wclass, QString title) {
+		emit windowChanged(QString(wclass), title);
 	};
-	Q_NOREPLY void activeWindowTitleChanged(QString w) {
-		emit windowTitleChanged(w);
+	Q_NOREPLY void activeWindowTitleChanged(QString wclass) {
+		emit windowTitleChanged(wclass);
 	};
 
 signals:
-	void windowChanged(QString w);
-	void windowTitleChanged(QString w);
+	void windowChanged(QString wclass, QString title);
+	void windowTitleChanged(QString wclass);
 
 private:
 

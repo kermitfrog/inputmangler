@@ -26,7 +26,6 @@ class AbstractInputHandler;
 #include <qobject.h>
 #include "abstractinputhandler.h"
 #include <QtDBus/QtDBus>
-#include <X11/Xutil.h>
 #include <linux/input.h> //__u16...
 
 struct shared_data;
@@ -56,15 +55,15 @@ public:
 
 public slots:
 	void cleanUp();
-	void activeWindowChanged(QString w);
-	void activeWindowTitleChanged(QString w);
+	void activeWindowChanged(QString wclass, QString title);
+	void activeWindowTitleChanged(QString title);
 	void reReadConfig();
+	void printWinInfo();
 	
 private:
 	shared_data * sd;
 	QList<AbstractInputHandler*> handlers;
 	QList<idevs> parseInputDevices();
-	Display *display;
 	QString wm_class, wm_title;
 	QMap<QString, TransformationStructure> wsets;
 	bool readConf();

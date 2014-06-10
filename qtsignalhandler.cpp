@@ -24,11 +24,12 @@
 
 int QtSignalHandler::sighupFd[2];
 int QtSignalHandler::sigtermFd[2];
+int QtSignalHandler::sigusr1Fd[2];
 
 //Somewhere else in your startup code, you install your Unix signal handlers with sigaction(2).
 static int setup_unix_signal_handlers()
 {
-	struct sigaction hup, term;
+	struct sigaction hup, term, usr1;
 
 	hup.sa_handler = QtSignalHandler::hupSignalHandler;
 	sigemptyset(&hup.sa_mask);
@@ -45,6 +46,13 @@ static int setup_unix_signal_handlers()
 	if (sigaction(SIGTERM, &term, 0) > 0)
 		return 2;
 
+	usr1.sa_handler = QtSignalHandler::usr1SignalHandler;
+	sigemptyset(&usr1.sa_mask);
+	usr1.sa_flags |= SA_RESTART;
+
+	if (sigaction(SIGUSR1, &usr1, 0) > 0)
+		return 2;
+
 	return 0;
 }
 
@@ -55,10 +63,16 @@ QtSignalHandler::QtSignalHandler(QObject *parent, const char *name)
 
 	if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFd))
 		qFatal("Couldn't create TERM socketpair");
+	
+	if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigusr1Fd))
+		qFatal("Couldn't create USR1 socketpair");
+	
 	snHup = new QSocketNotifier(sighupFd[1], QSocketNotifier::Read, this);
 	connect(snHup, SIGNAL(activated(int)), this, SLOT(handleSigHup()));
 	snTerm = new QSocketNotifier(sigtermFd[1], QSocketNotifier::Read, this);
 	connect(snTerm, SIGNAL(activated(int)), this, SLOT(handleSigTerm()));
+	snUsr1 = new QSocketNotifier(sigusr1Fd[1], QSocketNotifier::Read, this);
+	connect(snUsr1, SIGNAL(activated(int)), this, SLOT(handleSigUsr1()));
 	setup_unix_signal_handlers();
 	
 }
@@ -66,16 +80,20 @@ QtSignalHandler::QtSignalHandler(QObject *parent, const char *name)
 //In your Unix signal handlers, you write a byte to the write end of a socket pair and return. This will cause the corresponding QSocketNotifier to emit its activated() signal, which will in turn cause the appropriate Qt slot function to run.
 void QtSignalHandler::hupSignalHandler(int)
 {
-	printf("--HUP--");
 	char a = 1;
 	::write(sighupFd[0], &a, sizeof(a));
 }
 
 void QtSignalHandler::termSignalHandler(int)
 {
-	printf("--TERM--");
 	char a = 1;
 	::write(sigtermFd[0], &a, sizeof(a));
+}
+
+void QtSignalHandler::usr1SignalHandler(int)
+{
+	char a = 1;
+	::write(sigusr1Fd[0], &a, sizeof(a));
 }
 
 //In the slot functions connected to the QSocketNotifier::activated() signals, you read the byte. Now you are safely back in Qt with your signal, and you can do all the Qt stuff you weren'tr allowed to do in the Unix signal handler.
@@ -102,5 +120,18 @@ void QtSignalHandler::handleSigHup()
 
 	snHup->setEnabled(true);
 }
+
+void QtSignalHandler::handleSigUsr1()
+{
+	snUsr1->setEnabled(false);
+	char tmp;
+	::read(sigusr1Fd[1], &tmp, sizeof(tmp));
+
+	// do Qt stuff
+	emit usr1Received();
+
+	snUsr1->setEnabled(true);
+}
+
 
 #include "moc_qtsignalhandler.cpp"

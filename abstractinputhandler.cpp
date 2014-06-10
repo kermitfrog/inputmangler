@@ -90,8 +90,9 @@ void AbstractInputHandler::sendOutEvent(OutEvent* t)
 void AbstractInputHandler::sendMouseEvent(VEvent* e, int num) 
 {
 #ifdef DEBUGME
-// 	qDebug() << "Mouse sending: " 
-// 	<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
+	if (e->type == EV_KEY)
+		qDebug() << "Mouse sending: " 
+		<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
 #endif
 	write(sd->fd_mouse, e, num*sizeof(VEvent));
 }

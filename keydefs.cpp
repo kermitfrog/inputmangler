@@ -4,6 +4,7 @@
 QHash<QString, int> keymap;
 QHash<char, OutEvent> charmap;
 QHash<QString, OutEvent> specialmap;
+QMap<int, QString> keymap_reverse;
 
 void setUpKeymaps()
 {
@@ -61,6 +62,7 @@ void setUpKeymaps()
 			else 
 				code = tmp[0].toInt();
 			keymap[tmp[1]] = code;
+			keymap_reverse[code] = tmp[1];
 		}
 		li++;
 	}
@@ -113,17 +115,4 @@ void setUpKeymaps()
 		}
 		li++;
 	}
-	
-	
-/*	
-	charmap['\x0e4']     = TEvent(KEY_A, false, true);
-	charmap['\x0f6']     = TEvent(KEY_S, false, true);
-	charmap['\x0fc']     = TEvent(KEY_F, false, true);
-	charmap['\x0df']     = TEvent(KEY_SEMICOLON, false, true);
-
-	charmap['\x0c4']     = TEvent(KEY_A, true, true);
-	charmap['\x0d6']     = TEvent(KEY_S, true, true);
-	charmap['\x0dc']     = TEvent(KEY_F, true, true);
-*/
-
 }
