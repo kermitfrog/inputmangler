@@ -73,7 +73,12 @@ void DebugHandler::run()
 	{
 		//wait until there is data
 		ret = poll (&p, 1, 1500);
-		
+		if (p.revents & ( POLLERR | POLLHUP | POLLNVAL ))
+		{
+			qDebug() << "Device " << _id << "was removed or other error occured!"
+					 << "\n shutting down " << _id;
+			break;
+		}
 		//break the loop if we want to stop
 		if(sd->terminating)
 		{
