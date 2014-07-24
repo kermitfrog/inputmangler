@@ -28,7 +28,9 @@ class TransformationStructure;
 #include <QVector>
 #include <unistd.h>
 
-// Data shared by all Handlers
+/*!
+ * @brief Data shared by all Handlers
+ */
 struct shared_data
 {
 	int fd_kbd;
@@ -36,18 +38,20 @@ struct shared_data
 	bool terminating;
 };
 
-// Data that wil be sent to inputdummy, aka low level input event
-// See linux/input.h for Details on Variables
+/*!
+ * @brief Data that wil be sent to inputdummy, aka low level input event
+ * See linux/input.h for Details on Variables
+ */
 struct VEvent
 {
-//	__u16 type; //should be 16... TODO: fix in inputdummy
-//	__u16 code;
-	__s32 type;
-	__s32 code;
+	__s32 type; // these two are __s16 in input.h, but input_event(), called in
+	__s32 code; // inputdummy expects int
 	__s32 value;
 };
 
-//base class for event transformation
+/*!
+ * @brief base class for event transformation
+ */
 class AbstractInputHandler : public QThread
 {
 	Q_OBJECT
