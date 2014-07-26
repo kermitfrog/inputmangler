@@ -1,6 +1,6 @@
 /*
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2013  Arek <arek@ag.de1.cc>
+    Copyright (C) 2013  Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,8 +17,9 @@
 */
 
 
-#ifndef ABSTRACTINPUTHANDLER_H
-#define ABSTRACTINPUTHANDLER_H
+#pragma once
+
+struct stat;
 class OutEvent;
 class TransformationStructure;
 
@@ -27,6 +28,7 @@ class TransformationStructure;
 #include <linux/input.h>
 #include <QVector>
 #include <unistd.h>
+#include <QtXml>
 
 /*!
  * @brief Data shared by all Handlers
@@ -55,29 +57,49 @@ struct VEvent
 class AbstractInputHandler : public QThread
 {
 	Q_OBJECT
+	// structure with information on input devices as read
+	// from /proc/bus/input/devices
+protected:
+	class idevs 
+	{
+	public:
+		QString vendor;
+		QString product;
+		QString event;
+		QString id;
+		bool mouse;
+		bool operator==(idevs o) const{
+			return (vendor == o.vendor && product == o.product);
+		};
+	};
 	
 public:
 	//AbstractInputHandler(shared_data *sd, QObject *parent = 0);
-	virtual ~AbstractInputHandler();
+	virtual ~AbstractInputHandler() {};
 	virtual void setId(QString i) {_id = i;};
 	virtual QString id() const {return _id;};
 	virtual void setOutputs(QVector<OutEvent> o);
 	virtual QVector<OutEvent> getOutputs() const {return outputs;};
 	virtual int addInputCode(__u16 in);
 	virtual int addInputCode(__u16 in, OutEvent def);
+// 	static QList<AbstractInputHandler*> parseXml(QDomNode nodes) {};
+	int inputIndex(QString s) const {return inputs.indexOf(keymap[s]);};
 	void sendMouseEvent(VEvent *e, int num = 1);
 	void sendKbdEvent(VEvent *e, int num = 1);
 	void sendOutEvent(OutEvent *t);
-	QString getId() const {return _id;};
 	int getNumInputs() const {return inputs.size();};
 	int getNumOutputs() const {return outputs.size();};
 	bool hasWindowSpecificSettings;
+	static QList<idevs> parseInputDevices();
+	static void registerParser(QString id, QList<AbstractInputHandler*>(*func)(QDomNodeList));
+	static void generalSetup();
+	static shared_data sd; // TODO: protect
+	static QMap<QString,QList<AbstractInputHandler*>(*)(QDomNodeList)> parseMap;
 	
 protected:
 	QString _id;
-	shared_data *sd;
 	QVector<__u16> inputs;		// codes of the keys to be transformed
 	QVector<OutEvent> outputs;	// current target events
+	
 };
 
-#endif // ABSTRACTINPUTHANDLER_H

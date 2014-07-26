@@ -1,6 +1,6 @@
 /*
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2013  Arek <arek@ag.de1.cc>
+    Copyright (C) 2013  Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

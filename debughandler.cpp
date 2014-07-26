@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2014  Arek <arek@ag.de1.cc>
+ * Copyright (C) 2014  Arkadiusz Guzinski <kermit@ag.de1.cc>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,9 +27,8 @@
 #include <sys/ioctl.h>
 #include <cerrno>
 
-DebugHandler::DebugHandler(idevs i, shared_data* sd, QString out, bool grab)
+DebugHandler::DebugHandler(idevs i, QString out, bool grab)
 {
-	this->sd = sd;
 	_id = i.id;
 	_grab = grab;
 	hasWindowSpecificSettings = _id != "";
@@ -80,7 +79,7 @@ void DebugHandler::run()
 			break;
 		}
 		//break the loop if we want to stop
-		if(sd->terminating)
+		if(sd.terminating)
 		{
 			qDebug() << "terminating";
 			break;
@@ -112,5 +111,35 @@ void DebugHandler::run()
 	close(fd);
 	outfile.close();
 }
+
+QList< AbstractInputHandler* > DebugHandler::parseXml(QDomNodeList nodes)
+{
+	QList<AbstractInputHandler*> handlers;
+	QList<idevs> availableDevices = parseInputDevices();
+	/// debug dump, aka keylogger
+	DebugHandler *dh;
+	for (int i = 0; i < nodes.length(); i++)
+	{
+		idevs d;
+		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
+		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
+		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
+		while (availableDevices.count(d))
+		{
+			int idx = availableDevices.indexOf(d);
+			// copy information obtained from /proc/bus/input/devices to complete
+			// the data in the idevs object used to construct the DevHandler
+			d.event = availableDevices.at(idx).event;
+			d.mouse = availableDevices.at(idx).mouse;
+			handlers.append(new DebugHandler ( d,
+							nodes.at(i).attributes().namedItem("log").nodeValue(), 
+						    nodes.at(i).attributes().namedItem("grab").nodeValue().toInt()
+											 ));
+			availableDevices.removeAt(idx);
+		}
+	}
+	return handlers;
+}
+
 
 #include "debughandler.moc"

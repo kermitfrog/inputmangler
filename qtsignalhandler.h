@@ -18,8 +18,7 @@
 */
 
 
-#ifndef QTSIGNALHANDLER_H
-#define QTSIGNALHANDLER_H
+#pragma once
 
 #include <QSocketNotifier>
 #include <signal.h>
@@ -39,27 +38,31 @@ Q_OBJECT
      static void hupSignalHandler(int unused);
      static void termSignalHandler(int unused);
      static void usr1SignalHandler(int unused);
+     static void usr2SignalHandler(int unused);
 
    public slots:
      // Qt signal handlers.
      void handleSigHup();
      void handleSigTerm();
      void handleSigUsr1();
+     void handleSigUsr2();
 
    private:
      static int sighupFd[2];
      static int sigtermFd[2];
      static int sigusr1Fd[2];
+     static int sigusr2Fd[2];
 
      QSocketNotifier *snHup;
      QSocketNotifier *snTerm;
      QSocketNotifier *snUsr1;
+     QSocketNotifier *snUsr2;
 	 
 signals:
     //void intReceived();
     void hupReceived();
     void usr1Received();
+    void usr2Received();
 };
 
 
-#endif // QTSIGNALHANDLER_H

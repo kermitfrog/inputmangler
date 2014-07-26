@@ -1,6 +1,6 @@
 /*
  * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2014  Arek <arek@ag.de1.cc>
+ * Copyright (C) 2014  Arkadiusz Guzinski <kermit@ag.de1.cc>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
  *
  */
 
-#ifndef DEBUGHANDLER_H
-#define DEBUGHANDLER_H
+#pragma once
 
 #include "abstractinputhandler.h"
 #include <QFile>
@@ -28,7 +27,8 @@ class DebugHandler : public AbstractInputHandler
     Q_OBJECT
 
 public:
-	DebugHandler(idevs i, shared_data* sd, QString out, bool grab = 0);
+	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
+	DebugHandler(idevs i, QString out, bool grab = 0);
     virtual ~DebugHandler();
 
 private:
@@ -39,4 +39,3 @@ private:
 	bool _grab;
 };
 
-#endif // DEBUGHANDLER_H

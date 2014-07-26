@@ -1,6 +1,6 @@
 /*
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2013  Arek <arek@ag.de1.cc>
+    Copyright (C) 2013  Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
 */
 
 
-#ifndef NETHANDLER_H
-#define NETHANDLER_H
+#pragma once
 
 #include "abstractinputhandler.h"
 #include <QTcpServer>
@@ -28,7 +27,8 @@ class NetHandler : public AbstractInputHandler
 {
 
 public:
-    NetHandler(shared_data *sd, QString a, int port);
+    NetHandler(QString a, int port);
+	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
     virtual ~NetHandler();
 	virtual void run();
 	void actOnData(char *b, int n);
@@ -41,4 +41,3 @@ private:
 	OutEvent l, r, dot; //cursor left, cursor right, '.'
 };
 
-#endif // NETHANDLER_H

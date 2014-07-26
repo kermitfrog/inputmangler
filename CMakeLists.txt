@@ -18,6 +18,11 @@ find_package(X11)
 SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-lX11")
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-lX11")
 
+ADD_DEFINITIONS(
+    -std=c++11
+    -g -O0
+    )
+
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.

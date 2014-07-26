@@ -1,6 +1,6 @@
 /*
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2013  Arek <arek@ag.de1.cc>
+    Copyright (C) 2013  Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,8 +17,7 @@
 */
 
 
-#ifndef INPUTMANGLER_H
-#define INPUTMANGLER_H
+#pragma once
 #include "keydefs.h"
 
 class AbstractInputHandler;
@@ -26,24 +25,11 @@ class AbstractInputHandler;
 #include <qobject.h>
 #include "abstractinputhandler.h"
 #include <QtDBus/QtDBus>
+#include <QtXml>
 #include <linux/input.h> //__u16...
 
 struct shared_data;
 
-// structure with information on input devices as read
-// from /proc/bus/input/devices
-class idevs 
-{
-public:
-	QString vendor;
-	QString product;
-	QString event;
-	QString id;
-	bool mouse;
-	bool operator==(idevs o) const{
-		return (vendor == o.vendor && product == o.product);
-	};
-};
 
 class InputMangler : public QObject
 {
@@ -59,14 +45,17 @@ public slots:
 	void activeWindowTitleChanged(QString title);
 	void reReadConfig();
 	void printWinInfo();
+	void printConfig();
 	
 private:
-	shared_data * sd;
 	QList<AbstractInputHandler*> handlers;
-	QList<idevs> parseInputDevices();
 	QString wm_class, wm_title;
 	QMap<QString, TransformationStructure> wsets;
 	bool readConf();
+	bool hasSettingsForId(QString id, QDomElement element);
+	QVector<OutEvent> parseOutputs(QString id, QDomElement element, QVector<OutEvent> def);
+	QVector<OutEvent> parseOutputsShort(QString confString);
+	QMultiMap<QString, AbstractInputHandler*> handlersById;
 // 	void stopHandlers();
 	
 };
@@ -84,13 +73,7 @@ public:
 	OutEvent(int c) {keycode = c;};
 	OutEvent(QString s);
 	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false); 
-	QString print()
-	{
-		QString s = QString::number(keycode) + " [";
-		for(int i = 0; i < modifiers.count(); i++)
-			s += QString::number(modifiers[i]) + ", ";
-		return s + "]";
-	};
+	QString print() const;
 	QVector<__u16> modifiers;
 	__u16 keycode;
 	__u16 code() const {return keycode;};
@@ -127,9 +110,8 @@ public:
 	~TransformationStructure();
 	QVector<OutEvent> getOutputs(QString window_class, QString window_name);
 	WindowSettings *window(QString w, bool create = false);
-	bool sanityCheck(int s, QString id);
+	bool sanityCheck(int s, QString id, bool debug = false);
 	QVector<OutEvent> def;
 	QHash<QString, WindowSettings*> classes;
 };
 
-#endif // INPUTMANGLER_H

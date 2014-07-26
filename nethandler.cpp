@@ -1,6 +1,6 @@
 /*
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2013  Arek <arek@ag.de1.cc>
+    Copyright (C) 2013  Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include "keydefs.h"
 #include <QTest>
 
-NetHandler::NetHandler(shared_data *sd, QString a, int port)
+NetHandler::NetHandler(QString a, int port)
 {
 	addr = QHostAddress(a);
 	this->port = port;
@@ -60,7 +60,7 @@ void NetHandler::run()
 	{
 		state = s->waitForNewConnection(1000);
 		// check if we should stop the loop
-		if (sd->terminating)
+		if (sd.terminating)
 		{
 			s->close();
 			delete s;
@@ -76,7 +76,7 @@ void NetHandler::run()
 		{
 			state = socket->waitForReadyRead(1000);
 			// check if we should stop the loop
-			if (sd->terminating)
+			if (sd.terminating)
 			{
 				s->close();
 // 				socket->disconnectFromHost();
@@ -150,10 +150,24 @@ void NetHandler::actOnData(char* b, int n)
 	}
 }
 
+QList< AbstractInputHandler* > NetHandler::parseXml(QDomNodeList nodes)
+{
+	QList<AbstractInputHandler*> handlers;
+	/// nethandler
+	NetHandler *n;
+	for (int i = 0; i < nodes.length(); i++)
+	{
+	n = new NetHandler(	nodes.at(i).attributes().namedItem("addr").nodeValue(),
+						nodes.at(i).attributes().namedItem("port").nodeValue().toInt() );
+	handlers.append(n);
+	}
+	return handlers;
+}
 
 
 NetHandler::~NetHandler()
 {
+	
 
 }
 

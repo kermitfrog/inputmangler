@@ -1,6 +1,6 @@
 /*
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2013  Arek <arek@ag.de1.cc>
+    Copyright (C) 2013  Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,11 +18,8 @@
 
 #include "imdbusinterface.h"
 #include "inputmangler.h"
-#include "devhandler.h"
-#include "nethandler.h"
-#include "debughandler.h"
-#include "xwatcher.h"
-#include <fcntl.h>
+#include "handlers.h"
+// #include <fcntl.h>
 #include <unistd.h>
 #include <QtXml>
 #include <signal.h>
@@ -33,21 +30,14 @@ InputMangler::InputMangler()
 {
 	// set up key definitions
 	setUpKeymaps(); // keys as well as char mappings and multi-char commands (nethandler)
-	
+	registerHandlers();
+	AbstractInputHandler::generalSetup();
 	readConf();
 }
 
 // Reads the Config and actually starts the handler threads, too
 bool InputMangler::readConf()
 {
-	// set up shared data
-	sd = new shared_data;
-	sd->fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
-	sd->fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
-#ifdef DEBUGME	
-	qDebug() << "kbd: " << sd->fd_kbd << ", mouse: " << sd->fd_mouse;
-#endif
-	
 	//parsing config
 	QString confPath;
 	if (QCoreApplication::arguments().count() < 2)
@@ -59,101 +49,25 @@ bool InputMangler::readConf()
 	QDomNodeList nodes;
 	conf.setContent(&f);
 	
-	// get a list of available devices from /proc/bus/input/devices
-	QList<idevs> availableDevices = parseInputDevices();
-	/// Devices
-	nodes = conf.elementsByTagName("device");
-	// for every configured <device...>
-	for (int i = 0; i < nodes.length(); i++)
+	foreach (QString nodeName, AbstractInputHandler::parseMap.keys())
 	{
-		/*
-		 * create an idevs structure for the configured device
-		 * vendor and product are set to match the devices in /proc/bus/...
-		 * id is the config-id 
-		 */
-		idevs d;
-		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
-		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
-		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
-		
-		// create a devhandler for every device that matches vendor and product
-		// of the configured device,
-		while (availableDevices.count(d))
+		nodes = conf.elementsByTagName(nodeName);
+		handlers.append(AbstractInputHandler::parseMap[nodeName](nodes));
+		// FIXME: write a proper interface for doing this or something
+		if (nodeName == "xwatcher")
 		{
-			int idx = availableDevices.indexOf(d);
-			// copy information obtained from /proc/bus/input/devices to complete
-			// the data in the idevs object used to construct the DevHandler
-			d.event = availableDevices.at(idx).event;
-			d.mouse = availableDevices.at(idx).mouse;
-			handlers.append(new DevHandler(d, sd));
-			availableDevices.removeAt(idx);
-			
-			/*
-			 * read the <signal> entries.
-			 * [key] will be the input event, that will be transformed
-			 * [default] will be the current output device, this is 
-			 * transformed to. If no [default] is set, the current output will
-			 * be the same as the input.
-			 * For DevHandlers with window specific settings, the current output
-			 * becomes the default output when the TransformationStructure is
-			 * constructed, otherwise it won't ever change anyway...
-			 */
-			QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
-			for (int j = 0; j < codes.length(); j++)
-			{
-				QString key = codes.at(j).attributes().namedItem("key").nodeValue();
-				QString def = codes.at(j).attributes().namedItem("default").nodeValue();
-				if (def == "")
-					handlers.last()->addInputCode(keymap[key]);
-				else
-					handlers.last()->addInputCode(keymap[key], OutEvent(def));
-			}
+			connect(static_cast<XWatcher*>(handlers.last()), SIGNAL(windowChanged(QString,QString)),
+					SLOT(activeWindowChanged(QString,QString)));
+			connect(static_cast<XWatcher*>(handlers.last()), SIGNAL(windowTitleChanged(QString)),
+					SLOT(activeWindowTitleChanged(QString)));
 		}
 	}
-	
-	/// debug dump, aka keylogger
-	nodes = conf.elementsByTagName("debug");
-	DebugHandler *dh;
-	for (int i = 0; i < nodes.length(); i++)
+	foreach (AbstractInputHandler* handler, handlers)
 	{
-		idevs d;
-		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
-		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
-		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
-		while (availableDevices.count(d))
-		{
-			int idx = availableDevices.indexOf(d);
-			// copy information obtained from /proc/bus/input/devices to complete
-			// the data in the idevs object used to construct the DevHandler
-			d.event = availableDevices.at(idx).event;
-			d.mouse = availableDevices.at(idx).mouse;
-			handlers.append(new DebugHandler ( d, sd,
-							nodes.at(i).attributes().namedItem("log").nodeValue(), 
-						    nodes.at(i).attributes().namedItem("grab").nodeValue().toInt()
-											 ));
-			availableDevices.removeAt(idx);
-		}
+		if (handler->id() != "")
+			handlersById.insert(handler->id(), handler);
 	}
 	
-	/// netfhandler
-	nodes = conf.elementsByTagName("net");
-	NetHandler *n;
-	for (int i = 0; i < nodes.length(); i++)
-	{
-	n = new NetHandler(	sd,
-						nodes.at(i).attributes().namedItem("addr").nodeValue(),
-						nodes.at(i).attributes().namedItem("port").nodeValue().toInt() );
-	handlers.append(n);
-	}
-	
-	/// xwatcher
-	nodes = conf.elementsByTagName("xwatcher");
-	if (nodes.length())
-	{
-		XWatcher *xw;
-		xw = new XWatcher( sd );
-		handlers.append(n);
-	}
 	
 	/// check if there is a reason to continue at all...
 	if (handlers.count() == 0)
@@ -192,12 +106,12 @@ bool InputMangler::readConf()
 			 */
 			bool hasNoIdInWindowButTitlesWithId = false;
 			QDomNodeList titles = e.elementsByTagName("title");
-			if (!e.hasAttribute(id))
+			if (!hasSettingsForId(id, e))
 			{
 				for (int k = 0; k < titles.length(); k++)
 				{
 					QDomElement t = titles.at(k).toElement();
-					if (t.hasAttribute(id))
+					if (hasSettingsForId(id, t))
 					{
 						hasNoIdInWindowButTitlesWithId = true;
 						break;
@@ -208,20 +122,16 @@ bool InputMangler::readConf()
 			}
 				
 			// create WindowSettings
-			WindowSettings *w = wsets[id].window(e.attribute("class"), true);
+			WindowSettings *windowSetting = wsets[id].window(e.attribute("class"), true);
 			/*
 			 * set default outputs for that window class.
 			 * in the special case mentioned above, the window default output
 			 * events are same as the id default.
 			 */
 			if (hasNoIdInWindowButTitlesWithId)
-				w->def = wsets[id].def;
+				windowSetting->def = wsets[id].def;
 			else
-			{
-				QStringList l = e.attribute(id).split(",");
-				foreach(QString s, l)
-					w->def.append(OutEvent(s));
-			}
+				windowSetting->def = parseOutputs(id, e, wsets[id].def);
 
 			// for each <title> inside the current <window>
 			for (int k = 0; k < titles.length(); k++)
@@ -229,30 +139,26 @@ bool InputMangler::readConf()
 				QDomElement t = titles.at(k).toElement();
 				if (!t.hasAttribute(id))
 					continue;
-				w->titles.append(new QRegularExpression(QString("^") + t.attribute("regex") + "$"));
-				QStringList l = t.attribute(id).split(",");
-				QVector<OutEvent> o;
-				foreach(QString s, l)
-					o.append(OutEvent(s));
-				w->events.append(o);
+				windowSetting->titles.append(new QRegularExpression(QString("^") + t.attribute("regex") + "$"));
+				windowSetting->events.append(parseOutputs(id, t, windowSetting->def));
 			}
 		}	
 	}
 	
 	// prepare and actualy start threads. also roll a sanity check
-	sd->terminating = false;
+	AbstractInputHandler::sd.terminating = false;
 	
 	activeWindowTitleChanged("");
 	bool sane;
 	foreach (AbstractInputHandler *h, handlers)
 	{
 		sane = false;
-		if (h->getId() == "" && h->getNumInputs() == h->getNumOutputs() && h->getNumInputs())
+		if (h->id() == "" && h->getNumInputs() == h->getNumOutputs() && h->getNumInputs())
 			sane = true;
 		else if(!h->hasWindowSpecificSettings )
 			sane = true;
 		else 
-			sane = wsets[h->id()].sanityCheck(h->getNumInputs(), h->getId());
+			sane = wsets[h->id()].sanityCheck(h->getNumInputs(), h->id());
 		
 		if (sane)
 			h->start();
@@ -261,63 +167,65 @@ bool InputMangler::readConf()
 	f.close();
 }
 
-
-/* 
- * parses /proc/bus/input/devices for relevant information, where relevant is:
- * I: Vendor=1395 Product=0020
- * H: Handlers=kbd event9     <-- kbd or mouse? which event file in /dev/input/ is it?
- */
-QList< idevs > InputMangler::parseInputDevices()
+bool InputMangler::hasSettingsForId(QString id, QDomElement element)
 {
-	QFile d("/proc/bus/input/devices");
-	
-	if(!d.open(QIODevice::ReadOnly))
-	{
-		qDebug() << "could not open " << d.fileName();
-		return QList<idevs>();
-	}
-	QTextStream t(&d);
-	// we read it line by line
-	QStringList devs = t.readAll().split("\n"); 
-	QList<idevs> l;
-	idevs i;
-	QStringList tmp;
-	int idx;
-	
-	QList<QString>::iterator li = devs.begin();
-	while (li != devs.end())
-	{
-		// "I:" marks the beginning of a new section
-		// and also contains information we want
-		if(!(*li).startsWith("I"))
-		{
-			++li;
-			continue;
-		}
-		tmp = (*li).split(" ");
-		idx = tmp.indexOf(QRegExp("Vendor.*"));
-		i.vendor = tmp.at(idx).right(4);
-		idx = tmp.indexOf(QRegExp("Product.*"));
-		i.product = tmp.at(idx).right(4);
-		while (li != devs.end())
-		{
-			// "H:" marks the line with the rest
-			if(!(*li).startsWith("H"))
-			{
-				++li;
-				continue;
-			}
-			tmp = (*li).split(QRegExp("[\\s=]"));
-			idx = tmp.indexOf(QRegExp("event.*"));
-			i.event = tmp.at(idx);
-			i.mouse = (tmp.indexOf(QRegExp("mouse.*")) != -1);
-			++li;
-			break;
-		}
-		l.append(i);
-	}
-	return l;
+	qDebug() << "hasSettingsForId(" << id;
+	if (element.hasAttribute(id))
+		return true;
+	qDebug() << "1";
+	QDomNodeList nodes = element.elementsByTagName("long");
+	for (int i = 0; i < nodes.length(); i++)
+		if (nodes.at(i).attributes().namedItem("id").nodeValue() == id)
+			return true;
+	qDebug() << "2";
+	return false;
 }
+
+QVector< OutEvent > InputMangler::parseOutputs(QString id, QDomElement element, QVector< OutEvent > def)
+{
+	if (element.hasAttribute(id))
+		return parseOutputsShort(element.attributes().namedItem(id).nodeValue());
+	qDebug() << "long";
+	QDomNodeList nodes = element.elementsByTagName("long");
+	for(int i =  0; i < nodes.length(); i++)
+	{
+		if (nodes.at(i).attributes().namedItem("id").nodeValue() != id)
+			continue;
+		qDebug() << "i = " << i;
+		QStringList lines = nodes.at(i).toElement().text().split("\n");
+		qDebug() << lines;
+		foreach (QString s, lines)
+		{
+			QStringList args = s.trimmed().split(" ");
+			if (args.count() != 2)
+				return def;
+			
+			QMap<QString,AbstractInputHandler*>::iterator handler = handlersById.find(id);
+			while(handler != handlersById.end() && handler.key() == id)
+			{
+				int idx = handler.value()->inputIndex(args[0]);
+				if (idx >= 0)
+				{
+					def[idx] = OutEvent(args[1]);
+					break;
+				}
+				++handler;
+			}
+		}
+	}
+	return def;
+}
+
+QVector< OutEvent > InputMangler::parseOutputsShort(QString confString)
+{
+	QVector<OutEvent> out;
+	QStringList l = confString.split(",");
+	foreach(QString s, l)
+		out.append(OutEvent(s));
+	return out;
+}
+
+
 
 /*
  * this is called when the active window changes
@@ -326,7 +234,7 @@ QList< idevs > InputMangler::parseInputDevices()
 void InputMangler::activeWindowChanged(QString wclass, QString title)
 {
 //	qDebug() << "InputMangler::activeWindowChanged(" << wclass << ", " << title << ")";
-	if (sd->terminating)
+	if (AbstractInputHandler::sd.terminating)
 		return;
 		
 	wm_class = wclass;
@@ -354,15 +262,14 @@ void InputMangler::activeWindowTitleChanged(QString title)
  */
 void InputMangler::cleanUp()
 {
-	sd->terminating = true;
+	AbstractInputHandler::sd.terminating = true;
 	qDebug() << "waiting for Threads to finish";
 	foreach (AbstractInputHandler *h, handlers)
 		h->wait(4000);
-	close(sd->fd_kbd);
-	close(sd->fd_mouse);
+	close(AbstractInputHandler::sd.fd_kbd);
+	close(AbstractInputHandler::sd.fd_mouse);
 	foreach (AbstractInputHandler *h, handlers)
 		delete h;
-	delete sd;
 	handlers.clear();
 	wsets.clear();
 }
@@ -370,6 +277,18 @@ void InputMangler::cleanUp()
 void InputMangler::printWinInfo()
 {
 	qDebug() << "Class = " << wm_class << ", Title = " << wm_title;
+}
+
+void InputMangler::printConfig()
+{
+	foreach (AbstractInputHandler *h, handlers)
+	{
+		if (h->id() == "" && h->getNumInputs() == h->getNumOutputs() && h->getNumInputs())
+			continue;
+		if(!h->hasWindowSpecificSettings )
+			continue;
+		wsets[h->id()].sanityCheck(h->getNumInputs(), h->id(), true);
+	}
 }
 
 InputMangler::~InputMangler()
@@ -459,10 +378,10 @@ void InputMangler::reReadConfig()
 }
 
 // check a TransformationStructure for configuration errors
-bool TransformationStructure::sanityCheck(int s, QString id)
+bool TransformationStructure::sanityCheck(int s, QString id, bool debug)
 {
 	bool result = true;
-	qDebug() << "checking " << id << " with size " << s;
+	qDebug() << "\nchecking " << id << " with size " << s;
 	if (this->def.size() != s)
 	{
 		qDebug() << "TransformationStructure.def is " << this->def.size();
@@ -471,9 +390,18 @@ bool TransformationStructure::sanityCheck(int s, QString id)
 	QList<WindowSettings*> wlist = classes.values();
 	foreach (WindowSettings *w, wlist)
 	{
-#ifdef DEBUGME 
-		qDebug() << "Settings found for Window = \"" << classes.key(w) << "\"";
-#endif
+		if (debug)
+		{
+			qDebug() << "Settings for Window = " << classes.key(w);
+			QString s = "  ";
+			for (int j = 0; j < w->def.size(); j++)
+			{
+				s += w->def.at(j).print();
+				if (j < w->def.size() - 1)
+					s += ", ";
+			}
+			qDebug() << s;
+		}
 		if (w->def.size() != s)
 		{
 			qDebug() << "WindowSettings.def for " << classes.key(w) << " is " << def.size();
@@ -487,9 +415,18 @@ bool TransformationStructure::sanityCheck(int s, QString id)
 		}
 		for(int i = 0; i < w->events.size(); i++)
 		{
-#ifdef DEBUGME
-			qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
-#endif
+			if (debug)
+			{
+				qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
+				QString s = "    ";
+				for (int j = 0; j < w->events.at(i).size(); j++)
+				{
+					s += w->events.at(i).at(j).print();
+					if (j < w->events.at(i).size() - 1)
+						s += ", ";
+				}
+				qDebug() << s;
+			}
 			if (w->events.at(i).size() != s)
 			{
 				qDebug() << "WindowSettings for " << classes.key(w) << ":" 
@@ -513,4 +450,16 @@ OutEvent::OutEvent(__s32 code, bool shift, bool alt, bool ctrl)
 	if (ctrl)
 		modifiers.append(KEY_LEFTCTRL);
 	this->keycode = code;
+}
+
+QString OutEvent::print() const
+{
+	QString s = keymap_reverse[keycode] + "(" + QString::number(keycode) + ")[";
+		for(int i = 0; i < modifiers.count(); i++)
+		{
+			s += keymap_reverse[modifiers[i]] + " (" + QString::number(modifiers[i]) + ")";
+			if (i < modifiers.count() - 1)
+				s += ", ";
+		}
+		return s + "]";
 }

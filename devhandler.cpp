@@ -1,6 +1,6 @@
 /*
     <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2013  Arek <arek@ag.de1.cc>
+    Copyright (C) 2013  Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ void DevHandler::run()
 		}
 		
 		//break the loop if we want to stop
-		if(sd->terminating)
+		if(sd.terminating)
 		{
 			qDebug() << "terminating";
 			break;
@@ -163,7 +163,7 @@ void DevHandler::run()
 	
 }
 
-DevHandler::DevHandler(idevs i, shared_data *sd)
+DevHandler::DevHandler(idevs i)
 {
 	this->sd = sd;
 	_id = i.id;
@@ -173,6 +173,62 @@ DevHandler::DevHandler(idevs i, shared_data *sd)
 		devtype = Mouse;
 	else
 		devtype = Keyboard;
+}
+
+QList< AbstractInputHandler* > DevHandler::parseXml(QDomNodeList nodes)
+{
+	QList<AbstractInputHandler*> handlers;
+	// get a list of available devices from /proc/bus/input/devices
+	QList<idevs> availableDevices = parseInputDevices();
+	/// Devices
+	// for every configured <device...>
+	for (int i = 0; i < nodes.length(); i++)
+	{
+		/*
+		 * create an idevs structure for the configured device
+		 * vendor and product are set to match the devices in /proc/bus/...
+		 * id is the config-id 
+		 */
+		idevs d;
+		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
+		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
+		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
+		
+		// create a devhandler for every device that matches vendor and product
+		// of the configured device,
+		while (availableDevices.count(d))
+		{
+			int idx = availableDevices.indexOf(d);
+			// copy information obtained from /proc/bus/input/devices to complete
+			// the data in the idevs object used to construct the DevHandler
+			d.event = availableDevices.at(idx).event;
+			d.mouse = availableDevices.at(idx).mouse;
+			handlers.append(new DevHandler(d));
+			availableDevices.removeAt(idx);
+			
+			/*
+			 * read the <signal> entries.
+			 * [key] will be the input event, that will be transformed
+			 * [default] will be the current output device, this is 
+			 * transformed to. If no [default] is set, the current output will
+			 * be the same as the input.
+			 * For DevHandlers with window specific settings, the current output
+			 * becomes the default output when the TransformationStructure is
+			 * constructed, otherwise it won't ever change anyway...
+			 */
+			QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
+			for (int j = 0; j < codes.length(); j++)
+			{
+				QString key = codes.at(j).attributes().namedItem("key").nodeValue();
+				QString def = codes.at(j).attributes().namedItem("default").nodeValue();
+				if (def == "")
+					handlers.last()->addInputCode(keymap[key]);
+				else
+					handlers.last()->addInputCode(keymap[key], OutEvent(def));
+			}
+		}
+	}
+	return handlers;
 }
 
 DevHandler::~DevHandler()
