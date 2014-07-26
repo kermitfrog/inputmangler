@@ -95,6 +95,10 @@ public:
 	static void generalSetup();
 	static shared_data sd; // TODO: protect
 	static QMap<QString,QList<AbstractInputHandler*>(*)(QDomNodeList)> parseMap;
+
+signals:
+	void windowChanged(QString wclass, QString title);
+	void windowTitleChanged(QString wclass);
 	
 protected:
 	QString _id;

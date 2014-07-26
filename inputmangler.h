@@ -23,10 +23,10 @@
 class AbstractInputHandler;
 
 #include <qobject.h>
-#include "abstractinputhandler.h"
 #include <QtDBus/QtDBus>
 #include <QtXml>
-#include <linux/input.h> //__u16...
+#include "abstractinputhandler.h"
+#include "output.h"
 
 struct shared_data;
 
@@ -60,58 +60,4 @@ private:
 	
 };
 
-/*
- * an output event, e.g: 
- * "S" for press shift
- * "g" for press g
- * "d+C" for press Ctrl-D
- */
-class OutEvent 
-{
-public:
-	OutEvent() {};
-	OutEvent(int c) {keycode = c;};
-	OutEvent(QString s);
-	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false); 
-	QString print() const;
-	QVector<__u16> modifiers;
-	__u16 keycode;
-	__u16 code() const {return keycode;};
-#ifdef DEBUGME
-	QString initString;
-#endif
-	
-};
-
-/*
- * 1/Window class in TransformationStructure, e.g:
- * <window class="Konsole" F="S,n+C,R,B" M="LEFT+S,RIGHT+S"/> (no title-matching)
- * <window class="Opera" F="S,_,R,B">  (with title-matching)
- *     <title regex="Dude and Zombies.*" F="S,ESC,BTN_LEFT,_"/>
- * <window/>
- */
-class WindowSettings 
-{
-public:
-	WindowSettings(){};
-	~WindowSettings();
-	QVector<OutEvent> def;                // value when no title matches
-	QVector<QRegularExpression*> titles;  // list of title regexes
-	QVector< QVector<OutEvent> > events;  // events are matched to titles via index
-};
-
-/*
- * 1/id - holds all window-specific settings for a given id
- */
-class TransformationStructure 
-{
-public:
-	TransformationStructure(){};
-	~TransformationStructure();
-	QVector<OutEvent> getOutputs(QString window_class, QString window_name);
-	WindowSettings *window(QString w, bool create = false);
-	bool sanityCheck(int s, QString id, bool debug = false);
-	QVector<OutEvent> def;
-	QHash<QString, WindowSettings*> classes;
-};
 

@@ -29,16 +29,18 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
 set(INPUTMANGLER_SRCS 
-						debughandler.cpp
-						xwatcher.cpp 
-						main.cpp
-						inputmangler.cpp 
 						abstractinputhandler.cpp
+						debughandler.cpp
 						devhandler.cpp 
-						qtsignalhandler.cpp 
 						imdbusinterface.cpp 
+						inputmangler.cpp 
 						keydefs.cpp 
-						nethandler.cpp)
+						main.cpp
+						nethandler.cpp
+						output.cpp
+						qtsignalhandler.cpp 
+						xwatcher.cpp 
+						)
 
 add_executable(inputmangler ${INPUTMANGLER_SRCS})
 

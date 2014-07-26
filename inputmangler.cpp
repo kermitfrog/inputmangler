@@ -56,9 +56,10 @@ bool InputMangler::readConf()
 		// FIXME: write a proper interface for doing this or something
 		if (nodeName == "xwatcher")
 		{
-			connect(static_cast<XWatcher*>(handlers.last()), SIGNAL(windowChanged(QString,QString)),
+			XWatcher *xwatcher = static_cast<XWatcher*>(handlers.last());
+			connect(xwatcher, SIGNAL(windowChanged(QString,QString)),
 					SLOT(activeWindowChanged(QString,QString)));
-			connect(static_cast<XWatcher*>(handlers.last()), SIGNAL(windowTitleChanged(QString)),
+			connect(xwatcher, SIGNAL(windowTitleChanged(QString)),
 					SLOT(activeWindowTitleChanged(QString)));
 		}
 	}
@@ -169,15 +170,12 @@ bool InputMangler::readConf()
 
 bool InputMangler::hasSettingsForId(QString id, QDomElement element)
 {
-	qDebug() << "hasSettingsForId(" << id;
 	if (element.hasAttribute(id))
 		return true;
-	qDebug() << "1";
 	QDomNodeList nodes = element.elementsByTagName("long");
 	for (int i = 0; i < nodes.length(); i++)
 		if (nodes.at(i).attributes().namedItem("id").nodeValue() == id)
 			return true;
-	qDebug() << "2";
 	return false;
 }
 
@@ -185,15 +183,12 @@ QVector< OutEvent > InputMangler::parseOutputs(QString id, QDomElement element, 
 {
 	if (element.hasAttribute(id))
 		return parseOutputsShort(element.attributes().namedItem(id).nodeValue());
-	qDebug() << "long";
 	QDomNodeList nodes = element.elementsByTagName("long");
 	for(int i =  0; i < nodes.length(); i++)
 	{
 		if (nodes.at(i).attributes().namedItem("id").nodeValue() != id)
 			continue;
-		qDebug() << "i = " << i;
-		QStringList lines = nodes.at(i).toElement().text().split("\n");
-		qDebug() << lines;
+		QStringList lines = nodes.at(i).toElement().text().split(QRegExp("(\n|,)"));
 		foreach (QString s, lines)
 		{
 			QStringList args = s.trimmed().split(" ");
@@ -281,12 +276,14 @@ void InputMangler::printWinInfo()
 
 void InputMangler::printConfig()
 {
+	QStringList checkedIds;
 	foreach (AbstractInputHandler *h, handlers)
 	{
-		if (h->id() == "" && h->getNumInputs() == h->getNumOutputs() && h->getNumInputs())
+		if(!h->hasWindowSpecificSettings || h->id() == "")
 			continue;
-		if(!h->hasWindowSpecificSettings )
+		if (checkedIds.contains(h->id()))
 			continue;
+		checkedIds.append(h->id());
 		wsets[h->id()].sanityCheck(h->getNumInputs(), h->id(), true);
 	}
 }
@@ -295,171 +292,9 @@ InputMangler::~InputMangler()
 {
 }
 
-// Constructs an output event from a config string
-OutEvent::OutEvent(QString s)
-{
-#ifdef DEBUGME
-	initString = s;
-#endif
-	keycode = 0;
-	QStringList l = s.split("+");
-	if (l.empty())
-		return;
-	keycode = keymap[l[0]];
-	if (l.length() > 1)
-	{
-		if(l[1].contains("S"))
-			modifiers.append(keymap["S"]);
-		if(l[1].contains("A"))
-			modifiers.append(keymap["A"]);
-		if(l[1].contains("C"))
-			modifiers.append(keymap["C"]);
-		if(l[1].contains("M"))
-			modifiers.append(keymap["M"]);
-		if(l[1].contains("G") || l[1].contains("3"))
-			modifiers.append(keymap["RIGHTALT"]);
-		/*if(l[1].contains("~"))
-			modifiers = modifiers | MOD_REPEAT;
-		if(l[1].contains(""))
-			modifiers = modifiers | MOD_MACRO;*/
-	}
-}
-
-// get the window structure for window w
-// if create is true: create a new window, when none is found
-WindowSettings* TransformationStructure::window(QString w, bool create)
-{
-	if (create)
-	{
-		if(!classes.contains(w))
-			classes.insert(w, new WindowSettings());
-		return classes.value(w);
-	}
-	if (!classes.contains(w))
-		return NULL;
-	return classes.value(w);
-}
-
-// get output events for a given window and window title
-QVector< OutEvent > TransformationStructure::getOutputs(QString window_class, QString window_name)
-{
-	//qDebug() << "getOutputs(" << c << ", " << n << ")";
-	WindowSettings *w = window(window_class);
-	if (w == NULL)
-		return def;
-	//qDebug() << "Window found with " << w->titles.size() << "titles";
-	int idx;
-	for (int i = 0; i < w->titles.size(); i++)
-	{
-		//qDebug() << "Title: " << w->titles.at(i)->pattern();
-		QRegularExpressionMatch m = w->titles.at(i)->match(window_name);
-		if(m.hasMatch())
-			return w->events.at(i);
-	}
-	return w->def;
-}
-
-WindowSettings::~WindowSettings()
-{
-	foreach (QRegularExpression* r, titles)
-		delete r;
-}
-
-TransformationStructure::~TransformationStructure()
-{
-	foreach (WindowSettings * w, classes)
-		delete w;
-}
-
 void InputMangler::reReadConfig()
 {
 	cleanUp();
 	readConf();
 }
 
-// check a TransformationStructure for configuration errors
-bool TransformationStructure::sanityCheck(int s, QString id, bool debug)
-{
-	bool result = true;
-	qDebug() << "\nchecking " << id << " with size " << s;
-	if (this->def.size() != s)
-	{
-		qDebug() << "TransformationStructure.def is " << this->def.size();
-		result = false;
-	}
-	QList<WindowSettings*> wlist = classes.values();
-	foreach (WindowSettings *w, wlist)
-	{
-		if (debug)
-		{
-			qDebug() << "Settings for Window = " << classes.key(w);
-			QString s = "  ";
-			for (int j = 0; j < w->def.size(); j++)
-			{
-				s += w->def.at(j).print();
-				if (j < w->def.size() - 1)
-					s += ", ";
-			}
-			qDebug() << s;
-		}
-		if (w->def.size() != s)
-		{
-			qDebug() << "WindowSettings.def for " << classes.key(w) << " is " << def.size();
-			result = false;
-		}
-		if (w->events.size() != w->titles.size())
-		{
-			qDebug() << "WindowSettings.titles = " << w->titles.size() 
-					 << " events = " << w->events.size() << " for " << classes.key(w);
-			result = false;
-		}
-		for(int i = 0; i < w->events.size(); i++)
-		{
-			if (debug)
-			{
-				qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
-				QString s = "    ";
-				for (int j = 0; j < w->events.at(i).size(); j++)
-				{
-					s += w->events.at(i).at(j).print();
-					if (j < w->events.at(i).size() - 1)
-						s += ", ";
-				}
-				qDebug() << s;
-			}
-			if (w->events.at(i).size() != s)
-			{
-				qDebug() << "WindowSettings for " << classes.key(w) << ":" 
-						 << "Regex = \"" << w->titles.at(i)->pattern() << "\", size = " 
-						 << w->events.at(i).size();
-				result = false;
-			}
-		}
-	}
-	if (!result)
-		qDebug() << id << " failed SanityCheck!!!";
-	return result;
-}
-
-OutEvent::OutEvent(__s32 code, bool shift, bool alt, bool ctrl)
-{
-	if (shift)
-		modifiers.append(KEY_LEFTSHIFT);
-	if (alt)
-		modifiers.append(KEY_RIGHTALT);
-	if (ctrl)
-		modifiers.append(KEY_LEFTCTRL);
-	this->keycode = code;
-}
-
-QString OutEvent::print() const
-{
-	QString s = keymap_reverse[keycode] + "(" + QString::number(keycode) + ")[";
-		for(int i = 0; i < modifiers.count(); i++)
-		{
-			s += keymap_reverse[modifiers[i]] + " (" + QString::number(modifiers[i]) + ")";
-			if (i < modifiers.count() - 1)
-				s += ", ";
-		}
-		return s + "]";
-}
