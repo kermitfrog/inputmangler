@@ -23,21 +23,23 @@
 #include <QTcpServer>
 #include <QHostAddress>
 
+/*!
+ * @brief NetHandler listens on a TCP Port and generates input events from the incoming data.
+ */
 class NetHandler : public AbstractInputHandler
 {
 
 public:
-    NetHandler(QString a, int port);
+    NetHandler(QString address, int port);
 	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
     virtual ~NetHandler();
 	virtual void run();
-	void actOnData(char *b, int n);
 	
-private:
+protected:
+	void actOnData(char *b, int n);
 	QTcpServer *s;
 	QHostAddress addr;
 	int port;
-	QString buffer;
-	OutEvent l, r, dot; //cursor left, cursor right, '.'
+	QString buffer; //!< Buffer for unfinished input sequences.
 };
 

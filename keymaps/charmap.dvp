@@ -1,3 +1,8 @@
+\u000a ENTER
+\u000d ENTER
+\u0008 BACKSPACE
+\u0009 TAB
+\u0020 SPACE
 @
 $
 & AND
@@ -119,6 +124,10 @@ Z z+S
 ^u UP
 ^c c+C
 
+\u0085 .
+\u001b[C RIGHT
+\u001b[D LEFT
+\u001b[K END
 
 
 

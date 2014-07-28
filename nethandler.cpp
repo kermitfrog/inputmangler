@@ -24,25 +24,25 @@
 #include "keydefs.h"
 #include <QTest>
 
-NetHandler::NetHandler(QString a, int port)
+/*!
+ * @brief Constructs a NetHandler.
+ * @param address IP or host address of the network device on which to listen on.
+ * @param port The port.
+ */
+NetHandler::NetHandler(QString address, int port)
 {
-	addr = QHostAddress(a);
+	addr = QHostAddress(address);
 	this->port = port;
 	this->sd = sd;
-	l = OutEvent(KEY_LEFT);
-	r = OutEvent(KEY_RIGHT);
-	dot = OutEvent(KEY_E);
 	_id = "___NET";
-	hasWindowSpecificSettings = false;
+	_hasWindowSpecificSettings = false;
 }
 
-/*
- * this thread will read text (and a few editing/movement commands) from the Network
- * and create events to write that text
- * it is intended to be used with speech recognition running in a virtual machine,
- * piping its output through hyperterminal with a few macros set..
+/*!
+ * @brief
+ * this thread will read text from the Network
+ * and create events to write that text.
  */
-
 void NetHandler::run()
 {
 	s = new QTcpServer();
@@ -79,8 +79,6 @@ void NetHandler::run()
 			if (sd.terminating)
 			{
 				s->close();
-// 				socket->disconnectFromHost();
-// 				socket->close();
 				delete socket;
 				delete s;
 				return;
@@ -104,52 +102,60 @@ void NetHandler::run()
 	}
 }
 
+/*!
+ * @brief Process the incoming data. Possibly unfinished input will be buffered.
+ * @param b Input.
+ * @param n Length of input.
+ */
 void NetHandler::actOnData(char* b, int n)
 {
 	// we need a buffer for split multi-char commands
 	QString s = buffer + QString::fromLatin1(b, n);
 	buffer = "";
-// 	qDebug() << "Buffer: " << buffer << " S: " << s << "Hex:" << QTest::toHexRepresentation(b, n);
+//   	qDebug() << "Buffer: " << buffer << " S: " << s << "Hex:" << QTest::toHexRepresentation(b, n);
+  	qDebug() << "Hex:" << QTest::toHexRepresentation(b, n);
 	for (int i = 0; i < s.length(); i++)
 	{
-		if (s[i] == '\x085') //'...'
+		// clearly not a multi-char-sequence
+		if (!sequence_starting_chars.contains(s[i]))
 		{
-			int dc = 3;
-			while(dc--)
-				sendOutEvent(&dot);
-			continue;
-		}	
-		if (s[i] == '\x01b') // Escaped ^[C (Cursor Right), or ^[D (Cursor Left)
-		{
-			if (s.length() - i < 3)
-			{
-				buffer = s.mid(i);
-				return;
-			}
-			i+=2;
-			if(s[i] == '\x044')
-				sendOutEvent(&l); // left
-			else
-				sendOutEvent(&r); // right
+			sendOutEvent(&(charmap[s[i].toLatin1()]));
 			continue;
 		}
- 		if (s[i] == '^') // custom commands
+		// may be a multi-char-sequence, but possibly not complete -> put it into the buffer and end function
+		if (s.length() - i < max_sequence_length)
 		{
-			if (s.length() - i < 2) 
+			buffer = s.mid(i);
+			return;
+		}
+		// look if it is a multi-char-sequence
+		int iMod = 0;
+		for (int j = 2; j <= max_sequence_length; j++)
+		{
+			if (specialmap.contains(s.mid(i, j)))
 			{
-				buffer = s.mid(i);
-				return;
+				sendOutEvent(&specialmap[s.mid(i,j)]);
+				iMod = j - 1;
+				break;
 			}
-			sendOutEvent(&specialmap[s.mid(i,2)]);
-			i++;
+		}
+		// if it was a multi-char-sequence, iMod => 1. Increment i approparately and continue loop.
+		if (iMod)
+		{
+			i += iMod;
 			continue;
 		}
-		//qDebug() << "Data: " << s[i];
+		// nope, it's not a multi-char-sequence after all
 		sendOutEvent(&(charmap[s[i].toLatin1()]));
-		
+		//qDebug() << "Data: " << s[i];
 	}
 }
 
+/*!
+ * @brief Parses the corresponding xml parts and creates NetHandler objects.
+ * @param nodes All the <net> nodes.
+ * @return List containing all NetHandlers.
+ */
 QList< AbstractInputHandler* > NetHandler::parseXml(QDomNodeList nodes)
 {
 	QList<AbstractInputHandler*> handlers;

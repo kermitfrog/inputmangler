@@ -17,8 +17,6 @@
  *
  */
 
-#include "debughandler.h"
-#include "inputmangler.h"
 #include <poll.h>       //poll
 #include <QDebug>
 #include <linux/input.h>
@@ -26,21 +24,32 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <cerrno>
+#include "debughandler.h"
+#include "inputmangler.h"
 
-DebugHandler::DebugHandler(idevs i, QString out, bool grab)
+/*!
+ * @brief Constructs a DebugHandler.
+ * @param device Device information.
+ * @param outFile Name of the output file.
+ * @param grab Should the device be grabbed or not?
+ */
+DebugHandler::DebugHandler(idevs device, QString outFile, bool grab)
 {
-	_id = i.id;
+	_id = device.id;
 	_grab = grab;
-	hasWindowSpecificSettings = _id != "";
-	filename = QString("/dev/input/") + i.event;
+	_hasWindowSpecificSettings = _id != "";
+	filename = QString("/dev/input/") + device.event;
 	qDebug() << filename;
-	outfile.setFileName(out);
+	outfile.setFileName(outFile);
 }
 
 DebugHandler::~DebugHandler()
 {
 }
 
+/*!
+ * @brief 
+ */
 void DebugHandler::run()
 {
 	//TODO toLatin1 works... always? why not UTF-8?
@@ -51,7 +60,7 @@ void DebugHandler::run()
 		return;
 	}
 	
-	// grab the device, otherwise there will be double events
+	// grab the device.
 	if (_grab)
 		ioctl(fd, EVIOCGRAB, 1);
 	

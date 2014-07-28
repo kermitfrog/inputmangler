@@ -16,29 +16,29 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "imdbusinterface.h"
-#include "inputmangler.h"
-#include "handlers.h"
-// #include <fcntl.h>
 #include <unistd.h>
 #include <QtXml>
 #include <signal.h>
+#include "imdbusinterface.h"
+#include "inputmangler.h"
+#include "handlers.h"
 #include "keydefs.h"
 
 
 InputMangler::InputMangler()
 {
-	// set up key definitions
-	setUpKeymaps(); // keys as well as char mappings and multi-char commands (nethandler)
 	registerHandlers();
-	AbstractInputHandler::generalSetup();
 	readConf();
 }
 
-// Reads the Config and actually starts the handler threads, too
+/*!
+ * @brief  Reads the Config and actually starts the handler threads, too
+ */
 bool InputMangler::readConf()
 {
-	//parsing config
+	// open output devices
+	AbstractInputHandler::generalSetup();
+	//parse config
 	QString confPath;
 	if (QCoreApplication::arguments().count() < 2)
 		confPath = QDir::homePath() + "/.config/inputMangler/config.xml";
@@ -49,6 +49,16 @@ bool InputMangler::readConf()
 	QDomNodeList nodes;
 	conf.setContent(&f);
 	
+	// set up key definitions as well as char mappings and multi-char commands (nethandler)
+	{
+		QDomElement e = conf.elementsByTagName("mapfiles").at(0).toElement();
+		QString k, c;
+		k = e.attribute("keymap");
+		c = e.attribute("charmap");
+		qDebug() << " :: " << k << " | " << c;
+		setUpKeymaps(k, c);
+	}
+	// all handler-specific configuration is read by the registered parsing functions
 	foreach (QString nodeName, AbstractInputHandler::parseMap.keys())
 	{
 		nodes = conf.elementsByTagName(nodeName);
@@ -81,7 +91,7 @@ bool InputMangler::readConf()
 	QStringList ids;
 	foreach(AbstractInputHandler *a, handlers)
 	{
-		if (!a->hasWindowSpecificSettings)
+		if (!a->hasWindowSpecificSettings())
 			continue;
 		// make current outputs the default
 		// if nessecary, a new TransformationStructure is created on demand by QMap,
@@ -95,7 +105,7 @@ bool InputMangler::readConf()
 	// for each <window>
 	for (int i = 0; i < nodes.length(); i++) 
 	{
-		QDomElement e = nodes.at(i).toElement();
+		QDomElement element = nodes.at(i).toElement(); // representing a <window> structure
 		foreach(QString id, ids) // where id = M|F|? -> for each id
 		{
 			/*
@@ -106,12 +116,12 @@ bool InputMangler::readConf()
 			 * object needs to be created.
 			 */
 			bool hasNoIdInWindowButTitlesWithId = false;
-			QDomNodeList titles = e.elementsByTagName("title");
-			if (!hasSettingsForId(id, e))
+			QDomNodeList titles = element.elementsByTagName("title");
+			if (!hasSettingsForId(id, element))
 			{
 				for (int k = 0; k < titles.length(); k++)
 				{
-					QDomElement t = titles.at(k).toElement();
+					QDomElement t = titles.at(k).toElement(); // representing a <title> structure
 					if (hasSettingsForId(id, t))
 					{
 						hasNoIdInWindowButTitlesWithId = true;
@@ -121,9 +131,9 @@ bool InputMangler::readConf()
 				if (!hasNoIdInWindowButTitlesWithId)
 					continue;
 			}
-				
+			
 			// create WindowSettings
-			WindowSettings *windowSetting = wsets[id].window(e.attribute("class"), true);
+			WindowSettings *windowSetting = wsets[id].window(element.attribute("class"), true);
 			/*
 			 * set default outputs for that window class.
 			 * in the special case mentioned above, the window default output
@@ -132,31 +142,34 @@ bool InputMangler::readConf()
 			if (hasNoIdInWindowButTitlesWithId)
 				windowSetting->def = wsets[id].def;
 			else
-				windowSetting->def = parseOutputs(id, e, wsets[id].def);
+				windowSetting->def = parseOutputs(id, element, wsets[id].def);
 
 			// for each <title> inside the current <window>
 			for (int k = 0; k < titles.length(); k++)
 			{
-				QDomElement t = titles.at(k).toElement();
+				QDomElement t = titles.at(k).toElement(); // <title>
 				if (!t.hasAttribute(id))
 					continue;
 				windowSetting->titles.append(new QRegularExpression(QString("^") + t.attribute("regex") + "$"));
 				windowSetting->events.append(parseOutputs(id, t, windowSetting->def));
 			}
-		}	
+		}
 	}
 	
-	// prepare and actualy start threads. also roll a sanity check
+	// Prepare and actualy start threads. Also roll a sanity check.
 	AbstractInputHandler::sd.terminating = false;
 	
+	// Make sure outputs and window & class name are set to something...
+	// May be unneccessary, but better safe than sorry.
 	activeWindowTitleChanged("");
+	
 	bool sane;
 	foreach (AbstractInputHandler *h, handlers)
 	{
 		sane = false;
 		if (h->id() == "" && h->getNumInputs() == h->getNumOutputs() && h->getNumInputs())
 			sane = true;
-		else if(!h->hasWindowSpecificSettings )
+		else if(!h->hasWindowSpecificSettings() )
 			sane = true;
 		else 
 			sane = wsets[h->id()].sanityCheck(h->getNumInputs(), h->id());
@@ -168,10 +181,17 @@ bool InputMangler::readConf()
 	f.close();
 }
 
+/*!
+ * @brief Check if element has any output definition for TransformationStructure with id
+ * @param id Id of a TransformationStructure
+ * @param element XML element, typicaly <window> or <title>
+ */
 bool InputMangler::hasSettingsForId(QString id, QDomElement element)
 {
+	// short version
 	if (element.hasAttribute(id))
 		return true;
+	// long version
 	QDomNodeList nodes = element.elementsByTagName("long");
 	for (int i = 0; i < nodes.length(); i++)
 		if (nodes.at(i).attributes().namedItem("id").nodeValue() == id)
@@ -179,29 +199,51 @@ bool InputMangler::hasSettingsForId(QString id, QDomElement element)
 	return false;
 }
 
+/*!
+ * @brief Parse output definition for TransformationStructure with id. 
+ * Returns def when nothing is found.
+ * @param id Id of a TransformationStructure
+ * @param element XML element, typicaly <window> or <title>
+ * @param def Default value. Returned when no output definition is found. Result of
+ * <long> description is based on this.
+ */
 QVector< OutEvent > InputMangler::parseOutputs(QString id, QDomElement element, QVector< OutEvent > def)
 {
+	// short version
 	if (element.hasAttribute(id))
-		return parseOutputsShort(element.attributes().namedItem(id).nodeValue());
+	{
+		def.clear();
+		QStringList l = element.attributes().namedItem(id).nodeValue().split(",");
+		foreach(QString s, l)
+			def.append(OutEvent(s));
+		return def;
+	}
+	// long version
 	QDomNodeList nodes = element.elementsByTagName("long");
 	for(int i =  0; i < nodes.length(); i++)
 	{
 		if (nodes.at(i).attributes().namedItem("id").nodeValue() != id)
 			continue;
+		// valid seperators are '\n' and ','
 		QStringList lines = nodes.at(i).toElement().text().split(QRegExp("(\n|,)"));
 		foreach (QString s, lines)
 		{
-			QStringList args = s.trimmed().split(" ");
-			if (args.count() != 2)
+			// we want allow a dual use of '=', e.g. <long> ==c, r== </long>
+			s = s.trimmed();
+			int pos = s.indexOf('=', 1);
+			QString left = s.left(pos);
+			QString right = s.mid(pos + 1);
+			if (left.isEmpty() && right.isEmpty())
 				return def;
 			
+			// find the right input index
 			QMap<QString,AbstractInputHandler*>::iterator handler = handlersById.find(id);
 			while(handler != handlersById.end() && handler.key() == id)
 			{
-				int idx = handler.value()->inputIndex(args[0]);
+				int idx = handler.value()->inputIndex(left);
 				if (idx >= 0)
 				{
-					def[idx] = OutEvent(args[1]);
+					def[idx] = OutEvent(right);
 					break;
 				}
 				++handler;
@@ -211,24 +253,14 @@ QVector< OutEvent > InputMangler::parseOutputs(QString id, QDomElement element, 
 	return def;
 }
 
-QVector< OutEvent > InputMangler::parseOutputsShort(QString confString)
-{
-	QVector<OutEvent> out;
-	QStringList l = confString.split(",");
-	foreach(QString s, l)
-		out.append(OutEvent(s));
-	return out;
-}
-
-
-
-/*
- * this is called when the active window changes
- * it updates the Outputs of all handlers
+/*!
+ * @brief this is called when the active window changes.
+ * It updates the Outputs of all handlers.
+ * @param wclass The new window class.
+ * @param title The new window title.
  */
 void InputMangler::activeWindowChanged(QString wclass, QString title)
 {
-//	qDebug() << "InputMangler::activeWindowChanged(" << wclass << ", " << title << ")";
 	if (AbstractInputHandler::sd.terminating)
 		return;
 		
@@ -236,14 +268,14 @@ void InputMangler::activeWindowChanged(QString wclass, QString title)
 	wm_title = title;
 	
 	foreach (AbstractInputHandler *a, handlers)
-		if (a->hasWindowSpecificSettings)
+		if (a->hasWindowSpecificSettings())
 			a->setOutputs(wsets[a->id()].getOutputs(wm_class, wm_title));
 	
 }
 
-/*
- * this is called when the title of the active window changes
- * it just calls activeWindowChanged with the current class
+/*!
+ * @brief This is called when the title of the active window changes.
+ * It just calls activeWindowChanged() with the current class
  * and the new title
  */
 void InputMangler::activeWindowTitleChanged(QString title)
@@ -252,8 +284,8 @@ void InputMangler::activeWindowTitleChanged(QString title)
 	activeWindowChanged(wm_class, title);
 }
 
-/*
- * end threads and close all devices
+/*!
+ * @brief End threads and close all devices.
  */
 void InputMangler::cleanUp()
 {
@@ -269,17 +301,27 @@ void InputMangler::cleanUp()
 	wsets.clear();
 }
 
+/*!
+ * @brief Print the current window class and title to console.
+ * Called by sending a USR1 signal.
+ * TODO: make it work as a dbus call, returning the string.
+ */
 void InputMangler::printWinInfo()
 {
 	qDebug() << "Class = " << wm_class << ", Title = " << wm_title;
 }
 
+/*!
+ * @brief Print the current window specific config to console.
+ * Called by sending a USR2 signal.
+ * TODO: make it work as a dbus call, returning the string.
+ */
 void InputMangler::printConfig()
 {
 	QStringList checkedIds;
 	foreach (AbstractInputHandler *h, handlers)
 	{
-		if(!h->hasWindowSpecificSettings || h->id() == "")
+		if(!h->hasWindowSpecificSettings() || h->id() == "")
 			continue;
 		if (checkedIds.contains(h->id()))
 			continue;
@@ -292,6 +334,11 @@ InputMangler::~InputMangler()
 {
 }
 
+/*!
+ * @brief Clean up and reread the configuration. Basicaly a restart without a restart.
+ * Called by sending a HUP signal.
+ * TODO: make it work as a dbus call.
+ */
 void InputMangler::reReadConfig()
 {
 	cleanUp();

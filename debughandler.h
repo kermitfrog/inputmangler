@@ -19,19 +19,24 @@
 
 #pragma once
 
-#include "abstractinputhandler.h"
 #include <QFile>
+#include "abstractinputhandler.h"
 
+/*!
+ * @brief DebugHandler is essentially a keylogger. It attaches itself to an input device and 
+ * writes everything coming from that device to a logfile. The device can, but does not have 
+ * to be opened exclusively.
+ */
 class DebugHandler : public AbstractInputHandler
 {
     Q_OBJECT
 
 public:
 	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
-	DebugHandler(idevs i, QString out, bool grab = 0);
+	DebugHandler(AbstractInputHandler::idevs device, QString outFile, bool grab = 0);
     virtual ~DebugHandler();
 
-private:
+protected:
 	void run();
 	QString filename;
 	QFile outfile;

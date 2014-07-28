@@ -24,26 +24,27 @@
 #include <QString>
 class OutEvent;
 
-const int NUM_MOD = 5;
+const int NUM_MOD = 5; //!<  maximum number of mmodifiers in an OutEvent[K]
 
-extern QHash<QString, int> keymap;
-extern QHash<char, OutEvent> charmap;
-extern QHash<QString, OutEvent> specialmap;
+extern QHash<QString, int> keymap; //!< Used to map a key in the configuration file to a keycode.
+extern QHash<char, OutEvent> charmap; //!<  Used to map a character to a key sequence, e.g. A -> Shift+a in NetHandler
+extern QHash<QString, OutEvent> specialmap; //!< Used to map multicharacter sequences to a key sequence, e.g. ^R -> Ctrl+RIGHT
+extern unsigned int max_sequence_length; //!<  length of the longest multicharacter input sequence in charmap.
+extern QList<QChar> sequence_starting_chars; //!< list of all the characters, used to start a multicharacter sequence.
 
-extern QMap<int, QString> keymap_reverse;
+extern QMap<int, QString> keymap_reverse; //!< Reverse mapped keymap (for debugging output)
 
-void setUpKeymaps();
+void setUpKeymaps(QString keymap_path, QString charmap_path);
 
-// Flags
-
-const int MOD_NONE		= 0x0;
-const int MOD_SHIFT		= 0x1;
-const int MOD_ALT		= 0x2;
-const int MOD_CONTROL	= 0x4;
-const int MOD_META		= 0x8;
-const int MOD_ALTGR		= 0x10;
-const int MOD_REPEAT	= 0x100;
-const int MOD_MACRO		= 0x1000;
+// Flags - currently not used, and maybe never will be.
+// const int MOD_NONE		= 0x0;
+// const int MOD_SHIFT		= 0x1;
+// const int MOD_ALT		= 0x2;
+// const int MOD_CONTROL	= 0x4;
+// const int MOD_META		= 0x8;
+// const int MOD_ALTGR		= 0x10;
+// const int MOD_REPEAT	= 0x100;
+// const int MOD_MACRO		= 0x1000;
 
 
 

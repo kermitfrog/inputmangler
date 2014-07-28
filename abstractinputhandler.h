@@ -42,7 +42,7 @@ struct shared_data
 
 /*!
  * @brief Data that wil be sent to inputdummy, aka low level input event
- * See linux/input.h for Details on Variables
+ * See linux/input.h for Details on Variables.
  */
 struct VEvent
 {
@@ -67,33 +67,26 @@ protected:
 		QString product;
 		QString event;
 		QString id;
-		bool mouse;
+		bool mouse; // TODO: make an enum -> more possible types
 		bool operator==(idevs o) const{
 			return (vendor == o.vendor && product == o.product);
 		};
 	};
 	
 public:
-	//AbstractInputHandler(shared_data *sd, QObject *parent = 0);
 	virtual ~AbstractInputHandler() {};
 	virtual void setId(QString i) {_id = i;};
 	virtual QString id() const {return _id;};
 	virtual void setOutputs(QVector<OutEvent> o);
 	virtual QVector<OutEvent> getOutputs() const {return outputs;};
-	virtual int addInputCode(__u16 in);
-	virtual int addInputCode(__u16 in, OutEvent def);
 // 	static QList<AbstractInputHandler*> parseXml(QDomNode nodes) {};
 	int inputIndex(QString s) const {return inputs.indexOf(keymap[s]);};
-	void sendMouseEvent(VEvent *e, int num = 1);
-	void sendKbdEvent(VEvent *e, int num = 1);
-	void sendOutEvent(OutEvent *t);
 	int getNumInputs() const {return inputs.size();};
 	int getNumOutputs() const {return outputs.size();};
-	bool hasWindowSpecificSettings;
-	static QList<idevs> parseInputDevices();
+	bool hasWindowSpecificSettings() const {return _hasWindowSpecificSettings;};
 	static void registerParser(QString id, QList<AbstractInputHandler*>(*func)(QDomNodeList));
 	static void generalSetup();
-	static shared_data sd; // TODO: protect
+	static shared_data sd; // TODO: protect?
 	static QMap<QString,QList<AbstractInputHandler*>(*)(QDomNodeList)> parseMap;
 
 signals:
@@ -104,6 +97,13 @@ protected:
 	QString _id;
 	QVector<__u16> inputs;		// codes of the keys to be transformed
 	QVector<OutEvent> outputs;	// current target events
+	virtual int addInputCode(__u16 in);
+	virtual int addInputCode(__u16 in, OutEvent def);
+	void sendMouseEvent(VEvent *e, int num = 1);
+	void sendKbdEvent(VEvent *e, int num = 1);
+	void sendOutEvent(OutEvent *t);
+	bool _hasWindowSpecificSettings;
+	static QList<idevs> parseInputDevices();
 	
 };
 

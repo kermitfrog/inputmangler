@@ -23,10 +23,27 @@ QHash<QString, int> keymap;
 QHash<char, OutEvent> charmap;
 QHash<QString, OutEvent> specialmap;
 QMap<int, QString> keymap_reverse;
+unsigned int max_sequence_length;
+QList<QChar> sequence_starting_chars;
 
-void setUpKeymaps()
+/*!
+ * @brief this global function reads /usr/include/linux/input.h, keymap and charmap and populates the globally used maps(see keydefs.h).
+ */
+void setUpKeymaps(QString keymap_path, QString charmap_path)
 {
-	QMap<QString, int> in;
+	// clear them all, just in case we're rereading
+	keymap.clear();
+	charmap.clear();
+	specialmap.clear();
+	keymap_reverse.clear();
+	
+	/*
+	 * read /usr/include/linux/input.h
+	 * find all lines like
+	 * #define KEY_MINUS       12
+	 * and make a mapping of "KEY_MINUS" to 12
+	 */
+	QMap<QString, int> inputMap; // Mappings from input.h
 	QFile input_h_file("/usr/include/linux/input.h");
 	if (!input_h_file.open(QIODevice::ReadOnly))
 	{
@@ -35,7 +52,7 @@ void setUpKeymaps()
 	}
 	QTextStream input_h_stream(&input_h_file);
 	QStringList input_h = input_h_stream.readAll().split("\n"); 
-// 	input_h_file.close();
+ 	input_h_file.close();
 	QStringList tmp;
 	
 	QList<QString>::iterator li = input_h.begin();
@@ -52,12 +69,21 @@ void setUpKeymaps()
 				else 
 					code = tmp[2].toInt(&ok, 10);
 				if (ok)
-					in[tmp[1]] = code;
+					inputMap[tmp[1]] = code;
 			}
 		li++;
 	}
 	
-	QString confPath = QDir::homePath() + "/.config/inputMangler/keymap";
+	/*
+	 * read ~/.config/inputMangler/keymap
+	 * empty lines are ignored, otherwise ' ' is the delimiter
+	 * KEY_3 { => map value of "KEY_3" in inputMap to "{"
+	 */
+	QString confPath;
+	if (keymap_path.isEmpty())
+		confPath = QDir::homePath() + "/.config/inputMangler/keymap";
+	else
+		confPath = keymap_path;
 	QFile keymap_file(confPath);
 	if (!keymap_file.open(QIODevice::ReadOnly))
 	{
@@ -76,7 +102,7 @@ void setUpKeymaps()
 		{
 			int code;
 			if (QRegExp("\\D").exactMatch(tmp[0].left(1)) )
-				code = in[tmp[0]];
+				code = inputMap[tmp[0]];
 			else 
 				code = tmp[0].toInt();
 			keymap[tmp[1]] = code;
@@ -84,14 +110,23 @@ void setUpKeymaps()
 		}
 		li++;
 	}
+	keymap_file.close();
 	
-	charmap['\n']        = OutEvent(KEY_ENTER);
-	charmap['\r']        = OutEvent(KEY_ENTER);
-	charmap['\b']     = OutEvent(KEY_BACKSPACE);
-	charmap['\t']   = OutEvent(KEY_TAB);
-	charmap[' ']     = OutEvent(KEY_SPACE);
+	/*
+	 * read ~/.config/inputMangler/charmap and populate charmap or specialmap.
+	 * there are three possibilities per line:
+	 * 1. "$" : Character '$' is mapped to the output event associated with itself in keymap. (charmap)
+	 * 2. "^ @+S" : Character '^' is mapped to OutEvent("@+^"). (charmap)
+	 * 3. "^D PAGEDOWN" : The character sequence "^D" is mapped to OutEvent("PAGEDOWN"). (specialmap)
+	 * On the left side it is possible to map any Unicode character by using a 4-digit hex code like \u09ab.
+	 */
 	
-	confPath = QDir::homePath() + "/.config/inputMangler/charmap";
+	max_sequence_length = 1;
+	
+	if (charmap_path.isEmpty())
+		confPath = QDir::homePath() + "/.config/inputMangler/charmap";
+	else
+		confPath = charmap_path;
 	QFile charmap_file(confPath);
 	if (!charmap_file.open(QIODevice::ReadOnly))
 	{
@@ -110,6 +145,26 @@ void setUpKeymaps()
 			li++;
 			continue;
 		}
+		QString left = tmp[0];
+		// interpret character codes in 4-byte hex notation introduced by \u
+		while (left.contains("\\u"))
+		{
+			bool ok;
+			int pos = left.indexOf("\\u");
+			QString s = left.mid(pos + 2, 4);
+			if (s.length() != 4)
+			{
+				qDebug() << "Error in charmap at interpreting " << left;
+				break;
+			}
+			left.replace(pos, 6, s.toUShort(&ok, 16));
+			if (!ok)
+			{
+				qDebug() << "Error in charmap at interpreting " << left;
+				break;
+			}
+		}
+		// case 1. "$"
 		if (tmp.size() == 1)
 		{
 			charmap[tmp[0][0].toLatin1()] = OutEvent(keymap[tmp[0]]);
@@ -117,20 +172,31 @@ void setUpKeymaps()
 			qDebug() << tmp[0] << "=" << tmp[0] << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
 #endif
 		}
-		else if(tmp[0].size() == 1)
-		{
-			charmap[tmp[0][0].toLatin1()] = OutEvent(tmp[1]);
-#ifdef DEBUGME
-			qDebug() << tmp[0] << "=" << tmp[1] << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
-#endif
-		}
 		else 
 		{
-			specialmap[tmp[0]] = OutEvent(tmp[1]);
-#ifdef DEBUGME
-			qDebug() << tmp[0] << "=" << tmp[0] << " --> " << specialmap[tmp[0]].print() ;
-#endif
+			QString right = tmp[1];
+			// case 2. "^ @+S"
+			if(left.size() == 1)
+			{
+				charmap[left[0].toLatin1()] = OutEvent(right);
+	#ifdef DEBUGME
+				qDebug() << tmp[0] << "=" << s << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
+	#endif
+			}
+			else // case 3. "^D PAGEDOWN"
+			{
+				specialmap[left] = OutEvent(right);
+				if (right.length() > max_sequence_length)
+					max_sequence_length = left.length();
+				if (!sequence_starting_chars.contains(left.at(0)))
+					sequence_starting_chars.append(left.at(0));
+	#ifdef DEBUGME
+				qDebug() << tmp[0] << "=" << tmp[0] << " --> " << specialmap[tmp[0]].print() ;
+	#endif
+			}
 		}
 		li++;
 	}
+	charmap_file.close();
+	qSort(sequence_starting_chars);
 }

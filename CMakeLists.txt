@@ -20,7 +20,6 @@ SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-lX11")
 
 ADD_DEFINITIONS(
     -std=c++11
-    -g -O0
     )
 
 # Find includes in corresponding build directories
@@ -45,7 +44,9 @@ set(INPUTMANGLER_SRCS
 add_executable(inputmangler ${INPUTMANGLER_SRCS})
 
 install(TARGETS inputmangler RUNTIME DESTINATION bin)
-
+FILE(GLOB keymaps "${CMAKE_CURRENT_SOURCE_DIR}/keymaps/*")
+INSTALL(FILES ${keymaps} DESTINATION share/inputmangler/)
+# TODO: doc
 qt5_use_modules(inputmangler Core Xml DBus Network Test)
 
 #add_definitions( -DDEBUGME )

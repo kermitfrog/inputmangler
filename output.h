@@ -25,20 +25,22 @@
 
 
 
-/*
- * an output event, e.g: 
+/*!
+ * @brief An output event, e.g: 
  * "S" for press shift
  * "g" for press g
  * "d+C" for press Ctrl-D
  */
 class OutEvent 
 {
+	friend class WindowSettings;
+	friend class TransformationStructure;
 public:
 	OutEvent() {};
 	OutEvent(int c) {keycode = c;};
 	OutEvent(QString s);
-	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false); 
-	QString print() const;
+// 	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false); 
+	QString toString() const;
 	QVector<__u16> modifiers;
 	__u16 keycode;
 	__u16 code() const {return keycode;};
@@ -48,7 +50,8 @@ public:
 	
 };
 
-/*
+/*!
+ * @brief WindowSettings contains the Output settings for one window class.
  * 1/Window class in TransformationStructure, e.g:
  * <window class="Konsole" F="S,n+C,R,B" M="LEFT+S,RIGHT+S"/> (no title-matching)
  * <window class="Opera" F="S,_,R,B">  (with title-matching)
@@ -57,16 +60,17 @@ public:
  */
 class WindowSettings 
 {
+	friend class TransformationStructure;
 public:
 	WindowSettings(){};
 	~WindowSettings();
-	QVector<OutEvent> def;                // value when no title matches
-	QVector<QRegularExpression*> titles;  // list of title regexes
-	QVector< QVector<OutEvent> > events;  // events are matched to titles via index
+	QVector<OutEvent> def;                //!< value when no title matches
+	QVector<QRegularExpression*> titles;  //!< list of title regexes
+	QVector< QVector<OutEvent> > events;  //!< events are matched to titles via index
 };
 
-/*
- * 1/id - holds all window-specific settings for a given id
+/*!
+ * @brief Holds all window-specific settings for a given id.
  */
 class TransformationStructure 
 {
@@ -75,8 +79,9 @@ public:
 	~TransformationStructure();
 	QVector<OutEvent> getOutputs(QString window_class, QString window_name);
 	WindowSettings *window(QString w, bool create = false);
-	bool sanityCheck(int s, QString id, bool debug = false);
-	QVector<OutEvent> def;
-	QHash<QString, WindowSettings*> classes;
+	bool sanityCheck(int numInputs, QString id, bool verbose = false);
+	QVector<OutEvent> def; //!< Default outputs for id.
+protected:
+	QHash<QString, WindowSettings*> classes; //!< HashMap of window classes.
 };
 

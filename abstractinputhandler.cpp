@@ -16,18 +16,22 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <fcntl.h>
 #include "abstractinputhandler.h"
 #include "inputmangler.h"
+#include <fcntl.h>
 #include <QDebug>
 #include <QTest>
 
 shared_data AbstractInputHandler::sd; // TODO: protect
 QMap<QString,QList<AbstractInputHandler*>(*)(QDomNodeList)> AbstractInputHandler::parseMap;
 
+/*!
+ * @brief This static Function is called to set up the shared data structure.
+ * This includes opening the output devices.
+ */
 void AbstractInputHandler::generalSetup()
 {
-	// set up shared data
+	// set up shared data 
 	sd.fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
 	sd.fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
 	sd.terminating = false;
@@ -36,6 +40,11 @@ void AbstractInputHandler::generalSetup()
 #endif
 }
 
+/*!
+ * @brief Add a code to the list of expected inputs. The associated output is set to the same code.
+ * @param in Input code.
+ * @return Number of expected inputs after the operation.
+ */
 int AbstractInputHandler::addInputCode(__u16 in)
 {
 	inputs.append(in);
@@ -44,6 +53,12 @@ int AbstractInputHandler::addInputCode(__u16 in)
 }
 
 
+/*!
+ * @brief Add a code to the list of expected inputs.
+ * @param in Input code.
+ * @param def The default output.
+ * @return Number of expected inputs after the operation.
+ */
 int AbstractInputHandler::addInputCode(__u16 in, OutEvent def)
 {
 	inputs.append(in);
@@ -51,7 +66,9 @@ int AbstractInputHandler::addInputCode(__u16 in, OutEvent def)
 	return inputs.size();
 }
 
-
+/*!
+ * @brief set current outputs.
+ */
 void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 {
 	if (o.size() != inputs.size())
@@ -65,15 +82,25 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 	outputs = o;
 }
 
-// TEvent -> send VEvent[]:
-// Example: (Ctrl+Shift+C) 
-// 1: Shift down,           ,       ,     ,        , Shift up
-// 2: Shift down, Ctrl down ,       ,     , Ctrl up, Shift up
-// 3: Shift down, Ctrl down , C down, C up, Ctrl up, Shift up
+/*!
+ * @brief Transforms an OutEvent (keycode and maybe modifiers) to a Vector 
+ * of raw VEvents and sends it to the virtual keyboard driver.
+ * TEvent -> send VEvent[]:
+ * @param t Event to be generated.
+ */
 void AbstractInputHandler::sendOutEvent(OutEvent* t)
 {
-	VEvent e[NUM_MOD*2+2];
+	qDebug() << t->toString();
+	VEvent e[NUM_MOD*2+2]; //TODO: limit modifiers
 	QVector<__u16> m = t->modifiers;
+    /*  
+	  if there are modifiers, populate e with a series of keyboard events, 
+	  that compose the wanted shortcut.
+      Example: (Ctrl+Shift+C) 
+      1: Shift down,           ,       ,     ,        , Shift up
+      2: Shift down, Ctrl down ,       ,     , Ctrl up, Shift up
+      3: Shift down, Ctrl down , C down, C up, Ctrl up, Shift up 
+    */
 	int offset = 2 + m.size(), k = 0;
 	for (; k < m.size(); k++)
 	{
@@ -96,6 +123,9 @@ void AbstractInputHandler::sendOutEvent(OutEvent* t)
 	usleep(5000); // wait x * 0.000001 seconds
 }
 
+/*!
+ * @brief sends num raw input events to be generated the virtual mouse device.
+ */
 //FIXME: should be inline, but then code does not link -> WTF???
 void AbstractInputHandler::sendMouseEvent(VEvent* e, int num) 
 {
@@ -107,7 +137,10 @@ void AbstractInputHandler::sendMouseEvent(VEvent* e, int num)
 	write(sd.fd_mouse, e, num*sizeof(VEvent));
 }
 
-inline void AbstractInputHandler::sendKbdEvent(VEvent* e, int num)
+/*!
+ * @brief sends num raw input events to be generated the virtual keyboard device.
+ */
+void AbstractInputHandler::sendKbdEvent(VEvent* e, int num)
 {
 	
 #ifdef DEBUGME
@@ -117,6 +150,11 @@ inline void AbstractInputHandler::sendKbdEvent(VEvent* e, int num)
 	write(sd.fd_kbd, e, num*sizeof(VEvent));
 }
 
+/*!
+ * @brief Register a static parser function.
+ * @param id Id used in config.xml to identify the subclass of AbstractInputHandler
+ * @param func Function used to parse all <id>xml parts.
+ */
 void AbstractInputHandler::registerParser(QString id, QList<AbstractInputHandler*>(*func)(QDomNodeList))
 {
 	parseMap[id] = func;

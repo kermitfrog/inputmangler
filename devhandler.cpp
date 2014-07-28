@@ -19,18 +19,17 @@
 
 #include "devhandler.h"
 #include "inputmangler.h"
-#include <poll.h>       //poll
 #include <QDebug>
+#include <poll.h>
 #include <linux/input.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
-/*
- * this thread will read from one input device and transform input
- * events according to previosly set rules
+/*!
+ * @brief This thread will read from one input device and transform input
+ * events according to previosly set rules.
  */
-
 void DevHandler::run()
 {
 	//TODO toLatin1 works... always? why not UTF-8?
@@ -50,14 +49,15 @@ void DevHandler::run()
 	p.events = POLLIN;
 	p.revents = POLLIN;
 	
-	int ret, n;
-	bool matches;
+	int ret; // return value of poll
+	int n;   // number of events to read / act upon
+	bool matches; // does it match an input code that we want to act upon?
 
 	input_event buf[4];
 	VEvent e[NUM_MOD*2+2];
 	while (1)
 	{
-		//wait until there is data
+		//wait until there is data or 1.5 seconds have passed to look at sd.terminating 
 		ret = poll (&p, 1, 1500);
 		if (p.revents & ( POLLERR | POLLHUP | POLLNVAL ))
 		{
@@ -163,18 +163,27 @@ void DevHandler::run()
 	
 }
 
-DevHandler::DevHandler(idevs i)
+/*!
+ * @brief Construct a DevHandler thread for the device described in device.
+ * @param device Description of a device.
+ */
+DevHandler::DevHandler(idevs device)
 {
 	this->sd = sd;
-	_id = i.id;
-	hasWindowSpecificSettings = _id != "";
-	filename = QString("/dev/input/") + i.event;
-	if (i.mouse)
+	_id = device.id;
+	_hasWindowSpecificSettings = _id != "";
+	filename = QString("/dev/input/") + device.event;
+	if (device.mouse)
 		devtype = Mouse;
 	else
 		devtype = Keyboard;
 }
 
+/*!
+ * @brief Parses all the <device> parts of the configuration and constructs DevHandler objects.
+ * @param nodes All the <device> nodes.
+ * @return List containing all DevHandlers.
+ */
 QList< AbstractInputHandler* > DevHandler::parseXml(QDomNodeList nodes)
 {
 	QList<AbstractInputHandler*> handlers;
@@ -203,7 +212,7 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QDomNodeList nodes)
 			// the data in the idevs object used to construct the DevHandler
 			d.event = availableDevices.at(idx).event;
 			d.mouse = availableDevices.at(idx).mouse;
-			handlers.append(new DevHandler(d));
+			DevHandler *devhandler = new DevHandler(d);
 			availableDevices.removeAt(idx);
 			
 			/*
@@ -222,10 +231,11 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QDomNodeList nodes)
 				QString key = codes.at(j).attributes().namedItem("key").nodeValue();
 				QString def = codes.at(j).attributes().namedItem("default").nodeValue();
 				if (def == "")
-					handlers.last()->addInputCode(keymap[key]);
+					devhandler->addInputCode(keymap[key]);
 				else
-					handlers.last()->addInputCode(keymap[key], OutEvent(def));
+					devhandler->addInputCode(keymap[key], OutEvent(def));
 			}
+			handlers.append(devhandler);
 		}
 	}
 	return handlers;

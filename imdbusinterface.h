@@ -20,8 +20,11 @@
 #pragma once
 
 #include <QtDBus>
-
 #include <QCoreApplication>
+
+/*!
+ * @brief Inputmanglers d-bus interface.
+ */
 class imDbusInterface : public QObject
 {
 	Q_OBJECT

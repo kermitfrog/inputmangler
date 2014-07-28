@@ -21,6 +21,9 @@
 #include <QDBusConnection>
 #include <QDebug>
 
+/*!
+ * @brief Register on d-bus.
+ */
 imDbusInterface::imDbusInterface(QObject* parent)
 {
  	QDBusConnection::sessionBus().registerService("org.inputManglerInterface");

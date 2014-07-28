@@ -22,7 +22,9 @@
 #include <QDebug>
 #include <QRegularExpression>
 
-// Constructs an output event from a config string
+/*!
+ * @brief  Constructs an output event from a config string, e.g "p+S"
+ */
 OutEvent::OutEvent(QString s)
 {
 #ifdef DEBUGME
@@ -36,7 +38,12 @@ OutEvent::OutEvent(QString s)
 	if (l.length() > 1)
 	{
 		for(unsigned int i = 0; i < l[1].length(); i++)
-			if (!keymap.contains(l[1].at(i)))
+			if (i >= NUM_MOD)
+			{
+				qDebug() << "Too many modifiers in " << s;
+				break;
+			}
+			else if (!keymap.contains(l[1].at(i)))
 				qDebug() << "Unknown modifier " << l[1][i];
 			else
 				modifiers.append(keymap[l[1].at(i)]);
@@ -47,8 +54,11 @@ OutEvent::OutEvent(QString s)
 	}
 }
 
-// get the window structure for window w
-// if create is true: create a new window, when none is found
+/*!
+ * @brief get the window structure for window w
+ * @param w window class
+ * @param create if true: create a new window, when none is found
+ */
 WindowSettings* TransformationStructure::window(QString w, bool create)
 {
 	if (create)
@@ -62,7 +72,9 @@ WindowSettings* TransformationStructure::window(QString w, bool create)
 	return classes.value(w);
 }
 
-// get output events for a given window and window title
+/*!
+ * @brief get output events for a given window and window title
+ */
 QVector< OutEvent > TransformationStructure::getOutputs(QString window_class, QString window_name)
 {
 	//qDebug() << "getOutputs(" << c << ", " << n << ")";
@@ -81,24 +93,36 @@ QVector< OutEvent > TransformationStructure::getOutputs(QString window_class, QS
 	return w->def;
 }
 
+/*!
+ * @brief deletes all titles
+ */
 WindowSettings::~WindowSettings()
 {
 	foreach (QRegularExpression* r, titles)
 		delete r;
 }
 
+/*!
+ * @brief deletes all window classes
+ */
 TransformationStructure::~TransformationStructure()
 {
 	foreach (WindowSettings * w, classes)
 		delete w;
 }
 
-// check a TransformationStructure for configuration errors
-bool TransformationStructure::sanityCheck(int s, QString id, bool debug)
+/*!
+ * @brief Check a TransformationStructure for configuration errors.
+ * @param numInputs Number of expected inputs.
+ * @param id Id of the TransformationStructure.
+ * @param verbose If true, the complete TransformationStructure will be printed to console.
+ * @return True if TransformationStructure seems ok.
+ */
+bool TransformationStructure::sanityCheck(int numInputs, QString id, bool verbose)
 {
 	bool result = true;
-	qDebug() << "\nchecking " << id << " with size " << s;
-	if (this->def.size() != s)
+	qDebug() << "\nchecking " << id << " with size " << numInputs;
+	if (this->def.size() != numInputs)
 	{
 		qDebug() << "TransformationStructure.def is " << this->def.size();
 		result = false;
@@ -106,21 +130,21 @@ bool TransformationStructure::sanityCheck(int s, QString id, bool debug)
 	QList<WindowSettings*> wlist = classes.values();
 	foreach (WindowSettings *w, wlist)
 	{
-		if (debug)
+		if (verbose)
 		{
 			qDebug() << "Settings for Window = " << classes.key(w);
 			QString s = "  ";
 			for (int j = 0; j < w->def.size(); j++)
 			{
-				s += w->def.at(j).print();
+				s += w->def.at(j).toString();
 				if (j < w->def.size() - 1)
 					s += ", ";
 			}
 			qDebug() << s;
 		}
-		if (w->def.size() != s)
+		if (w->def.size() != numInputs)
 		{
-			qDebug() << "WindowSettings.def for " << classes.key(w) << " is " << def.size();
+			qDebug() << "WindowSettings.def for " << classes.key(w) << " is " << w->def.size();
 			result = false;
 		}
 		if (w->events.size() != w->titles.size())
@@ -131,19 +155,19 @@ bool TransformationStructure::sanityCheck(int s, QString id, bool debug)
 		}
 		for(int i = 0; i < w->events.size(); i++)
 		{
-			if (debug)
+			if (verbose)
 			{
 				qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
 				QString s = "    ";
 				for (int j = 0; j < w->events.at(i).size(); j++)
 				{
-					s += w->events.at(i).at(j).print();
+					s += w->events.at(i).at(j).toString();
 					if (j < w->events.at(i).size() - 1)
 						s += ", ";
 				}
 				qDebug() << s;
 			}
-			if (w->events.at(i).size() != s)
+			if (w->events.at(i).size() != numInputs)
 			{
 				qDebug() << "WindowSettings for " << classes.key(w) << ":" 
 						 << "Regex = \"" << w->titles.at(i)->pattern() << "\", size = " 
@@ -157,18 +181,21 @@ bool TransformationStructure::sanityCheck(int s, QString id, bool debug)
 	return result;
 }
 
-OutEvent::OutEvent(__s32 code, bool shift, bool alt, bool ctrl)
-{
-	if (shift)
-		modifiers.append(KEY_LEFTSHIFT);
-	if (alt)
-		modifiers.append(KEY_RIGHTALT);
-	if (ctrl)
-		modifiers.append(KEY_LEFTCTRL);
-	this->keycode = code;
-}
+// OutEvent::OutEvent(__s32 code, bool shift, bool alt, bool ctrl)
+// {
+// 	if (shift)
+// 		modifiers.append(KEY_LEFTSHIFT);
+// 	if (alt)
+// 		modifiers.append(KEY_RIGHTALT);
+// 	if (ctrl)
+// 		modifiers.append(KEY_LEFTCTRL);
+// 	this->keycode = code;
+// }
 
-QString OutEvent::print() const
+/*!
+ * @brief return a QString describing the Output.
+ */
+QString OutEvent::toString() const
 {
 	QString s = keymap_reverse[keycode] + "(" + QString::number(keycode) + ")[";
 		for(int i = 0; i < modifiers.count(); i++)

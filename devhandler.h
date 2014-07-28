@@ -22,6 +22,10 @@
 #include "abstractinputhandler.h"
 #include <QFile>
 
+/*!
+ * @brief DevHandler reads input from one keyboard or mouse device and transforms it 
+ * according to the rules set in the configuration file. (Saved in outputs)
+ */
 class DevHandler : public AbstractInputHandler
 {
 	// does this handle a mouse or a keyboard?
@@ -29,16 +33,16 @@ class DevHandler : public AbstractInputHandler
 	enum DType{Keyboard, Mouse};
 
 public:
-    DevHandler(idevs i);
+    DevHandler(AbstractInputHandler::idevs device);
     virtual ~DevHandler();
 	//setTranslations()
 	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
 
-private:
+protected:
 	QString filename;
-	int fd;
-	DType devtype;
+	int fd;        // file descriptor
+	DType devtype; // keyboard or mouse
 	void run();
-    void createEvent(OutEvent *out, input_event *buf);
+//     void createEvent(OutEvent *out, input_event *buf);
 };
 
