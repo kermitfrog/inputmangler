@@ -1,0 +1,6 @@
+#!/bin/zsh
+
+zip -r kwinNotifyOnWindowChange.kwinscript kwinNotifyOnWindowChange
+plasmapkg -r kwinNotifyOnWindowChange
+plasmapkg --type kwinscript -i kwinNotifyOnWindowChange.kwinscript
+

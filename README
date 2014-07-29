@@ -1,0 +1,40 @@
+Arkadiusz Guzinski <kermit@ag.de1.cc>
+
+##01## Introduction ######
+
+inputmangler is a daemon, running in userspace, that intercepts and transforms linux input events, depending on the active window.
+It aims to be highly configurable, reliable and not too hard to use. You can use it to remap those extra mouse buttons, properly utilize a Footswitch or even remap your second keyboard to trigger all kinds of shortcuts! And you can have a different configuration for each window!
+It is also capable of translating Text from the network to key presses.
+
+So how does it work?
+First of all: it completely bypasses X!
+This is done for following reasons:
+1. In my experience, applications that generate X events do not work reliably with all applications, especially those in full-screen mode.
+2. As X may become obsolete (I certainly hope so) in the near future, I'd rather write something that doesn't need to be rewritten soon.
+3. That way it can be used without X running as well.
+4. I *hate* working with the X API :( - i really tried, but when i couldn't reliably get the window title after -i don't know how many- hours, even using a code example from the internet that was supposed to do *exactly* what i wanted, i really had enough of that #&%!!.
+
+So what it actually does, is grabbing input events at their device files in /dev/input and using a custom kernel module to generate new input events inside the kernel.
+Also, it does not directly talk to X about changes of the current window, but instead offers a D-Bus interface which can be used by the window manager to inform inputmangler about these.
+While writing this, I am completely aware that except for the kde-window-manager and xmonad there might not be any window managers actually capable of doing that. See the section on configuring your desktop (#04#) for alternatives.
+
+
+##02## Requierements ######
+Basic:
+qt5 (with support for dbus, xml, network)
+linux-headers
+cmake
+
+On Ubuntu do
+$ sudo apt-get install cmake qtbase5-dev linux-headers
+
+
+To use window specific settings:
+With KDE: no additial requirements
+With xmonad: probably   qdbus
+With other desktop environments / window managers probably   qdbus xdotool x11-utils
+
+$ sudo apt-get install qdbus xdotool x11-utils
+
+
+##03## Installation ######
