@@ -1,6 +1,8 @@
 #!/bin/bash
 CONFIG_PATH="~/.config/inputMangler/"
 
+mkdir -p $CONFIG_PATH > /dev/null
+
 echo "Copy example config file to $CONFIG_PATH ?  [y|N]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' ]]; then
@@ -15,6 +17,6 @@ do
 	echo $var
 done
 read LAYOUT
-cp -v keymaps/keymap.$LAYOUT $CONFIG_PATH
-cp -v keymaps/charmap.$LAYOUT $CONFIG_PATH
+cp -v keymaps/keymap.$LAYOUT $CONFIG_PATH/keymap
+cp -v keymaps/charmap.$LAYOUT $CONFIG_PATH/charmap
 

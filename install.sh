@@ -42,7 +42,7 @@ fi
 echo "Append lines to rc.local, to set the correct rights to the inputdummy devices? [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo sed -ie "s/^exit 0$/chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse\nchmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse\nexit0/" /etc/rc.local
+	sudo sed -ie "s/^exit 0$/chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse\nchmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse\nexit 0/" /etc/rc.local
 fi
 
 echo "Done!"
@@ -61,6 +61,8 @@ echo ""
 echo "Delete the comment (#) sign of the appropriate lines (starting with ATTRS{idVendor}) in 99-input.rules to enable the Devices you want to use with inputmangler. Then execute the following line to install the file in /etc/udev/rules.d/"
 echo "sudo cp 99-input.rules /etc/udev/rules.d/ ; sudo chmod 644 /etc/udev/rules.d/99-input.rules"
 echo "" 
-echo "After that: to activate it reboot or execute"
-echo "sudo ./loadItNow.sh $GRP"
+echo "Please note, that udev does not set the permissions for PS/2 devices. See the README, section ##INS## on how to do that."
+echo ""
+echo "After that: to activate it reboot or set the permissions of your input devices manually and run"
+echo "sudo modprobe inputmangler ; chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse ; chmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse"
 

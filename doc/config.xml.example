@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inputmanglerConf>
+	<!-- Comment -->
+	<!-- In this example it's all commented out, because I really can't think of any sane default configuration. -->
+	<!-- Custom path to keymap and charmap - default is ~/.config/inputMangler/(key|char)map -->
+	<!-- <mapfiles keymap="/usr/local/share/inputmangler/keymap.dvp" charmap="/usr/local/share/inputmangler/charmap.dvp"/> -->
+	
+	<!-- Listen on network - this is completely unencrypted! -->
+	<!-- <net addr="127.0.0.1" port="20000"/> -->
+	
+	<!-- Log everything from the Kinesis Freestyle Keyboard to /tmp/key.log -->
+	<!-- <debug name="Keyboard" vendor="058f" product="9410" id="K" log="/tmp/key.log" grab="0" /> -->
+	
+	<!-- For a Kinesis Low-Force-USB-Keypad: Transform every use of '#' to '='
+		 Here '#' is what the '=' on the keypad would send with a Programmer Dvorak Layout,
+		 so we just fixed it ;) 
+		 Note that the meaning of '#' and '=' is defined in the keymap file -->
+	<!--
+	<device name="Keypad" vendor="04b4" product="5202"> 
+		<signal key="#"   default="=" />
+	</device> 
+	-->
+	
+	<!-- Configure an Evoluent VerticalMouse 3 for using window specific settings for its extra buttons,
+		 using the id "M". -->
+	<!--
+	<device name="Mouse" vendor="1a7c" product="0068" id="M">
+		<signal key="BTN_EXTRA"/>
+		<signal key="BTN_SIDE"/>
+	</device>
+	-->
+	
+	<!-- In KDevelop: Always use the extra buttons to switch tabs. -->
+	<!-- <window class="kdevelop" M="LEFT+A,RIGHT+A"/> -->
+	
+	<!-- If there was another device to configure, this might look like -->
+	<!-- <window class="kdevelop" M="LEFT+A,RIGHT+A" F="a,b,_,END"/> -->
+	
+	<!-- Opera (Version 12) does not need any special treatment to use additional mouse buttons,
+		 but to we might want to give them another function when playing flash games.
+		 As the window title is changed, depending on the currently open tab, this can easily be
+		 achieved by using a matching regular expression for the title.
+		 This example also shows the use of the long notation form.
+	-->
+	<!--
+	<window class="opera">
+		<title regex="Decision 2.*" M="_,e" />
+		<title regex="Dude and Zombies.*">
+			<long id="M">
+				BTN_EXTRA=q
+				BTN_SIDE=e
+			</long>
+		</title>
+	</window>
+	-->
+</inputmanglerConf>

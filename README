@@ -16,11 +16,14 @@ Arkadiusz Guzinski <kermit@ag.de1.cc>
 ##QST## Quickstart for the very impatient #######
 
 (Tested on KUbuntu 14.04)
-sudo apt-get install cmake qtbase5-dev linux-headers-`uname -r`
+# Installation and system setup
+sudo apt-get install g++ cmake qtbase5-dev linux-headers-`uname -r`
 ./install.sh
 plasmapkg --type kwinscript -i kwinNotifyOnWindowChange.kwinscript # for KDE; if not see ##CDE##
 echo "/path/to/inputmangler 2> /tmp/.inputmangler.log &" >> your_autostart_file
-sudo ./loadItNow.sh $GRP
+reboot
+
+# configure and start
 ./setupHelper.sh
 $EDITOR ~/.config/inputMangler/config.xml # (for more Information go to section ##CIM##, the part starting with "config.xml:").
 build/inputmangler
@@ -29,7 +32,7 @@ build/inputmangler
 
 ##INT## Introduction #######
 
-inputmangler is a daemon, running in userspace, that intercepts and transforms linux input events, depending on the active window.
+inputmangler is a daemon that intercepts and transforms linux input events, depending on the active window.
 It aims to be highly configurable, reliable and not too hard to use. You can use it to remap those extra mouse buttons, properly utilize a Footswitch or even remap your second keyboard to trigger all kinds of shortcuts! And you can have a different configuration for each window!
 It is also capable of translating Text from the network to key presses.
 
@@ -37,9 +40,10 @@ So how does it work?
 First of all: it completely bypasses X!
 This is done for following reasons:
 1. In my experience, applications that generate X events do not work reliably with all applications, especially those in full-screen mode.
-2. As X may become obsolete (I certainly hope so) in the near future, I'd rather write something that doesn't need to be rewritten soon.
-3. That way it can be used without X running as well.
-4. I *hate* working with the X API :( - i really tried, but when i couldn't reliably get the window title after -i don't know how many- hours, even using a code example from the internet that was supposed to do *exactly* what i wanted, i really had enough of that #&%!!.
+2. It allows configuring different devices independently.
+3. As X may become obsolete (I certainly hope so) in the near future, I'd rather write something that doesn't need to be rewritten soon.
+4. That way it can be used without X running as well.
+5. I *hate* working with the X API :( - i really tried, but when i couldn't reliably get the window title after -i don't know how many- hours, even using a code example from the internet that was supposed to do *exactly* what i wanted, i really had enough of that #&%!!.
 
 So what it actually does, is grabbing input events at their device files in /dev/input and using a custom kernel module to generate new input events inside the kernel.
 Also, it does not directly talk to X about changes of the current window, but instead offers a D-Bus interface which can be used by the window manager to inform inputmangler about these.
@@ -52,12 +56,13 @@ I recommend not to use it for any devices that are used to type in sensitive dat
 ##REQ## Requierements #######
 
 Basic:
+g++
 qt5 (with support for dbus, xml, network)
 linux-headers (for your kernel version)
 cmake
 
 On Ubuntu do
-$ sudo apt-get install cmake qtbase5-dev linux-headers-`uname -r`
+$ sudo apt-get install g++ cmake qtbase5-dev linux-headers-`uname -r`
 
 
 To use window specific settings:
@@ -80,9 +85,19 @@ install.sh (mostly) automates the following steps:
 5. set up the system, so that the virtual input devices get the right permissions (can this be done via udev?)
 6. generate udev rules to set the right permissions on the input devices, that inputmangler should use (needs the user to uncomment them)
 
-After this is done, reboot the system or start the script
-$ sudo ./loadItNow.sh $GRP
+After this is done, reboot the system or set the permissions of your input devices manually and run"
+$ sudo modprobe inputmangler ; chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse ; chmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse
 Where $GRP is with the group with the necessary permissions.
+
+Please note, that udev does not set the permissions for PS/2 devices. You have to set them in /etc/rc.local.
+$ ls /dev/input/by-id/platform*event*
+shows you a list of canditates. Then after the line "chmod 660 \/dev\/virtual_kbd \/dev\/virtual_mous" in /etc/rc.local insert something like
+chown :$GRP /dev/input/by-id/platform-i8042-serio-1-event-mouse
+chmod 660 /dev/input/by-id/platform-i8042-serio-1-event-mouse
+
+If you are unsure, which is the correct device, you can use hd.
+$ sudo hd /dev/input/by-id/platform-i8042-serio-1-event-mouse
+and do something with only that device for a few seconds. If you get a lot of output, your guess was good ;). Stop it by pressing Ctrl-C.
 
 
 ##CDE## Configuring Your Desktop #######
@@ -261,6 +276,7 @@ If you're not sure what that keys are called, use the debug module or take a loo
 
 
 ##KEY## Editing keymap
+
 The "keymap" file contains a list of key definitions, loaded at startup.
 It looks like this:
 KEY_LEFTCTRL LEFTCTRL
