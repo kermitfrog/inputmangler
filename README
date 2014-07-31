@@ -1,15 +1,18 @@
-Arkadiusz Guzinski <kermit@ag.de1.cc>
-
 ##QST## Quickstart for the very impatient
 ##INT## Introduction
 ##REQ## Requierements
 ##INS## Installation
 ##CDE## Configuring Your Desktop
 ##CIM## Configuring inputmangler
+  #XML#   A few XML-Basics
+  #CNF#   The configuration file
+  #OUT#   Defining outputs
 ##KEY## Editing keymap
 ##NET## Using the Net module
-##SIG## Interaction through Signals (Also: start and stop)
-
+##SIG## Invocation and Interaction
+##FUT## Future Plans
+##HLP## Contributing to inputmangler
+##SPM## Contact
 
 
 
@@ -87,7 +90,7 @@ $ sudo apt-get install qdbus xdotool x11-utils
 
 ##INS## Installation #######
 
-On (K)ubuntu install.sh is your friend - on other Systems it might or might not work.
+On (K)ubuntu, install.sh is your friend - on other Systems it might or might not work.
 
 install.sh (mostly) automates the following steps:
 1. Building the application. (mkdir build ; cd build ; cmake -DCMAKE_BUILD_TYPE=Release .. ; make)
@@ -97,9 +100,9 @@ install.sh (mostly) automates the following steps:
 5. set up the system, so that the virtual input devices get the right permissions (can this be done via udev?)
 6. generate udev rules to set the right permissions on the input devices, that inputmangler should use (needs the user to uncomment them)
 
-After this is done, reboot the system or set the permissions of your input devices manually and run"
+After this is done, reboot the system or set the permissions of your input devices manually and run
 $ sudo modprobe inputmangler ; chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse ; chmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse
-Where $GRP is with the group with the necessary permissions.
+Where $GRP is the group with the necessary permissions.
 
 Please note, that udev does not set the permissions for PS/2 devices. You have to set them in /etc/rc.local.
 $ ls /dev/input/by-id/platform*event*
@@ -167,6 +170,7 @@ This is where the truly interesting things are configured. I recommend starting 
 If you are familiar with XML, jump to #CNF#.
 
 #XML# A few XML-Basics (maybe not using the correct terminology)
+
 XML has elements.
 In xml, Every element either starts with
 <elementName optionalAttribute=something >
@@ -188,6 +192,7 @@ and end with
 
 
 #CNF# The configuration file.
+
 The configuration file starts with
 <?xml version="1.0" encoding="UTF-8"?>
 <inputmanglerConf>
@@ -256,7 +261,8 @@ The <title> element allows for fine-tuning of the window matching by the title o
 In most cases you will only need ".*", which matches to anything. Inputmangler uses QRegExp, so if this is not enough, look at http://qt-project.org/doc/qt-5/QRegExp.html for documentation.
 </window>
 
-#OUT#
+#OUT# Defining outputs.
+
 The output format is actually quite simple. There are two variations:
 1. no modifiers - just the key
 @
@@ -325,26 +331,106 @@ So, if you are ready to modify the keymap definition to fit your layout (or if y
 
 
 ##NET## Using the Net module
+The net module listens on TCP port and converts incoming data to linux input events.
+WARNING!!!
+There is no encryption or authentification! If you use this, everyone who can access the port, will be able to do all sorts of strange things on your computer, that are possible with the currently used charmap!
+
+<net addr port />
+Configures inputmangler to listen at "port" of the ip(or hostname?) "addr".
+
+The more interesting part of the configuration is in charmap.
+This file contains a list of translations. At the left side is the trigger, which can be any sequence of UTF-8 characters, including non-visible ones (defined by the sequence \uxxxx, where xxxx is the 4-Hex-Digit UTF-8 character value).
+Then follows a space, and after that a key description as described in section #OUT#.
+If you use multiple character sequences as a trigger, please be aware that, at the moment, any event starting with a character used to start such as sequence will only be triggered after as many characters as the longest trigger sequence consists of has been read.
+Example:
+
+charmap: 
+a 1
+b 2
+c 3
+d 4
+da 5
+db 6
+dccccc 7
+be 8
+
+
+INPUT | +BUFFER  | OUTPUT | BUFFER
+abc   | abc      | 123    | 
+abda  | abda     | 12     | da
+d     | dad      |        | dad
+abbe  | dadabbe  | 5      | dabbe  | still 1 char short
+cdb   | dabbecdb | 522    | becdb  | dab translated
+ca    | becdbca  | 83     | dbca
+cac   | dbcacac  | 631313 |        | no problem with a & c
 
 
 
+##SIG## Invocation and Interaction
+
+Inputmangler takes exactly one parameter, and that this the path to an alternative config file.
+
+While running, you can interact with it through d-bus (at the moment only the two calls mentioned above to set the current window class and title are supported), or you can send UNIX signals. The following signals are supported:
+
+TERM  Tells inputmangler to graciously end itself.
+HUP   Reread the configuration.
+USR1  Print the current window class and title.
+USR2  Print the current window specific configuration.
+
+All output goes to stderr, which you hopefully redirected to a log file.
+
+If you are collecting the various window class names of your applications, you could open 2 console windows.
+In #1 start send USR1 every 2 seconds: 
+$ watch killall -USR1 inputmangler
+In #2 show the output:
+$ tail -f /tmp/.inputmangler.log | uniq
 
 
-##SIG## Interaction through Signals (Also: start and stop)
+##FUT## Future Plans
+
+Some things I want to do are:
+
+WHAT?                             | WHY?                                        | WHEN?
+------------------------------------------------------------------------------------------------
+Full support for relative         | Mouse Wheel support.                        | 2014
+movements.                        | Triggering Mouse movement.                  |
+                                  |                                             |
+Passing on absolute movements.    | Support for Flightsticks and tablets.       | 2014
+                                  |                                             |
+Making this README available as   | Because i can! ...                          | 2014
+man page (and maybe pdf).         | Can tex generate man pages?                 |
+                                  |                                             |
+Identify devices by Phys property.| Support for seperatly configuring multiple  | probably 2014
+                                  | identical devices.                          |
+                                  |                                             |                                  
+More complex output sequences     | Support for Macros.                         | 2015 ?
+and maybe making output modular.  |                                             |
+                                  |                                             |
+More d-bus slots.                 | Better interaction                          | maybe 2014
+                                  |                                             |
+Plugin architecture.              | A whole world of awesome new possibilities! | maybe 2015
+------------------------------------------------------------------------------------------------
 
 
 
+##HLP## Contributing to inputmangler
+
+There are a few things I would appreciate help with.
+
+If you are an experienced kernel hacker (which i definitely am not...):
+The inputdummy kernel module seems to be working fine, but would you mind taking a look at the code? Do I do something terribly stupid? Could something cause problems with other kernel modules?
+input.h defines two event types, EV_SYN and EV_MSC. So far I completely ignore them, which does not seem to be causing any problems. What do they do and are there any reasons I should care about them?
+
+If you are familiar with X:
+You could implement the xwatcher (see xwatcher.cpp).
+There are many different keyboard layouts, for which a keymap file could be written. But what would be even better, is some code that generates a keymap from the current keyboard layout.
+
+Just write me an e-mail if you are interested :).
 
 
+##SPM## Contact
 
-
-
-
-
-
-
-
-
+Arkadiusz Guzinski <kermit@ag.de1.cc>
 
 
 
