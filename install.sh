@@ -15,19 +15,19 @@ if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' ]];
 	sudo make install
 fi
 
+cd ../inputdummy
+make
 echo "inputdummy however is a kernel module and should be installed system wide. Do it? [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	cd ../inputdummy
-	make
 	sudo make install
-	cd ..
 fi
+cd ..
 
 echo "Append inputdummy to the list of modules that are loaded on boot?  [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo "echo inputdummy >> /etc/modules"
+	echo inputdummy | sudo tee -a /etc/modules > /dev/null
 fi
 
 echo ""
@@ -42,8 +42,7 @@ fi
 echo "Append lines to rc.local, to set the correct rights to the inputdummy devices? [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo "echo \"chown :$GRP /dev/virtual_kbd /dev/virtual_mouse\" >> /etc/rc.local"
-	sudo "echo \"chmod 660 /dev/virtual_kbd /dev/virtual_mouse\" >> /etc/rc.local"
+	sudo sed -ie "s/^exit 0$/chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse\nchmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse\nexit0/" /etc/rc.local
 fi
 
 echo "Done!"
