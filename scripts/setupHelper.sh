@@ -1,6 +1,7 @@
 #!/bin/bash
 CONFIG_PATH="$HOME/.config/inputMangler/"
-SOURCE_PATH="$PWD"
+#SOURCE_PATH="$PWD"
+SOURCE_PATH="/usr/local/" # TODO: change at compile time
 
 mkdir -p $CONFIG_PATH > /dev/null
 cd $SOURCE_PATH

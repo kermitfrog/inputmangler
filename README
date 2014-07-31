@@ -55,6 +55,18 @@ I recommend not to use it for any devices that are used to type in sensitive dat
 
 ##REQ## Requierements #######
 
+Supported Hardware: I'd like to categorize devices in 3 levels of support:
+Full: device is fully functional, and every event can be transformed from/into.
+Patrial: device fully works, but not every event transformation is possible.
+Unsupported: inputmangler will likely break some of the devices functionality, if configured to use it.
+
+At the moment these are:
+Full: keyboards, probably (not tested) joypads and joysticks that do not need calibration.
+Partial: mice, touchpads (no movement/wheel events)
+Unsupported: tablets, joypads and joysticks that need calibration.
+
+In technical terms: So far only keys are fully supported. Relative mouse movements (or wheel events, which are the same, as far as the linux input API is concerned) are passed through, but thats all - but it's the first thing on my TODO list ;). Absolute movements will go to /dev/null.
+
 Basic:
 g++
 qt5 (with support for dbus, xml, network)
