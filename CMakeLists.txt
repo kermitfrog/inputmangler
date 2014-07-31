@@ -47,9 +47,9 @@ install(TARGETS inputmangler RUNTIME DESTINATION bin)
 FILE(GLOB keymaps "${CMAKE_CURRENT_SOURCE_DIR}/keymaps/*")
 INSTALL(FILES ${keymaps} DESTINATION share/inputmangler/keymaps/)
 FILE(GLOB doc "${CMAKE_CURRENT_SOURCE_DIR}/doc/*")
-INSTALL(FILES ${keymaps} DESTINATION share/doc/inputmangler/)
+INSTALL(FILES ${doc} DESTINATION share/doc/inputmangler/)
 FILE(GLOB scripts "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*")
-INSTALL(FILES ${keymaps} DESTINATION share/inputmangler/)
+INSTALL(FILES ${scripts} DESTINATION share/inputmangler/)
 
 qt5_use_modules(inputmangler Core Xml DBus Network Test)
 
