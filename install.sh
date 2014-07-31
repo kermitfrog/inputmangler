@@ -27,7 +27,7 @@ fi
 echo "Append inputdummy to the list of modules that are loaded on boot?  [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo echo inputdummy >> /etc/modules
+	sudo "echo inputdummy >> /etc/modules"
 fi
 
 echo ""
@@ -42,8 +42,8 @@ fi
 echo "Append lines to rc.local, to set the correct rights to the inputdummy devices? [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo echo "chown :$GRP /dev/virtual_kbd /dev/virtual_mouse" >> /etc/rc.local
-	sudo echo "chmod 660 /dev/virtual_kbd /dev/virtual_mouse" >> /etc/rc.local
+	sudo "echo \"chown :$GRP /dev/virtual_kbd /dev/virtual_mouse\" >> /etc/rc.local"
+	sudo "echo \"chmod 660 /dev/virtual_kbd /dev/virtual_mouse\" >> /etc/rc.local"
 fi
 
 echo "Done!"
