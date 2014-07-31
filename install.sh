@@ -4,11 +4,15 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 
+if [[ $? -gt 0 ]] ; then
+	exit 1
+fi
+
 echo "inputmangler can run from any directory, so it does not need to be installed system wide - but that doesn't mean you can't"
 echo "install to /usr/local/?  [y|N]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' ]]; then
-	make install
+	sudo make install
 fi
 
 echo "inputdummy however is a kernel module and should be installed system wide. Do it? [Y|n]"
@@ -38,8 +42,8 @@ fi
 echo "Append lines to rc.local, to set the correct rights to the inputdummy devices? [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo echo "chown :$GRP /dev/virtual_kbd /dev/virtual_mouse" >> /etc/modules
-	sudo echo "chmod 660 /dev/virtual_kbd /dev/virtual_mouse" >> /etc/modules
+	sudo echo "chown :$GRP /dev/virtual_kbd /dev/virtual_mouse" >> /etc/rc.local
+	sudo echo "chmod 660 /dev/virtual_kbd /dev/virtual_mouse" >> /etc/rc.local
 fi
 
 echo "Done!"

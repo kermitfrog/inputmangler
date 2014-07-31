@@ -1,6 +1,33 @@
 Arkadiusz Guzinski <kermit@ag.de1.cc>
 
-##01## Introduction ######
+##QST## Quickstart for the very impatient
+##INT## Introduction
+##REQ## Requierements
+##INS## Installation
+##CDE## Configuring Your Desktop
+##CIM## Configuring inputmangler
+##KEY## Editing keymap
+##NET## Using the Net module
+##SIG## Interaction through Signals (Also: start and stop)
+
+
+
+
+##QST## Quickstart for the very impatient #######
+
+(Tested on KUbuntu 14.04)
+sudo apt-get install cmake qtbase5-dev linux-headers-`uname -r`
+./install.sh
+plasmapkg --type kwinscript -i kwinNotifyOnWindowChange.kwinscript # for KDE; if not see ##CDE##
+echo "/path/to/inputmangler 2> /tmp/.inputmangler.log &" >> your_autostart_file
+sudo ./loadItNow.sh $GRP
+./setupHelper.sh
+$EDITOR ~/.config/inputMangler/config.xml # (for more Information go to section ##CIM##, the part starting with "config.xml:").
+build/inputmangler
+
+
+
+##INT## Introduction #######
 
 inputmangler is a daemon, running in userspace, that intercepts and transforms linux input events, depending on the active window.
 It aims to be highly configurable, reliable and not too hard to use. You can use it to remap those extra mouse buttons, properly utilize a Footswitch or even remap your second keyboard to trigger all kinds of shortcuts! And you can have a different configuration for each window!
@@ -18,15 +45,19 @@ So what it actually does, is grabbing input events at their device files in /dev
 Also, it does not directly talk to X about changes of the current window, but instead offers a D-Bus interface which can be used by the window manager to inform inputmangler about these.
 While writing this, I am completely aware that except for the kde-window-manager and xmonad there might not be any window managers actually capable of doing that. See the section on configuring your desktop (#04#) for alternatives.
 
+WARNING:
+To transform input events from certain devices, this application needs the user to have full reading rights on these devices. This may not be a big problem on single-user systems, because if someone can hack into your one and only account, he or she can certainly find another way of doing all the nasty stuff these rights allow for, anyway. On multiuser systems however, this means that any user that is allowed to use inputmangler can log all the keystrokes (or other events) on these devices. That can also include the root password, typed on a console (the Ctrl-Alt-F1 type of console...).
+I recommend not to use it for any devices that are used to type in sensitive data, especially your main keyboard.
 
-##02## Requierements ######
+##REQ## Requierements #######
+
 Basic:
 qt5 (with support for dbus, xml, network)
-linux-headers
+linux-headers (for your kernel version)
 cmake
 
 On Ubuntu do
-$ sudo apt-get install cmake qtbase5-dev linux-headers
+$ sudo apt-get install cmake qtbase5-dev linux-headers-`uname -r`
 
 
 To use window specific settings:
@@ -37,4 +68,256 @@ With other desktop environments / window managers probably   qdbus xdotool x11-u
 $ sudo apt-get install qdbus xdotool x11-utils
 
 
-##03## Installation ######
+##INS## Installation #######
+
+On (K)ubuntu install.sh is your friend - on other Systems it might or might not work.
+
+install.sh (mostly) automates the following steps:
+1. Building the application. (mkdir build ; cd build ; cmake -DCMAKE_BUILD_TYPE=Release .. ; make)
+2. optional: install (make install)
+3. compile and install kernel module (cd inputdummy ; make ; sudo make install)
+4. set up the system to load the kernel module at boot
+5. set up the system, so that the virtual input devices get the right permissions (can this be done via udev?)
+6. generate udev rules to set the right permissions on the input devices, that inputmangler should use (needs the user to uncomment them)
+
+After this is done, reboot the system or start the script
+$ sudo ./loadItNow.sh $GRP
+Where $GRP is with the group with the necessary permissions.
+
+
+##CDE## Configuring Your Desktop #######
+
+Somewhere in your autostart skript, (KDE: Systemsettings -> "Startup and Shutdown" -> "Autostart" to add one) put the following line (modify path):
+/path/to/inputmangler 2> /tmp/.inputmangler.log &
+
+(or if you don't want it to log:)
+/path/to/inputmangler 2> /dev/null &
+
+
+KDE:
+to install the KWinScript, run:
+$ plasmapkg --type kwinscript -i kwinNotifyOnWindowChange.kwinscript
+Then open The KDE System Settings, navigate to "Window Behavior" -> "KWin Scripts" and activate "WindowChange Notifier".
+
+
+XMonad:
+I don't know how exactly to configure XMonad to send the right d-bus calls, but I am pretty sure it can be done. You need to find the routines that are triggered on a change of the window title or class and then trigger the d-bus events.
+
+From console this can be done with:
+Title changed:
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowTitleChanged "TITLE"
+Window changed:
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowChanged "CLASS" "TITLE"
+
+
+Others: 
+
+Best way: find a way to trigger some function on window changes from your window manager and make the d-bus calls there. Then send me an EMail describing what you have done, so i can include it here.
+
+Also a great way: I prepared a code skeleton (xwatcher.cpp) for a thread that watches X for changes and informs the rest of the application about them. Implement it! (you can activate it by putting a line with "<xwatcher/>" into the config file)
+
+More a hack, then a solution: use the included script trackCurrentWindow.sh. It calls xdotool and xprop every 2 seconds to get the properties of the current window and uses qdbus to notify inputmangler on a change. To use it, put this line (modify path) into your autostart file:
+/path/to/trackCurrentWindow.sh &
+
+
+##CIM## Configuring inputmangler #######
+
+You can use the included script to set a default keymap and copy a example config into inputmanglers config directory (~/.config/inputMangler).
+$ ./setupHelper.sh
+
+Inputmanglers configuration consists of 3 files in its config directory: keymap, charmap and config.xml.
+
+keymap:
+Describes your keyboard layout. Since inputmangler works at a very low level, it is not aware of your keyboard layout settings and needs its own definition. If you use a German(de), US(us) or Programmer Dvorak(dvp) layout, just copy the one you like from the keymaps directory to ~/.config/inputMangler/keymap (or let ./setupHelper.sh do it for you). It is not necessary to use the correct keymap, but it makes configuration more intuitive. See section ##KEY## on how to modify it, or just use the one most similar to yours.
+
+
+charmap:
+This is only needed if you intend to use the net module. For choosing the right one, it's the same as with keymap, with the exceptions that the dvp version is made for my personal, slightly modified, keyboard layout (The difference is in the handling of the german letters "äöüÄÖÜß".) and that you'll probably want to change it to your needs, anyway. See section ##NET## on how to modify it.
+
+config.xml:
+This is where the truly interesting things are configured. I recommend starting from the example configuration, because... well... it offers examples. The rest of this section will explain the configuration structure and a few basic things about xml.
+
+If you are familiar with XML, jump to #CNF#.
+
+#XML# A few XML-Basics (maybe not using the correct terminology)
+XML has elements.
+In xml, Every element either starts with
+<elementName optionalAttribute=something >
+and ends with
+</elementName>
+
+or consists just of
+<elementName optionalAttribute="something" />
+
+note the '/' at the end - it's important! Forgetting or misplacing the '/' will cause your configuration to be misinterpreted!
+Attributes are always formatted nameOfAttribute="value".
+
+Everything between <elementName> and </elementName> belongs to the element and can be either another element (a child element of elementName) or just some text.
+
+Comments start with 
+<!--
+and end with
+-->
+
+
+#CNF# The configuration file.
+The configuration file starts with
+<?xml version="1.0" encoding="UTF-8"?>
+<inputmanglerConf>
+and ends with
+</inputmanglerConf>
+
+Everything in between is optional, but if you don't configure anything, of course nothing will happen.
+
+--> I will putt optional Attributes in '[' ']'. The braces are not meant to be written in the config file.
+--> [/] means the element can stop here or have child elements.
+--> Attributes always want to followed by ="value". If i ommit it, the value is some String.
+--> '@' means a key as defined in keymap (see ##KEY##).
+--> '&' means an output definition(see #OUT#).
+--> {ID} is special and will be explained later in this chapter.
+--> Elements documented between <tag> and </tag> are child elements of <tag>.
+<inputmanglerConf> Can have the following child elements:
+
+<mapfiles [keymap] [charmap]/>
+This can be used to specify custom paths to the keymap and charmap files.
+
+<device [name] vendor product [id={ID}]>
+Configures a device to be read from. The device is identified by its "vendor" and "product" numbers, which can be found in the file "99-input.rules", generated by install.sh, or by looking at "/proc/bus/input/devices". 
+"name" is completely ignored by inputmangler and serves only to remind you what device that element is about. 
+"id" is the identifier later used to the assign window specific settings to this device.
+
+<signal key="@" [default="&"] /> Tells inputmangler to watch for a key. Only Events for keys, that are mentioned in a <signal> element are transformed.
+"default" specifies the default output that will be generated for the key. If not set, the default will be the same as key.
+</device>
+
+<net addr port />
+Configures inputmangler to listen at "port" of the ip(or hostname?) "addr". See ##NET##
+
+<debug [name] vendor product [id] log grab />
+Logs all events from the input device, identified by "vendor" and "product" (see <device>).
+This is meant to help you find the correct keynames and problems with your keymap configuration. Do not use it for anything evil or you'll sure end in hell... or prison... or whereever you believe bad people go to! In any case it would make the Flying Spaghetti Monster sad :(.
+"name" is completely ignored by inputmangler and serves only to remind you what device that element is about.
+"id" will be printed to the log file.
+"log" is the path to the log file.
+"grab" Can be 0 or 1. If set to 1, the input events will not be passed to other applications. Don't do this with your main keyboard!
+
+
+<window class [{ID="&,&,..."}] [/]>
+This element defines the transformations for a specific window class. A window class is an identifier set for a window by its application. Most times it is equal to the name of the application. Different windows of the same application do not need to have the same class value. SDL applications usually have an empty value as class and for Java applications it's usually bogus like "focusProxy".
+To find out what class a window has you can either use the xprop tool (sudo apt-get install x11-utils) - look for the second value of "WM_CLASS", or send a SIGUSR1 to inputmangler (see ##SIG##).
+
+ID="&,&,..." stands for the short notation of output definitions for this case for input comming from a device, identified by ID.
+If you configured a device like
+<device ... id="A" >
+	<signal key="a" />
+	<signal key="b" />
+	<signal key="c" />
+</device>
+then 
+A="c+C,b,a+S"
+means that pressing the key "a" on that device will trigger the key combination CTRL+C, "c" will be translated to SHIFT+A and "b" will just do what everyone expects it to do. Assuming, of course, you stick to the same naming of your keys and modifiers as I do (see ##KEY##, #OUT#).
+The value of {ID} always has to have the exact number of fields, separated by ',' is the device has <signal> elements.
+You can define multiple {ID} attributes in one <window> element.
+As an alternative to the short notation, you can use:
+<long {ID}>
+@=&, @=&
+</long>
+The long notation does not require you to specify all inputs. Aside from ',' newline it is also an accepted separator.
+
+<title regex [{ID="&,&,..."}] [/]>
+The <title> element allows for fine-tuning of the window matching by the title of the window to a regular expression. It accepts short and long notations of output values, just like <window>.
+In most cases you will only need ".*", which matches to anything. Inputmangler uses QRegExp, so if this is not enough, look at http://qt-project.org/doc/qt-5/QRegExp.html for documentation.
+</window>
+
+#OUT#
+The output format is actually quite simple. There are two variations:
+1. no modifiers - just the key
+@
+you can use any key, defined in keymap (see ##KEY##)
+
+2. with modifiers
+@+MOD
+where MOD is a sequence of @ with the following restrictions:
+1. A current maximum of five modifiers can be used per shortcut.
+2. Only keys that have a one character name defined in keymap can be used (you can define multiple names for the same key). The usual modifiers are:
+A - Left Alt
+S - Left Shift
+C - Left Control
+M - Left Meta ("Windoze key")
+G - AltGr, aka Right Alt, aka "Level 3 Shift"
+
+so "a" would just be translate a key to "a", where "f+CS" would be translated to the following sequence:
+press   Left Control
+press   Left Shift
+press   f
+release f
+release Left Shift
+release Left Control
+
+Note that you can also trigger mouse buttons, e.g.
+"BTN_LEFT+C" for Ctrl+Left Button. In the keymap file, search for "BTN_" for a list. In theory, every key and button supported by Linux should work with inputmangler.
+
+If you're not sure what that keys are called, use the debug module or take a look at the keymap file.
+
+
+##KEY## Editing keymap
+The "keymap" file contains a list of key definitions, loaded at startup.
+It looks like this:
+KEY_LEFTCTRL LEFTCTRL
+KEY_LEFTCTRL C
+KEY_A a
+KEY_S s
+
+Every line has two entries, separated by ' '. The left one is the name of the key as defined in /usr/include/linux/input.h, which is actually read by inputmangler as well.
+The other one is the name inputmangler will use in its configuration to identify the key.
+Defining it like that, instead just using the names in input.h has two advantages:
+1. Localization
+2. Lazy people like me can write ';' instead of "KEY_SEMICOLON", "S" instead of KEY_LEFTSHIFT and so on.
+
+(Because I am lazy,) I tried to give the naming as much freedom as possible, so you can use almost every UTF-8 character. Yet there are some restrictions:
+You can not use Space or Newline because they have a meaning in "keymap".
+',' '+' '~' are reserved for special meanings in inputmangler.
+'=' can be used, but will break the long definition if it is used anywhere but at the beginning of the name.
+Some of the characters like '&', '<', '>' and '"' are used in XML and may have to be treated in a special way.
+In summary:
+
+Do not use:       , + ~ Space Newline
+Use with caution: = & < > "
+
+
+So, if you are ready to modify the keymap definition to fit your layout (or if you are so lazy that you want to shorten every key to at most 2 characters), I suggest the following procedure:
+1. Take the keymap file, closest to your layout and copy it to keymap.[your layout]
+2. Modify the names so they fit your layout. 
+    * Most probably you are only interested in the first 60 or so lines of the file.
+    * The keys are mostly listed in the order they appear on a typical US layout, starting with the leftmost key in the row with the numbers, going left to right, top to bottom.
+    * Use lowercase letters for letters and uppercase letters as short modifiers.
+    * Do not use any modifier twice! (Inputmangler doesn't check for it yet, and strange things may happen...)
+3. Test it!
+4. If it is for a standard layout: send it to me, so i can include it in the next release. :)
+
+
+##NET## Using the Net module
+
+
+
+
+
+##SIG## Interaction through Signals (Also: start and stop)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

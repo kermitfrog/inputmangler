@@ -15,6 +15,6 @@ do
 	echo $var
 done
 read LAYOUT
-cp keymaps/keymap.$LAYOUT $CONFIG_PATH
-cp keymaps/charmap.$LAYOUT $CONFIG_PATH
+cp -v keymaps/keymap.$LAYOUT $CONFIG_PATH
+cp -v keymaps/charmap.$LAYOUT $CONFIG_PATH
 
