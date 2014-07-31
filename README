@@ -218,7 +218,7 @@ This is meant to help you find the correct keynames and problems with your keyma
 
 
 <window class [{ID="&,&,..."}] [/]>
-This element defines the transformations for a specific window class. A window class is an identifier set for a window by its application. Most times it is equal to the name of the application. Different windows of the same application do not need to have the same class value. SDL applications usually have an empty value as class and for Java applications it's usually bogus like "focusProxy".
+This element defines the transformations for a specific window class. A window class is an identifier, set for a window by its application. Most times it is equal to the name of the application. Different windows of the same application do not need to have the same class value. SDL applications usually have an empty value as class and for Java applications it's usually bogus like "focusProxy".
 To find out what class a window has you can either use the xprop tool (sudo apt-get install x11-utils) - look for the second value of "WM_CLASS", or send a SIGUSR1 to inputmangler (see ##SIG##).
 
 ID="&,&,..." stands for the short notation of output definitions for this case for input comming from a device, identified by ID.
@@ -231,7 +231,7 @@ If you configured a device like
 then 
 A="c+C,b,a+S"
 means that pressing the key "a" on that device will trigger the key combination CTRL+C, "c" will be translated to SHIFT+A and "b" will just do what everyone expects it to do. Assuming, of course, you stick to the same naming of your keys and modifiers as I do (see ##KEY##, #OUT#).
-The value of {ID} always has to have the exact number of fields, separated by ',' is the device has <signal> elements.
+The value of {ID} always has to have the exact number of fields, separated by ',' as the device has <signal> elements.
 You can define multiple {ID} attributes in one <window> element.
 As an alternative to the short notation, you can use:
 <long {ID}>
