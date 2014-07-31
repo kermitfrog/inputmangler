@@ -1,5 +1,5 @@
 #!/bin/bash
-CONFIG_PATH="~/.config/inputMangler/"
+CONFIG_PATH="$HOME/.config/inputMangler/"
 
 mkdir -p $CONFIG_PATH > /dev/null
 
