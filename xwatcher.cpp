@@ -1,7 +1,7 @@
 /*
     This file is part of inputmangler, a programm which intercepts and
     transforms linux input events, depending on the active window.
-    Copyright (C) 2014  [Name] <email>
+    Copyright (C) 2014 Arkadiusz Guzinski <kermit@ag.de1.cc>, [Name] <email>
    
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,12 +50,12 @@ XWatcher::~XWatcher()
 
 /*
  * this method should provide some way of getting changes of the current
- * window class (the 2nd field shown with xprop | grep WM_CLASS actually)
+ * window class (the 1st field shown with xprop | grep WM_CLASS)
  * and window title from X and emit a signal...
  * On class change:
  * emit windowChanged(QString wclass, QString title);
  * On title change:
- * emit windowTitleChanged(QString wclass);
+ * emit windowTitleChanged(QString wtitle);
  * also, it has to watch sd.terminating and end itself if that 
  * changes to true
  */

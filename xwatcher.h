@@ -1,7 +1,7 @@
 /*
     This file is part of inputmangler, a programm which intercepts and
     transforms linux input events, depending on the active window.
-    Copyright (C) 2014  [Name] <email>
+    Copyright (C) 2014 Arkadiusz Guzinski <kermit@ag.de1.cc>, [Name] <email>
    
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,7 +32,10 @@ public:
     XWatcher();
     ~XWatcher();
 	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
-	
+
+signals:
+	void windowChanged(QString wclass, QString title);
+	void windowTitleChanged(QString wtitle);
 
 protected:
     virtual void run();

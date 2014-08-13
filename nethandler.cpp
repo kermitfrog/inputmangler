@@ -71,7 +71,7 @@ void NetHandler::run()
 			continue;
 		
 		socket = s->nextPendingConnection();
-		qDebug() << "Yay! Someone connected";
+		qDebug() << "Yay! Someone connected at " << QDateTime::currentDateTime();
 		
 		while(1)
 		{
@@ -87,7 +87,7 @@ void NetHandler::run()
 			if (!state)
 				if (socket->state() == QAbstractSocket::UnconnectedState)
 				{
-					qDebug() << "Nay! Someone disconnected";
+					qDebug() << "Nay! Someone disconnected at " << QDateTime::currentDateTime();
 					break;
 				}
 				else
@@ -114,7 +114,7 @@ void NetHandler::actOnData(char* b, int n)
 	QString s = buffer + QString::fromLatin1(b, n);
 	buffer = "";
 //   	qDebug() << "Buffer: " << buffer << " S: " << s << "Hex:" << QTest::toHexRepresentation(b, n);
-  	qDebug() << "Hex:" << QTest::toHexRepresentation(b, n);
+//   	qDebug() << "Hex:" << QTest::toHexRepresentation(b, n);
 	for (int i = 0; i < s.length(); i++)
 	{
 		// clearly not a multi-char-sequence

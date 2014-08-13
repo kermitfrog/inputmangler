@@ -56,7 +56,7 @@ bool InputMangler::readConf()
 		QString k, c;
 		k = e.attribute("keymap");
 		c = e.attribute("charmap");
-		qDebug() << " :: " << k << " | " << c;
+ 		qDebug() << "using keymap = " << k << ", charmap = " << c;
 		setUpKeymaps(k, c);
 	}
 	// all handler-specific configuration is read by the registered parsing functions

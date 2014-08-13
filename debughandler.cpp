@@ -40,7 +40,7 @@ DebugHandler::DebugHandler(idevs device, QString outFile, bool grab)
 	_grab = grab;
 	_hasWindowSpecificSettings = _id != "";
 	filename = QString("/dev/input/") + device.event;
-	qDebug() << filename;
+	qDebug() << filename << " opened with DebugHandler - logging to " << outFile;
 	outfile.setFileName(outFile);
 }
 

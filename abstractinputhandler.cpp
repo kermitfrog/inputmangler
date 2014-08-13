@@ -91,8 +91,10 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
  */
 void AbstractInputHandler::sendOutEvent(OutEvent* t)
 {
-	qDebug() << t->toString();
-	VEvent e[NUM_MOD*2+2]; //TODO: limit modifiers
+	//qDebug() << t->toString();
+	VEvent e[NUM_MOD*2+2];
+	if (t->modifiers.size() > NUM_MOD)
+		t->modifiers.resize(NUM_MOD);
 	QVector<__u16> m = t->modifiers;
     /*  
 	  if there are modifiers, populate e with a series of keyboard events, 
