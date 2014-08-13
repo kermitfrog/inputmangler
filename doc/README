@@ -1,5 +1,6 @@
 ##QST## Quickstart for the very impatient
 ##INT## Introduction
+##DEV## Device Support
 ##REQ## Requierements
 ##INS## Installation
 ##CDE## Configuring Your Desktop
@@ -36,7 +37,7 @@ build/inputmangler
 ##INT## Introduction #######
 
 inputmangler is a daemon that intercepts and transforms linux input events, depending on the active window.
-It aims to be highly configurable, reliable and not too hard to use. You can use it to remap those extra mouse buttons, properly utilize a Footswitch or even remap your second keyboard to trigger all kinds of shortcuts! And you can have a different configuration for each window!
+It aims to be highly configurable, reliable and not too hard to use. You can use it to remap those extra mouse buttons, properly utilize a Footswitch or even remap your second keyboard to trigger all kinds of shortcuts! If you are left-handed, you can switch left and right mouse buttons for applications that ignore your Desktops settings (like dosbox and fs-uae). And you can have a different configuration for each window!
 It is also capable of translating Text from the network to key presses.
 
 So how does it work?
@@ -45,23 +46,25 @@ This is done for following reasons:
 1. In my experience, applications that generate X events do not work reliably with all applications, especially those in full-screen mode.
 2. It allows configuring different devices independently.
 3. As X may become obsolete (I certainly hope so) in the near future, I'd rather write something that doesn't need to be rewritten soon.
-4. That way it can be used without X running as well.
+4. It can be used without X running as well.
 5. I *hate* working with the X API :( - i really tried, but when i couldn't reliably get the window title after -i don't know how many- hours, even using a code example from the internet that was supposed to do *exactly* what i wanted, i really had enough of that #&%!!.
 
 So what it actually does, is grabbing input events at their device files in /dev/input and using a custom kernel module to generate new input events inside the kernel.
 Also, it does not directly talk to X about changes of the current window, but instead offers a D-Bus interface which can be used by the window manager to inform inputmangler about these.
-While writing this, I am completely aware that except for the kde-window-manager and xmonad there might not be any window managers actually capable of doing that. See the section on configuring your desktop (#04#) for alternatives.
+While writing this, I am completely aware that except for the kde-window-manager and xmonad there might not be any window managers actually capable of doing that. See the section on configuring your desktop (##CDE##) for alternatives.
 
 WARNING:
 To transform input events from certain devices, this application needs the user to have full reading rights on these devices. This may not be a big problem on single-user systems, because if someone can hack into your one and only account, he or she can certainly find another way of doing all the nasty stuff these rights allow for, anyway. On multiuser systems however, this means that any user that is allowed to use inputmangler can log all the keystrokes (or other events) on these devices. That can also include the root password, typed on a console (the Ctrl-Alt-F1 type of console...).
-I recommend not to use it for any devices that are used to type in sensitive data, especially your main keyboard.
+I recommend not to use it for any devices used to type in sensitive data, especially your main keyboard.
 
-##REQ## Requierements #######
+
+
+##DEV## Device Support
 
 Supported Hardware: I'd like to categorize devices in 3 levels of support:
 Full: device is fully functional, and every event can be transformed from/into.
 Patrial: device fully works, but not every event transformation is possible.
-Unsupported: inputmangler will likely break some of the devices functionality, if configured to use it.
+Unsupported: inputmangler will likely break some of the devices functionality if configured to use it.
 
 At the moment these are:
 Full: keyboards, probably (not tested) joypads and joysticks that do not need calibration.
@@ -69,6 +72,10 @@ Partial: mice, touchpads (no movement/wheel events)
 Unsupported: tablets, joypads and joysticks that need calibration.
 
 In technical terms: So far only keys are fully supported. Relative mouse movements (or wheel events, which are the same, as far as the linux input API is concerned) are passed through, but thats all - but it's the first thing on my TODO list ;). Absolute movements will go to /dev/null.
+
+
+
+##REQ## Requierements #######
 
 Basic:
 g++
@@ -86,6 +93,7 @@ With xmonad: probably   qdbus
 With other desktop environments / window managers probably   qdbus xdotool x11-utils
 
 $ sudo apt-get install qdbus xdotool x11-utils
+
 
 
 ##INS## Installation #######
@@ -113,6 +121,7 @@ chmod 660 /dev/input/by-id/platform-i8042-serio-1-event-mouse
 If you are unsure, which is the correct device, you can use hd.
 $ sudo hd /dev/input/by-id/platform-i8042-serio-1-event-mouse
 and do something with only that device for a few seconds. If you get a lot of output, your guess was good ;). Stop it by pressing Ctrl-C.
+
 
 
 ##CDE## Configuring Your Desktop #######
@@ -150,6 +159,7 @@ More a hack, then a solution: use the included script trackCurrentWindow.sh. It 
 /path/to/trackCurrentWindow.sh &
 
 
+
 ##CIM## Configuring inputmangler #######
 
 You can use the included script to set a default keymap and copy a example config into inputmanglers config directory (~/.config/inputMangler).
@@ -168,6 +178,7 @@ config.xml:
 This is where the truly interesting things are configured. I recommend starting from the example configuration, because... well... it offers examples. The rest of this section will explain the configuration structure and a few basic things about xml.
 
 If you are familiar with XML, jump to #CNF#.
+
 
 #XML# A few XML-Basics (maybe not using the correct terminology)
 
@@ -261,6 +272,7 @@ The <title> element allows for fine-tuning of the window matching by the title o
 In most cases you will only need ".*", which matches to anything. Inputmangler uses QRegExp, so if this is not enough, look at http://qt-project.org/doc/qt-5/QRegExp.html for documentation.
 </window>
 
+
 #OUT# Defining outputs.
 
 The output format is actually quite simple. There are two variations:
@@ -291,6 +303,7 @@ Note that you can also trigger mouse buttons, e.g.
 "BTN_LEFT+C" for Ctrl+Left Button. In the keymap file, search for "BTN_" for a list. In theory, every key and button supported by Linux should work with inputmangler.
 
 If you're not sure what that keys are called, use the debug module or take a look at the keymap file.
+
 
 
 ##KEY## Editing keymap
@@ -386,6 +399,7 @@ In #2 show the output:
 $ tail -f /tmp/.inputmangler.log | uniq
 
 
+
 ##FUT## Future Plans
 
 Some things I want to do are:
@@ -425,7 +439,12 @@ If you are familiar with X:
 You could implement the xwatcher (see xwatcher.cpp).
 There are many different keyboard layouts, for which a keymap file could be written. But what would be even better, is some code that generates a keymap from the current keyboard layout.
 
+Other things:
+Packaging!
+I tried using dkms to rebuild the kernel module when neccessary, but i don't yet get it. Could someone help me with that?
+
 Just write me an e-mail if you are interested :).
+
 
 
 ##SPM## Contact

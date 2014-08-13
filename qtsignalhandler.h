@@ -1,7 +1,7 @@
 /*
-    <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2013  
-    TODO: this is 95% from the internet... where?
+    This file is part of inputmangler, a programm which intercepts and
+    transforms linux input events, depending on the active window.
+    Copyright (C) 2014  Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,50 +19,33 @@
 
 
 #pragma once
-
+#include <QObject>
 #include <QSocketNotifier>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
+
 
 class QtSignalHandler : public QObject
 {
 Q_OBJECT
 
-   public:
-     QtSignalHandler(QObject *parent = 0, const char *name = 0);
-     ~QtSignalHandler() {};
+	public:
+	QtSignalHandler(QObject *parent = 0, const char *name = 0);
+	~QtSignalHandler() {};
 
-     // Unix signal handlers.
-     static void hupSignalHandler(int unused);
-     static void termSignalHandler(int unused);
-     static void usr1SignalHandler(int unused);
-     static void usr2SignalHandler(int unused);
+	static void signalHandler(int signum);
+	
+public slots:
+	void socketReady(); 
 
-   public slots:
-     // Qt signal handlers.
-     void handleSigHup();
-     void handleSigTerm();
-     void handleSigUsr1();
-     void handleSigUsr2();
-
-   private:
-     static int sighupFd[2];
-     static int sigtermFd[2];
-     static int sigusr1Fd[2];
-     static int sigusr2Fd[2];
-
-     QSocketNotifier *snHup;
-     QSocketNotifier *snTerm;
-     QSocketNotifier *snUsr1;
-     QSocketNotifier *snUsr2;
-	 
 signals:
-    //void intReceived();
-    void hupReceived();
-    void usr1Received();
-    void usr2Received();
+	void hupReceived();
+	void usr1Received();
+	void usr2Received();
+
+private:
+	static int mySocketPairFd[2];
+	QSocketNotifier *socNot;
+	void socketEmitter(int signum);
+	
 };
 
 

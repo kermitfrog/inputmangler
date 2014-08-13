@@ -9,7 +9,7 @@ cd $SOURCE_PATH
 echo "Copy example config file to $CONFIG_PATH ?  [y|N]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' ]]; then
-	cp doc/config.xml.example $CONFIG_PATH/config.xml
+	cp ../doc/inputmangler/config.xml.example $CONFIG_PATH/config.xml
 fi
 
 echo ""
