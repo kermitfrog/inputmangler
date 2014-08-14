@@ -1,3 +1,24 @@
+/*
+    Inputdummy is a linux kernel module that offers a virtual mouse and keyboard.
+    In /dev virtual_kbd and virtual_mouse will be created. Event values sent to those
+    device files will be generated on these virtual input devices.
+    Copyright (C) 2014  Arkadiusz Guzinski <kermit@ag.de1.cc>, based on 
+    "virtual_touchscreen" (https://github.com/vi/virtual_touchscreen) by Vitaly Shukela.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <linux/input.h>
 #include <linux/input/mt.h>
 #include <linux/module.h>

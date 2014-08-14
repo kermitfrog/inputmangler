@@ -20,6 +20,9 @@
 
 #include "xwatcher.h"
 
+/*!
+ * @brief Constructor of XWatcher
+ */
 XWatcher::XWatcher()
 {
 	_id = "___XWATCHER";
@@ -30,6 +33,14 @@ XWatcher::XWatcher()
 // 		qFatal("connection to X Server failed");
 }
 
+/*!
+ * @brief Parses all the <xwatcher> parts of the configuration and constructs XWatcher objects.
+ * If XWatcher needs any Parameters, they should be read here.
+ * See the parseXml functions of DevHandler, DebugHandler and NetHandler
+ * for examples.
+ * @param nodes All the <xwatcher> nodes.
+ * @return List containing all XWatchers.
+ */
 QList< AbstractInputHandler* > XWatcher::parseXml(QDomNodeList nodes)
 {
 	QList<AbstractInputHandler*> handlers;
@@ -48,15 +59,16 @@ XWatcher::~XWatcher()
 	//XFree(display); // is that the right way to close the connection with X?
 }
 
-/*
- * this method should provide some way of getting changes of the current
+/*!
+ * @brief Looks for changes of the current window & title.
+ * This method should provide some way of getting changes of the current
  * window class (the 1st field shown with xprop | grep WM_CLASS)
  * and window title from X and emit a signal...
  * On class change:
  * emit windowChanged(QString wclass, QString title);
  * On title change:
  * emit windowTitleChanged(QString wtitle);
- * also, it has to watch sd.terminating and end itself if that 
+ * Also, it has to watch sd.terminating and end itself if that 
  * changes to true
  */
 void XWatcher::run()
