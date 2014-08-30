@@ -1,1 +1,456 @@
-doc/README
+##QST## Quickstart for the very impatient
+##INT## Introduction
+##DEV## Device Support
+##REQ## Requierements
+##INS## Installation
+##CDE## Configuring Your Desktop
+##CIM## Configuring inputmangler
+  #XML#   A few XML-Basics
+  #CNF#   The configuration file
+  #OUT#   Defining outputs
+##KEY## Editing keymap
+##NET## Using the Net module
+##SIG## Invocation and Interaction
+##FUT## Future Plans
+##HLP## Contributing to inputmangler
+##SPM## Contact
+
+
+
+##QST## Quickstart for the very impatient #######
+
+(Tested on KUbuntu 14.04)
+# Installation and system setup
+sudo apt-get install g++ cmake qtbase5-dev linux-headers-`uname -r`
+./install.sh
+plasmapkg --type kwinscript -i kwinNotifyOnWindowChange.kwinscript # for KDE; if not see ##CDE##
+echo "/path/to/inputmangler 2> /tmp/.inputmangler.log &" >> your_autostart_file
+reboot
+
+# configure and start
+./setupHelper.sh
+$EDITOR ~/.config/inputMangler/config.xml # (for more Information go to section ##CIM##, the part starting with "config.xml:").
+build/inputmangler
+
+
+
+##INT## Introduction #######
+
+inputmangler is a daemon that intercepts and transforms linux input events, depending on the active window.
+It aims to be highly configurable, reliable and not too hard to use. You can use it to remap those extra mouse buttons, properly utilize a Footswitch or even remap your second keyboard to trigger all kinds of shortcuts! If you are left-handed, you can switch left and right mouse buttons for applications that ignore your Desktops settings (like dosbox and fs-uae). And you can have a different configuration for each window!
+It is also capable of translating Text from the network to key presses.
+
+So how does it work?
+First of all: it completely bypasses X!
+This is done for following reasons:
+1. In my experience, applications that generate X events do not work reliably with all applications, especially those in full-screen mode.
+2. It allows configuring different devices independently.
+3. As X may become obsolete (I certainly hope so) in the near future, I'd rather write something that doesn't need to be rewritten soon.
+4. It can be used without X running as well.
+5. I *hate* working with the X API :( - i really tried, but when i couldn't reliably get the window title after -i don't know how many- hours, even using a code example from the internet that was supposed to do *exactly* what i wanted, i really had enough of that #&%!!.
+
+So what it actually does, is grabbing input events at their device files in /dev/input and using a custom kernel module to generate new input events inside the kernel.
+Also, it does not directly talk to X about changes of the current window, but instead offers a D-Bus interface which can be used by the window manager to inform inputmangler about these.
+While writing this, I am completely aware that except for the kde-window-manager and xmonad there might not be any window managers actually capable of doing that. See the section on configuring your desktop (##CDE##) for alternatives.
+
+WARNING:
+To transform input events from certain devices, this application needs the user to have full reading rights on these devices. This may not be a big problem on single-user systems, because if someone can hack into your one and only account, he or she can certainly find another way of doing all the nasty stuff these rights allow for, anyway. On multiuser systems however, this means that any user that is allowed to use inputmangler can log all the keystrokes (or other events) on these devices. That can also include the root password, typed on a console (the Ctrl-Alt-F1 type of console...).
+I recommend not to use it for any devices used to type in sensitive data, especially your main keyboard.
+
+
+
+##DEV## Device Support
+
+Supported Hardware: I'd like to categorize devices in 3 levels of support:
+Full: device is fully functional, and every event can be transformed from/into.
+Patrial: device fully works, but not every event transformation is possible.
+Unsupported: inputmangler will likely break some of the devices functionality if configured to use it.
+
+At the moment these are:
+Full: keyboards, probably (not tested) joypads and joysticks that do not need calibration.
+Partial: mice, touchpads (no movement/wheel events)
+Unsupported: tablets, joypads and joysticks that need calibration.
+
+In technical terms: So far only keys are fully supported. Relative mouse movements (or wheel events, which are the same, as far as the linux input API is concerned) are passed through, but thats all - but it's the first thing on my TODO list ;). Absolute movements will go to /dev/null.
+
+
+
+##REQ## Requierements #######
+
+Basic:
+g++
+qt5 (with support for dbus, xml, network)
+linux-headers (for your kernel version)
+cmake
+
+On Ubuntu do
+$ sudo apt-get install g++ cmake qtbase5-dev linux-headers-`uname -r`
+
+
+To use window specific settings:
+With KDE: no additial requirements
+With xmonad: probably   qdbus
+With other desktop environments / window managers probably   qdbus xdotool x11-utils
+
+$ sudo apt-get install qdbus xdotool x11-utils
+
+
+
+##INS## Installation #######
+
+On (K)ubuntu, install.sh is your friend - on other Systems it might or might not work.
+
+install.sh (mostly) automates the following steps:
+1. Building the application. (mkdir build ; cd build ; cmake -DCMAKE_BUILD_TYPE=Release .. ; make)
+2. optional: install (make install)
+3. compile and install kernel module (cd inputdummy ; make ; sudo make install)
+4. set up the system to load the kernel module at boot
+5. set up the system, so that the virtual input devices get the right permissions (can this be done via udev?)
+6. generate udev rules to set the right permissions on the input devices, that inputmangler should use (needs the user to uncomment them)
+
+After this is done, reboot the system or set the permissions of your input devices manually and run
+$ sudo modprobe inputmangler ; chown :$GRP /dev/virtual_kbd /dev/virtual_mouse ; chmod 660 /dev/virtual_kbd /dev/virtual_mouse
+Where $GRP is the group with the necessary permissions.
+
+Please note, that udev does not set the permissions for PS/2 devices. You have to set them in /etc/rc.local.
+$ ls /dev/input/by-id/platform*event*
+shows you a list of canditates. Then after the line "chmod 660 /dev/virtual_kbd /dev/virtual_mouse" in /etc/rc.local insert something like
+chown :$GRP /dev/input/by-id/platform-i8042-serio-1-event-mouse
+chmod 660 /dev/input/by-id/platform-i8042-serio-1-event-mouse
+
+If you are unsure, which is the correct device, you can use hd.
+$ sudo hd /dev/input/by-id/platform-i8042-serio-1-event-mouse
+and do something with only that device for a few seconds. If you get a lot of output, your guess was good ;). Stop it by pressing Ctrl-C.
+
+
+
+##CDE## Configuring Your Desktop #######
+
+Somewhere in your autostart skript, (KDE: Systemsettings -> "Startup and Shutdown" -> "Autostart" to add one) put the following line (modify path):
+/path/to/inputmangler 2> /tmp/.inputmangler.log &
+
+(or if you don't want it to log:)
+/path/to/inputmangler 2> /dev/null &
+
+
+KDE:
+to install the KWinScript, run:
+$ plasmapkg --type kwinscript -i kwinNotifyOnWindowChange.kwinscript
+Then open The KDE System Settings, navigate to "Window Behavior" -> "KWin Scripts" and activate "WindowChange Notifier".
+
+
+XMonad:
+I don't know how exactly to configure XMonad to send the right d-bus calls, but I am pretty sure it can be done. You need to find the routines that are triggered on a change of the window title or class and then trigger the d-bus events.
+
+From console this can be done with:
+Title changed:
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowTitleChanged "TITLE"
+Window changed:
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowChanged "CLASS" "TITLE"
+
+
+Others:
+
+Best way: find a way to trigger some function on window changes from your window manager and make the d-bus calls there. Then send me an EMail describing what you have done, so i can include it here.
+
+Also a great way: I prepared a code skeleton (xwatcher.cpp) for a thread that watches X for changes and informs the rest of the application about them. Implement it! (you can activate it by putting a line with "<xwatcher/>" into the config file)
+
+More a hack, then a solution: use the included script trackCurrentWindow.sh. It calls xdotool and xprop every 2 seconds to get the properties of the current window and uses qdbus to notify inputmangler on a change. To use it, put this line (modify path) into your autostart file:
+/path/to/trackCurrentWindow.sh &
+
+
+
+##CIM## Configuring inputmangler #######
+
+You can use the included script to set a default keymap and copy a example config into inputmanglers config directory (~/.config/inputMangler).
+$ ./setupHelper.sh
+
+Inputmanglers configuration consists of 3 files in its config directory: keymap, charmap and config.xml.
+
+keymap:
+Describes your keyboard layout. Since inputmangler works at a very low level, it is not aware of your keyboard layout settings and needs its own definition. If you use a German(de), US(us) or Programmer Dvorak(dvp) layout, just copy the one you like from the keymaps directory to ~/.config/inputMangler/keymap (or let ./setupHelper.sh do it for you). It is not necessary to use the correct keymap, but it makes configuration more intuitive. See section ##KEY## on how to modify it, or just use the one most similar to yours.
+
+
+charmap:
+This is only needed if you intend to use the net module. For choosing the right one, it's the same as with keymap, with the exceptions that the dvp version is made for my personal, slightly modified, keyboard layout (The difference is in the handling of the german letters "äöüÄÖÜß".) and that you'll probably want to change it to your needs, anyway. See section ##NET## on how to modify it.
+
+config.xml:
+This is where the truly interesting things are configured. I recommend starting from the example configuration, because... well... it offers examples. The rest of this section will explain the configuration structure and a few basic things about xml.
+
+If you are familiar with XML, jump to #CNF#.
+
+
+#XML# A few XML-Basics (maybe not using the correct terminology)
+
+XML has elements.
+In xml, Every element either starts with
+<elementName optionalAttribute=something >
+and ends with
+</elementName>
+
+or consists just of
+<elementName optionalAttribute="something" />
+
+note the '/' at the end - it's important! Forgetting or misplacing the '/' will cause your configuration to be misinterpreted!
+Attributes are always formatted nameOfAttribute="value".
+
+Everything between <elementName> and </elementName> belongs to the element and can be either another element (a child element of elementName) or just some text.
+
+Comments start with
+<!--
+and end with
+-->
+
+
+#CNF# The configuration file.
+
+The configuration file starts with
+<?xml version="1.0" encoding="UTF-8"?>
+<inputmanglerConf>
+and ends with
+</inputmanglerConf>
+
+Everything in between is optional, but if you don't configure anything, of course nothing will happen.
+
+--> I will putt optional Attributes in '[' ']'. The braces are not meant to be written in the config file.
+--> [/] means the element can stop here or have child elements.
+--> Attributes always want to followed by ="value". If i ommit it, the value is some String.
+--> '@' means a key as defined in keymap (see ##KEY##).
+--> '&' means an output definition(see #OUT#).
+--> {ID} is special and will be explained later in this chapter.
+--> Elements documented between <tag> and </tag> are child elements of <tag>.
+<inputmanglerConf> Can have the following child elements:
+
+<mapfiles [keymap] [charmap]/>
+This can be used to specify custom paths to the keymap and charmap files.
+
+<device [name] vendor product [id={ID}]>
+Configures a device to be read from. The device is identified by its "vendor" and "product" numbers, which can be found in the file "99-input.rules", generated by install.sh, or by looking at "/proc/bus/input/devices".
+"name" is completely ignored by inputmangler and serves only to remind you what device that element is about.
+"id" is the identifier later used to the assign window specific settings to this device.
+
+<signal key="@" [default="&"] /> Tells inputmangler to watch for a key. Only Events for keys, that are mentioned in a <signal> element are transformed.
+"default" specifies the default output that will be generated for the key. If not set, the default will be the same as key.
+</device>
+
+<net addr port />
+Configures inputmangler to listen at "port" of the ip(or hostname?) "addr". See ##NET##
+
+<debug [name] vendor product [id] log grab />
+Logs all events from the input device, identified by "vendor" and "product" (see <device>).
+This is meant to help you find the correct keynames and problems with your keymap configuration. Do not use it for anything evil or you'll sure end in hell... or prison... or whereever you believe bad people go to! In any case it would make the Flying Spaghetti Monster sad :(.
+"name" is completely ignored by inputmangler and serves only to remind you what device that element is about.
+"id" will be printed to the log file.
+"log" is the path to the log file.
+"grab" Can be 0 or 1. If set to 1, the input events will not be passed to other applications. Don't do this with your main keyboard!
+
+
+<window class [{ID="&,&,..."}] [/]>
+This element defines the transformations for a specific window class. A window class is an identifier, set for a window by its application. Most times it is equal to the name of the application. Different windows of the same application do not need to have the same class value. SDL applications usually have an empty value as class and for Java applications it's usually bogus like "focusProxy".
+To find out what class a window has you can either use the xprop tool (sudo apt-get install x11-utils) - look for the second value of "WM_CLASS", or send a SIGUSR1 to inputmangler (see ##SIG##).
+
+ID="&,&,..." stands for the short notation of output definitions for this case for input comming from a device, identified by ID.
+If you configured a device like
+<device ... id="A" >
+	<signal key="a" />
+	<signal key="b" />
+	<signal key="c" />
+</device>
+then
+A="c+C,b,a+S"
+means that pressing the key "a" on that device will trigger the key combination CTRL+C, "c" will be translated to SHIFT+A and "b" will just do what everyone expects it to do. Assuming, of course, you stick to the same naming of your keys and modifiers as I do (see ##KEY##, #OUT#).
+The value of {ID} always has to have the exact number of fields, separated by ',' as the device has <signal> elements.
+You can define multiple {ID} attributes in one <window> element.
+As an alternative to the short notation, you can use:
+<long {ID}>
+@=&, @=&
+</long>
+The long notation does not require you to specify all inputs. Aside from ',' newline it is also an accepted separator.
+
+<title regex [{ID="&,&,..."}] [/]>
+The <title> element allows for fine-tuning of the window matching by the title of the window to a regular expression. It accepts short and long notations of output values, just like <window>.
+In most cases you will only need ".*", which matches to anything. Inputmangler uses QRegExp, so if this is not enough, look at http://qt-project.org/doc/qt-5/QRegExp.html for documentation.
+</window>
+
+
+#OUT# Defining outputs.
+
+The output format is actually quite simple. There are two variations:
+1. no modifiers - just the key
+@
+you can use any key, defined in keymap (see ##KEY##)
+
+2. with modifiers
+@+MOD
+where MOD is a sequence of @ with the following restrictions:
+1. A current maximum of five modifiers can be used per shortcut.
+2. Only keys that have a one character name defined in keymap can be used (you can define multiple names for the same key). The usual modifiers are:
+A - Left Alt
+S - Left Shift
+C - Left Control
+M - Left Meta ("Windoze key")
+G - AltGr, aka Right Alt, aka "Level 3 Shift"
+
+so "a" would just be translate a key to "a", where "f+CS" would be translated to the following sequence:
+press   Left Control
+press   Left Shift
+press   f
+release f
+release Left Shift
+release Left Control
+
+Note that you can also trigger mouse buttons, e.g.
+"BTN_LEFT+C" for Ctrl+Left Button. In the keymap file, search for "BTN_" for a list. In theory, every key and button supported by Linux should work with inputmangler.
+
+If you're not sure what that keys are called, use the debug module or take a look at the keymap file.
+
+
+
+##KEY## Editing keymap
+
+The "keymap" file contains a list of key definitions, loaded at startup.
+It looks like this:
+KEY_LEFTCTRL LEFTCTRL
+KEY_LEFTCTRL C
+KEY_A a
+KEY_S s
+
+Every line has two entries, separated by ' '. The left one is the name of the key as defined in /usr/include/linux/input.h, which is actually read by inputmangler as well.
+The other one is the name inputmangler will use in its configuration to identify the key.
+Defining it like that, instead just using the names in input.h has two advantages:
+1. Localization
+2. Lazy people like me can write ';' instead of "KEY_SEMICOLON", "S" instead of KEY_LEFTSHIFT and so on.
+
+(Because I am lazy,) I tried to give the naming as much freedom as possible, so you can use almost every UTF-8 character. Yet there are some restrictions:
+You can not use Space or Newline because they have a meaning in "keymap".
+',' '+' '~' are reserved for special meanings in inputmangler.
+'=' can be used, but will break the long definition if it is used anywhere but at the beginning of the name.
+Some of the characters like '&', '<', '>' and '"' are used in XML and may have to be treated in a special way.
+In summary:
+
+Do not use:       , + ~ Space Newline
+Use with caution: = & < > "
+
+
+So, if you are ready to modify the keymap definition to fit your layout (or if you are so lazy that you want to shorten every key to at most 2 characters), I suggest the following procedure:
+1. Take the keymap file, closest to your layout and copy it to keymap.[your layout]
+2. Modify the names so they fit your layout.
+    * Most probably you are only interested in the first 60 or so lines of the file.
+    * The keys are mostly listed in the order they appear on a typical US layout, starting with the leftmost key in the row with the numbers, going left to right, top to bottom.
+    * Use lowercase letters for letters and uppercase letters as short modifiers.
+    * Do not use any modifier twice! (Inputmangler doesn't check for it yet, and strange things may happen...)
+3. Test it!
+4. If it is for a standard layout: send it to me, so i can include it in the next release. :)
+
+
+##NET## Using the Net module
+The net module listens on TCP port and converts incoming data to linux input events.
+WARNING!!!
+There is no encryption or authentification! If you use this, everyone who can access the port, will be able to do all sorts of strange things on your computer, that are possible with the currently used charmap!
+
+<net addr port />
+Configures inputmangler to listen at "port" of the ip(or hostname?) "addr".
+
+The more interesting part of the configuration is in charmap.
+This file contains a list of translations. At the left side is the trigger, which can be any sequence of UTF-8 characters, including non-visible ones (defined by the sequence \uxxxx, where xxxx is the 4-Hex-Digit UTF-8 character value).
+Then follows a space, and after that a key description as described in section #OUT#.
+If you use multiple character sequences as a trigger, please be aware that, at the moment, any event starting with a character used to start such as sequence will only be triggered after as many characters as the longest trigger sequence consists of has been read.
+Example:
+
+charmap:
+a 1
+b 2
+c 3
+d 4
+da 5
+db 6
+dccccc 7
+be 8
+
+
+INPUT | +BUFFER  | OUTPUT | BUFFER
+abc   | abc      | 123    |
+abda  | abda     | 12     | da
+d     | dad      |        | dad
+abbe  | dadabbe  | 5      | dabbe  | still 1 char short
+cdb   | dabbecdb | 522    | becdb  | dab translated
+ca    | becdbca  | 83     | dbca
+cac   | dbcacac  | 631313 |        | no problem with a & c
+
+
+
+##SIG## Invocation and Interaction
+
+Inputmangler takes exactly one parameter, and that this the path to an alternative config file.
+
+While running, you can interact with it through d-bus (at the moment only the two calls mentioned above to set the current window class and title are supported), or you can send UNIX signals. The following signals are supported:
+
+TERM  Tells inputmangler to graciously end itself.
+HUP   Reread the configuration.
+USR1  Print the current window class and title.
+USR2  Print the current window specific configuration.
+
+All output goes to stderr, which you hopefully redirected to a log file.
+
+If you are collecting the various window class names of your applications, you could open 2 console windows.
+In #1 start send USR1 every 2 seconds:
+$ watch killall -USR1 inputmangler
+In #2 show the output:
+$ tail -f /tmp/.inputmangler.log | uniq
+
+
+
+##FUT## Future Plans
+
+Some things I want to do are:
+
+WHAT?                             | WHY?                                        | WHEN?
+------------------------------------------------------------------------------------------------
+Full support for relative         | Mouse Wheel support.                        | 2014
+movements.                        | Triggering Mouse movement.                  |
+                                  |                                             |
+Passing on absolute movements.    | Support for Flightsticks and tablets.       | 2014
+                                  |                                             |
+Making this README available as   | Because i can! ...                          | 2014
+man page (and maybe pdf).         | Can tex generate man pages?                 |
+                                  |                                             |
+Identify devices by Phys property.| Support for seperatly configuring multiple  | probably 2014
+                                  | identical devices.                          |
+                                  |                                             |                                 
+More complex output sequences     | Support for Macros.                         | 2015 ?
+and maybe making output modular.  |                                             |
+                                  |                                             |
+More d-bus slots.                 | Better interaction                          | maybe 2014
+                                  |                                             |
+Plugin architecture.              | A whole world of awesome new possibilities! | maybe 2015
+------------------------------------------------------------------------------------------------
+
+
+
+##HLP## Contributing to inputmangler
+
+There are a few things I would appreciate help with.
+
+If you are an experienced kernel hacker (which i definitely am not...):
+The inputdummy kernel module seems to be working fine, but would you mind taking a look at the code? Do I do something terribly stupid? Could something cause problems with other kernel modules?
+input.h defines two event types, EV_SYN and EV_MSC. So far I completely ignore them, which does not seem to be causing any problems. What do they do and are there any reasons I should care about them?
+
+If you are familiar with X:
+You could implement the xwatcher (see xwatcher.cpp).
+There are many different keyboard layouts, for which a keymap file could be written. But what would be even better, is some code that generates a keymap from the current keyboard layout.
+
+Other things:
+Packaging!
+I tried using dkms to rebuild the kernel module when neccessary, but i don't yet get it. Could someone help me with that?
+
+Just write me an e-mail if you are interested :).
+
+
+
+##SPM## Contact
+
+Arkadiusz Guzinski <kermit@ag.de1.cc>
+
+
+
+

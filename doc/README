@@ -109,12 +109,12 @@ install.sh (mostly) automates the following steps:
 6. generate udev rules to set the right permissions on the input devices, that inputmangler should use (needs the user to uncomment them)
 
 After this is done, reboot the system or set the permissions of your input devices manually and run
-$ sudo modprobe inputmangler ; chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse ; chmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse
+$ sudo modprobe inputmangler ; chown :$GRP /dev/virtual_kbd /dev/virtual_mouse ; chmod 660 /dev/virtual_kbd /dev/virtual_mouse
 Where $GRP is the group with the necessary permissions.
 
 Please note, that udev does not set the permissions for PS/2 devices. You have to set them in /etc/rc.local.
 $ ls /dev/input/by-id/platform*event*
-shows you a list of canditates. Then after the line "chmod 660 \/dev\/virtual_kbd \/dev\/virtual_mous" in /etc/rc.local insert something like
+shows you a list of canditates. Then after the line "chmod 660 /dev/virtual_kbd /dev/virtual_mouse" in /etc/rc.local insert something like
 chown :$GRP /dev/input/by-id/platform-i8042-serio-1-event-mouse
 chmod 660 /dev/input/by-id/platform-i8042-serio-1-event-mouse
 

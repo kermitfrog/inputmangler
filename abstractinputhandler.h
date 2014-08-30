@@ -28,7 +28,7 @@ class TransformationStructure;
 #include "inputmangler.h"
 #include <linux/input.h>
 #include <QVector>
-#include <unistd.h>
+#include <unistd.h> //@TODO: still needed here?
 #include <QtXml>
 
 /*!
@@ -36,21 +36,10 @@ class TransformationStructure;
  */
 struct shared_data
 {
-	int fd_kbd;
-	int fd_mouse;
 	bool terminating;
 };
 
-/*!
- * @brief Data that wil be sent to inputdummy, aka low level input event
- * See linux/input.h for Details on Variables.
- */
-struct VEvent
-{
-	__s32 type; // these two are __s16 in input.h, but input_event(), called in
-	__s32 code; // inputdummy expects int
-	__s32 value;
-};
+
 
 /*!
  * @brief base class for event transformation
@@ -96,13 +85,10 @@ signals:
 	
 protected:
 	QString _id;
-	QVector<__u16> inputs;		// codes of the keys to be transformed
 	QVector<OutEvent> outputs;	// current target events
+	QVector<__u16> inputs;		// codes of the keys to be transformed
 	virtual int addInputCode(__u16 in);
 	virtual int addInputCode(__u16 in, OutEvent def);
-	void sendMouseEvent(VEvent *e, int num = 1);
-	void sendKbdEvent(VEvent *e, int num = 1);
-	void sendOutEvent(OutEvent *t);
 	bool _hasWindowSpecificSettings;
 	static QList<idevs> parseInputDevices();
 	

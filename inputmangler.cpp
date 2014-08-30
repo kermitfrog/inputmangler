@@ -38,6 +38,7 @@ InputMangler::InputMangler()
 bool InputMangler::readConf()
 {
 	// open output devices
+	OutEvent::generalSetup();
 	AbstractInputHandler::generalSetup();
 	//parse config
 	QString confPath;
@@ -294,8 +295,8 @@ void InputMangler::cleanUp()
 	qDebug() << "waiting for Threads to finish";
 	foreach (AbstractInputHandler *h, handlers)
 		h->wait(4000);
-	close(AbstractInputHandler::sd.fd_kbd);
-	close(AbstractInputHandler::sd.fd_mouse);
+	close(OutEvent::fd_kbd);
+	close(OutEvent::fd_mouse);
 	foreach (AbstractInputHandler *h, handlers)
 		delete h;
 	handlers.clear();

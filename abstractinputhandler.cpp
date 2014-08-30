@@ -19,7 +19,6 @@
 
 #include "abstractinputhandler.h"
 #include "inputmangler.h"
-#include <fcntl.h>
 #include <QDebug>
 #include <QTest>
 
@@ -33,8 +32,6 @@ QMap<QString,QList<AbstractInputHandler*>(*)(QDomNodeList)> AbstractInputHandler
 void AbstractInputHandler::generalSetup()
 {
 	// set up shared data 
-	sd.fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
-	sd.fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
 	sd.terminating = false;
 #ifdef DEBUGME	
 	qDebug() << "kbd: " << sd.fd_kbd << ", mouse: " << sd.fd_mouse;
@@ -83,75 +80,7 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 	outputs = o;
 }
 
-/*!
- * @brief Transforms an OutEvent (keycode and maybe modifiers) to a Vector 
- * of raw VEvents and sends it to the virtual keyboard driver.
- * TEvent -> send VEvent[]:
- * @param t Event to be generated.
- */
-void AbstractInputHandler::sendOutEvent(OutEvent* t)
-{
-	//qDebug() << t->toString();
-	VEvent e[NUM_MOD*2+2];
-	if (t->modifiers.size() > NUM_MOD)
-		t->modifiers.resize(NUM_MOD);
-	QVector<__u16> m = t->modifiers;
-    /*  
-	  if there are modifiers, populate e with a series of keyboard events, 
-	  that compose the wanted shortcut.
-      Example: (Ctrl+Shift+C) 
-      1: Shift down,           ,       ,     ,        , Shift up
-      2: Shift down, Ctrl down ,       ,     , Ctrl up, Shift up
-      3: Shift down, Ctrl down , C down, C up, Ctrl up, Shift up 
-    */
-	int offset = 2 + m.size(), k = 0;
-	for (; k < m.size(); k++)
-	{
-		e[k].type = EV_KEY;
-		e[k].code = m.at(k);
-		e[k].value = 1;
-		e[k+offset].type = EV_KEY;
-		e[k+offset].code = m.at(k);
-		e[k+offset].value = 0;
-	}
-	e[k].type = EV_KEY;
-	e[k].code = t->keycode;
-	e[k].value = 1;
-	e[k+1].type = EV_KEY;
-	e[k+1].code = t->keycode;
-	e[k+1].value = 0;
-// 	for (int i = 0; i < m.size() * 2 + 2; i++)
-// 		qDebug() << e[i].type << " " << e[i].code << " " << e[i].value << " L= " << m.size()*2+2;
-	sendKbdEvent(e, m.size() * 2 + 2);
-	usleep(5000); // wait x * 0.000001 seconds
-}
 
-/*!
- * @brief sends num raw input events to be generated the virtual mouse device.
- */
-//FIXME: should be inline, but then code does not link -> WTF???
-void AbstractInputHandler::sendMouseEvent(VEvent* e, int num) 
-{
-#ifdef DEBUGME
-	if (e->type == EV_KEY)
-		qDebug() << "Mouse sending: " 
-		<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
-#endif
-	write(sd.fd_mouse, e, num*sizeof(VEvent));
-}
-
-/*!
- * @brief sends num raw input events to be generated the virtual keyboard device.
- */
-void AbstractInputHandler::sendKbdEvent(VEvent* e, int num)
-{
-	
-#ifdef DEBUGME
-	qDebug() << "Kbd sending: " 
-	<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
-#endif
-	write(sd.fd_kbd, e, num*sizeof(VEvent));
-}
 
 /*!
  * @brief Register a static parser function.

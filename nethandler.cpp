@@ -120,7 +120,7 @@ void NetHandler::actOnData(char* b, int n)
 		// clearly not a multi-char-sequence
 		if (!sequence_starting_chars.contains(s[i]))
 		{
-			sendOutEvent(&(charmap[s[i].toLatin1()]));
+			charmap[s[i].toLatin1()].send();
 			continue;
 		}
 		// may be a multi-char-sequence, but possibly not complete -> put it into the buffer and end function
@@ -135,7 +135,7 @@ void NetHandler::actOnData(char* b, int n)
 		{
 			if (specialmap.contains(s.mid(i, j)))
 			{
-				sendOutEvent(&specialmap[s.mid(i,j)]);
+				specialmap[s.mid(i,j)].send();
 				iMod = j - 1;
 				break;
 			}
@@ -147,7 +147,7 @@ void NetHandler::actOnData(char* b, int n)
 			continue;
 		}
 		// nope, it's not a multi-char-sequence after all
-		sendOutEvent(&(charmap[s[i].toLatin1()]));
+		charmap[s[i].toLatin1()].send();
 		//qDebug() << "Data: " << s[i];
 	}
 }

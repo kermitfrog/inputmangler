@@ -25,6 +25,7 @@
 #include <QHash>
 
 
+enum DType{Auto, Keyboard, Mouse};
 
 /*!
  * @brief An output event, e.g: 
@@ -34,6 +35,17 @@
  */
 class OutEvent 
 {
+	enum OutType {Simple, Combo, Macro, Custom};
+	/*!
+	* @brief Data that wil be sent to inputdummy, aka low level input event
+	* See linux/input.h for Details on Variables.
+	*/
+	struct VEvent
+	{
+		__s32 type; // these two are __s16 in input.h, but input_event(), called in
+		__s32 code; // inputdummy expects int
+		__s32 value;
+	};
 	friend class WindowSettings;
 	friend class TransformationStructure;
 public:
@@ -45,44 +57,25 @@ public:
 	QVector<__u16> modifiers;
 	__u16 keycode;
 	__u16 code() const {return keycode;};
+	OutType type;
+	void send();
+	void send(int value);
+	// protected?
+	static void sendMouseEvent(VEvent *e, int num = 1);
+	static void sendKbdEvent(VEvent *e, int num = 1);
+	
+	static void sendRaw(__s32 type, __s32 code, __s32 value, DType dtype = Auto);
+	
+	static void generalSetup();
+	static int fd_kbd;
+	static int fd_mouse;
 #ifdef DEBUGME
 	QString initString;
 #endif
+protected:
+	void sendMacro();
 	
 };
 
-/*!
- * @brief WindowSettings contains the Output settings for one window class.
- * 1/Window class in TransformationStructure, e.g:
- * <window class="Konsole" F="S,n+C,R,B" M="LEFT+S,RIGHT+S"/> (no title-matching)
- * <window class="Opera" F="S,_,R,B">  (with title-matching)
- *     <title regex="Dude and Zombies.*" F="S,ESC,BTN_LEFT,_"/>
- * <window/>
- */
-class WindowSettings 
-{
-	friend class TransformationStructure;
-public:
-	WindowSettings(){};
-	~WindowSettings();
-	QVector<OutEvent> def;                //!< value when no title matches
-	QVector<QRegularExpression*> titles;  //!< list of title regexes
-	QVector< QVector<OutEvent> > events;  //!< events are matched to titles via index
-};
 
-/*!
- * @brief Holds all window-specific settings for a given id.
- */
-class TransformationStructure 
-{
-public:
-	TransformationStructure(){};
-	~TransformationStructure();
-	QVector<OutEvent> getOutputs(QString window_class, QString window_name);
-	WindowSettings *window(QString w, bool create = false);
-	bool sanityCheck(int numInputs, QString id, bool verbose = false);
-	QVector<OutEvent> def; //!< Default outputs for id.
-protected:
-	QHash<QString, WindowSettings*> classes; //!< HashMap of window classes.
-};
 

@@ -55,7 +55,6 @@ void DevHandler::run()
 	bool matches; // does it match an input code that we want to act upon?
 
 	input_event buf[4];
-	VEvent e[NUM_MOD*2+2];
 	while (1)
 	{
 		//wait until there is data or 1.5 seconds have passed to look at sd.terminating 
@@ -95,64 +94,13 @@ void DevHandler::run()
 #ifdef DEBUGME
 							qDebug() << "Output : " << outputs.at(j).initString;
 #endif
-							// Combo Event ( see TEvent )
-							if(outputs.at(j).modifiers.size())
-							{
-								if (buf[i].value == 0)
-									break;
-								QVector<__u16> m = outputs.at(j).modifiers;
-								int offset = 2 + m.size(), k = 0;
-								for (; k < m.size(); k++)
-								{
-									e[k].type = EV_KEY;
-									e[k].code = m.at(k);
-									e[k].value = 1;
-									e[k+offset].type = EV_KEY;
-									e[k+offset].code = m.at(k);
-									e[k+offset].value = 0;
-								}
-								e[k].type = EV_KEY;
-								e[k].code = outputs.at(j).keycode;
-								e[k].value = 1;
-								e[k+1].type = EV_KEY;
-								e[k+1].code = outputs.at(j).keycode;
-								e[k+1].value = 0;
-								if (e[k].code >= BTN_MISC)
-								{
-									sendKbdEvent(e, m.size());
-									sendMouseEvent(&e[m.size()], 2);
-									sendKbdEvent(&e[offset], m.size());
-								}
-								else
-									sendKbdEvent(e, m.size() * 2 + 2);
-							}
-							// Raw Event
-							else
-							{
-								//qDebug() << "Raw " << outputs.at(j).code();
-								e[0].type = buf[i].type;
-								e[0].code = outputs.at(j).code();
-								e[0].value = buf[i].value;
-								if (e[0].code >= BTN_MISC)
-									sendMouseEvent(e);
-								else
-									sendKbdEvent(e);
-							}
+							outputs[j].send(buf[i].value);
 							break;
-							//TODO: Autofire, Macros
 						}
 					}
 				// Pass through
 				if (!matches)
-				{
-					e[0].type = buf[i].type;
-					e[0].code = buf[i].code;
-					e[0].value = buf[i].value;
-					if (devtype == Mouse)
-						sendMouseEvent(e);
-					else
-						sendKbdEvent(e);
-				}
+					OutEvent::sendRaw(buf[i].type, buf[i].code, buf[i].value, devtype);
 // 				qDebug("type: %d, code: %d, value: %d", buf[i].type, buf[i].code, buf[i].value );
 			}
 			//qDebug() << id << ":" << n;
@@ -229,12 +177,28 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QDomNodeList nodes)
 			QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
 			for (int j = 0; j < codes.length(); j++)
 			{
-				QString key = codes.at(j).attributes().namedItem("key").nodeValue();
-				QString def = codes.at(j).attributes().namedItem("default").nodeValue();
-				if (def == "")
-					devhandler->addInputCode(keymap[key]);
-				else
-					devhandler->addInputCode(keymap[key], OutEvent(def));
+				// EV_KEY
+				if (codes.at(j).attributes().contains("key"))
+				{
+					QString key = codes.at(j).attributes().namedItem("key").nodeValue();
+					QString def = codes.at(j).attributes().namedItem("default").nodeValue();
+					if (def == "")
+						devhandler->addInputCode(keymap[key]);
+					else
+						devhandler->addInputCode(keymap[key], OutEvent(def));
+				}
+				// EV_REL
+				else if (codes.at(j).attributes().contains("rel"))
+				{
+					QString rel = codes.at(j).attributes().namedItem("key").nodeValue();
+					QString value = codes.at(j).attributes().namedItem("value").nodeValue();
+					
+				}
+				// EV_ABS
+				else if (codes.at(j).attributes().contains("abs"))
+				{
+					
+				}
 			}
 			handlers.append(devhandler);
 		}

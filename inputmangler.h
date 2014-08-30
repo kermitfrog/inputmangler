@@ -27,7 +27,7 @@ class AbstractInputHandler;
 #include <QtDBus/QtDBus>
 #include <QtXml>
 #include "abstractinputhandler.h"
-#include "output.h"
+#include "transformationstructure.h"
 
 struct shared_data;
 

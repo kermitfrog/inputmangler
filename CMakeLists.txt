@@ -32,12 +32,14 @@ set(INPUTMANGLER_SRCS
 						debughandler.cpp
 						devhandler.cpp 
 						imdbusinterface.cpp 
+						inputevent.cpp
 						inputmangler.cpp 
 						keydefs.cpp 
 						main.cpp
 						nethandler.cpp
 						output.cpp
 						qtsignalhandler.cpp 
+						transformationstructure.cpp
 						xwatcher.cpp 
 						)
 

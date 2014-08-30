@@ -21,7 +21,18 @@
 #include "keydefs.h"
 #include <QStringList>
 #include <QDebug>
-#include <QRegularExpression>
+#include <fcntl.h>
+#include <unistd.h>
+
+int OutEvent::fd_kbd;
+int OutEvent::fd_mouse;
+
+void OutEvent::generalSetup()
+{
+	fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
+	fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
+}
+
 
 /*!
  * @brief  Constructs an output event from a config string, e.g "p+S"
@@ -32,12 +43,18 @@ OutEvent::OutEvent(QString s)
 	initString = s;
 #endif
 	keycode = 0;
+	if (s.startsWith("~"))
+	{
+		// read macro
+		return;
+	}
 	QStringList l = s.split("+");
 	if (l.empty())
 		return;
 	keycode = keymap[l[0]];
 	if (l.length() > 1)
 	{
+		type = Combo;
 		for(unsigned int i = 0; i < l[1].length(); i++)
 			if (i >= NUM_MOD)
 			{
@@ -53,133 +70,123 @@ OutEvent::OutEvent(QString s)
 		if(l[1].contains(""))
 			modifiers = modifiers | MOD_MACRO;*/
 	}
+	else
+		type = Simple;
 }
 
-/*!
- * @brief get the window structure for window w
- * @param w window class
- * @param create if true: create a new window, when none is found
- */
-WindowSettings* TransformationStructure::window(QString w, bool create)
+void OutEvent::send(int value)
 {
-	if (create)
+	VEvent e[NUM_MOD+1];
+	if (type == Simple)
 	{
-		if(!classes.contains(w))
-			classes.insert(w, new WindowSettings());
-		return classes.value(w);
-	}
-	if (!classes.contains(w))
-		return NULL;
-	return classes.value(w);
-}
-
-/*!
- * @brief get output events for a given window and window title
- */
-QVector< OutEvent > TransformationStructure::getOutputs(QString window_class, QString window_name)
-{
-	//qDebug() << "getOutputs(" << c << ", " << n << ")";
-	WindowSettings *w = window(window_class);
-	if (w == NULL)
-		return def;
-	//qDebug() << "Window found with " << w->titles.size() << "titles";
-	int idx;
-	for (int i = 0; i < w->titles.size(); i++)
+		e[0].type = EV_KEY;
+		e[0].code = keycode;
+		e[0].value = value;
+		if (keycode >= BTN_MISC)
+			sendMouseEvent(e);
+		else
+			sendKbdEvent(e);
+	} 
+	else if (type == Combo)
 	{
-		//qDebug() << "Title: " << w->titles.at(i)->pattern();
-		QRegularExpressionMatch m = w->titles.at(i)->match(window_name);
-		if(m.hasMatch())
-			return w->events.at(i);
-	}
-	return w->def;
-}
-
-/*!
- * @brief deletes all titles
- */
-WindowSettings::~WindowSettings()
-{
-	foreach (QRegularExpression* r, titles)
-		delete r;
-}
-
-/*!
- * @brief deletes all window classes
- */
-TransformationStructure::~TransformationStructure()
-{
-	foreach (WindowSettings * w, classes)
-		delete w;
-}
-
-/*!
- * @brief Check a TransformationStructure for configuration errors.
- * @param numInputs Number of expected inputs.
- * @param id Id of the TransformationStructure.
- * @param verbose If true, the complete TransformationStructure will be printed to console.
- * @return True if TransformationStructure seems ok.
- */
-bool TransformationStructure::sanityCheck(int numInputs, QString id, bool verbose)
-{
-	bool result = true;
-	qDebug() << "\nchecking " << id << " with size " << numInputs;
-	if (this->def.size() != numInputs)
-	{
-		qDebug() << "TransformationStructure.def is " << this->def.size();
-		result = false;
-	}
-	QList<WindowSettings*> wlist = classes.values();
-	foreach (WindowSettings *w, wlist)
-	{
-		if (verbose)
-		{
-			qDebug() << "Settings for Window = " << classes.key(w);
-			QString s = "  ";
-			for (int j = 0; j < w->def.size(); j++)
+		int k = 0;
+		if (value != 2)
+			for (; k < modifiers.size(); k++)
 			{
-				s += w->def.at(j).toString();
-				if (j < w->def.size() - 1)
-					s += ", ";
+				e[k].type = EV_KEY;
+				e[k].code = modifiers.at(k);
+				e[k].value = value;
 			}
-			qDebug() << s;
-		}
-		if (w->def.size() != numInputs)
+		e[k].type = EV_KEY;
+		e[k].code = keycode;
+		e[k].value = value;
+		
+		if (e[k].code >= BTN_MOUSE)
 		{
-			qDebug() << "WindowSettings.def for " << classes.key(w) << " is " << w->def.size();
-			result = false;
+			sendKbdEvent(e, modifiers.size());
+			sendMouseEvent(&e[k], 1);
 		}
-		if (w->events.size() != w->titles.size())
-		{
-			qDebug() << "WindowSettings.titles = " << w->titles.size() 
-					 << " events = " << w->events.size() << " for " << classes.key(w);
-			result = false;
-		}
-		for(int i = 0; i < w->events.size(); i++)
-		{
-			if (verbose)
-			{
-				qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
-				QString s = "    ";
-				for (int j = 0; j < w->events.at(i).size(); j++)
-				{
-					s += w->events.at(i).at(j).toString();
-					if (j < w->events.at(i).size() - 1)
-						s += ", ";
-				}
-				qDebug() << s;
-			}
-			if (w->events.at(i).size() != numInputs)
-			{
-				qDebug() << "WindowSettings for " << classes.key(w) << ":" 
-						 << "Regex = \"" << w->titles.at(i)->pattern() << "\", size = " 
-						 << w->events.at(i).size();
-				result = false;
-			}
-		}
+		else
+			sendKbdEvent(e, modifiers.size() + 1);
 	}
-	if (!result)
-		qDebug() << id << " failed SanityCheck!!!";
-	return result;
+	else if (type == Macro)
+		sendMacro();
+	usleep(5000); // wait x * 0.000001 seconds
+}
+
+void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
+{
+	VEvent e;
+	e.type = type;
+	e.code = code;
+	e.value = value;
+	switch (dtype)
+	{
+		case Keyboard:
+			sendKbdEvent(&e);
+			break;
+		case Mouse:
+			sendMouseEvent(&e);
+			break;
+		case Auto:
+			if (type != EV_KEY || code >= BTN_MOUSE)
+				sendMouseEvent(&e);
+			else
+				sendKbdEvent(&e);
+			break;
+	};
+	
+}
+
+void OutEvent::sendMacro()
+{
+
+}
+
+/*!
+ * @brief Transforms an OutEvent (keycode and maybe modifiers) to a Vector 
+ * of raw VEvents and sends it to the virtual keyboard driver.
+ * TEvent -> send VEvent[]:
+ * @param t Event to be generated.
+ */
+void OutEvent::send()
+{
+    /*  
+	  if there are modifiers, populate e with a series of keyboard events, 
+	  that compose the wanted shortcut.
+      Example: (Ctrl+Shift+C) 
+      1: Shift down,           ,       ,     ,        , Shift up
+      2: Shift down, Ctrl down ,       ,     , Ctrl up, Shift up
+      3: Shift down, Ctrl down , C down, C up, Ctrl up, Shift up 
+    */
+	send(1);
+	send(0);
+}
+
+/*!
+ * @brief sends num raw input events to be generated the virtual mouse device.
+ */
+//FIXME: should be inline, but then code does not link -> WTF???
+void OutEvent::sendMouseEvent(VEvent* e, int num)
+{
+#ifdef DEBUGME
+	if (e->type == EV_KEY)
+		qDebug() << "Mouse sending: " 
+		<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
+#endif
+	write(fd_mouse, e, num*sizeof(VEvent));
+}
+
+/*!
+ * @brief sends num raw input events to be generated the virtual keyboard device.
+ */
+void OutEvent::sendKbdEvent(VEvent* e, int num)
+{
+#ifdef DEBUGME
+	qDebug() << "Kbd sending: " 
+	<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
+#endif
+	write(fd_kbd, e, num*sizeof(VEvent));
 }
 
 // OutEvent::OutEvent(__s32 code, bool shift, bool alt, bool ctrl)

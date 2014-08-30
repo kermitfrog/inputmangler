@@ -20,8 +20,9 @@
 
 #pragma once
 
-#include "abstractinputhandler.h"
 #include <QFile>
+#include "abstractinputhandler.h"
+#include "output.h"
 
 /*!
  * @brief DevHandler reads input from one keyboard or mouse device and transforms it 
@@ -31,7 +32,6 @@ class DevHandler : public AbstractInputHandler
 {
 	// does this handle a mouse or a keyboard?
 	// for devices that do both, 2 instances are created
-	enum DType{Keyboard, Mouse};
 
 public:
     DevHandler(AbstractInputHandler::idevs device);
