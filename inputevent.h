@@ -17,17 +17,30 @@
  *
  */
 
-#ifndef INPUTEVENT_H
-#define INPUTEVENT_H
+#pragma once
+#include <linux/input.h>
+#include <QString>
+enum ValueType {All, Positive, Negative, Zero};
 
 class InputEvent
 {
+	
 public:
     InputEvent();
     InputEvent(const InputEvent& other);
+    InputEvent(__u16 code, __u16 type = EV_KEY, ValueType valueType = All)
+				: code(code), type(type), valueType(valueType) {};
     ~InputEvent();
     InputEvent& operator=(const InputEvent& other);
     bool operator==(const InputEvent& other);
+    bool operator==(const input_event& other);
+    bool operator==(const __u16 other) {return other == code;};
+	QString print();
+	
+	__u16 type = EV_KEY;
+	__u16 code = 0;
+	ValueType valueType = All;
+	
+	
 };
 
-#endif // INPUTEVENT_H

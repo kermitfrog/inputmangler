@@ -9,6 +9,7 @@ echo "Copy example config file to $CONFIG_PATH ?  [y|N]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' ]]; then
 	cp doc/config.xml.example $CONFIG_PATH/config.xml
+	cp keymaps/axismap $CONFIG_PATH/axismap
 fi
 
 echo ""

@@ -81,20 +81,19 @@ void DevHandler::run()
 				//if (id() == "M")// && buf[i].type == EV_REL && buf[i].code > 1 )
 				//	qDebug()<< "yup " << buf[i].type << " " << buf[i].code << " " << buf[i].value;
 				matches = false;
-				// Key/Button events only
-				// We do not yet handle mouse moves and
-				// certainly not misc and sync events
-				if(buf[i].type == EV_KEY) 
+				// Key/Button and movements(relative and absolute) only
+				// We do not handle misc and sync events
+				if(buf[i].type >= EV_KEY && buf[i].type <= EV_ABS) 
 					for(int j = 0; j < outputs.size(); j++)
 					{	
-	// 					qDebug() << j << " of " << outputs.size() << " in " << id();
-						if (buf[i].code == inputs[j])
+	 					//qDebug() << j << " of " << outputs.size() << " in " << id();
+						if (inputs[j] == buf[i])
 						{
 							matches = true;
 #ifdef DEBUGME
 							qDebug() << "Output : " << outputs.at(j).initString;
 #endif
-							outputs[j].send(buf[i].value);
+							outputs[j].send(buf[i].value, buf[i].type);
 							break;
 						}
 					}
@@ -177,28 +176,12 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QDomNodeList nodes)
 			QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
 			for (int j = 0; j < codes.length(); j++)
 			{
-				// EV_KEY
-				if (codes.at(j).attributes().contains("key"))
-				{
-					QString key = codes.at(j).attributes().namedItem("key").nodeValue();
-					QString def = codes.at(j).attributes().namedItem("default").nodeValue();
-					if (def == "")
-						devhandler->addInputCode(keymap[key]);
-					else
-						devhandler->addInputCode(keymap[key], OutEvent(def));
-				}
-				// EV_REL
-				else if (codes.at(j).attributes().contains("rel"))
-				{
-					QString rel = codes.at(j).attributes().namedItem("key").nodeValue();
-					QString value = codes.at(j).attributes().namedItem("value").nodeValue();
-					
-				}
-				// EV_ABS
-				else if (codes.at(j).attributes().contains("abs"))
-				{
-					
-				}
+				QString key = codes.at(j).attributes().namedItem("key").nodeValue();
+				QString def = codes.at(j).attributes().namedItem("default").nodeValue();
+				if (def == "")
+					devhandler->addInput(keymap[key]);
+				else
+					devhandler->addInput(keymap[key], OutEvent(def));
 			}
 			handlers.append(devhandler);
 		}

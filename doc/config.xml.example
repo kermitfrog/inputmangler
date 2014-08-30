@@ -25,30 +25,32 @@
 		 using the id "M". -->
 	<!--
 	<device name="Mouse" vendor="1a7c" product="0068" id="M">
+		<signal key="WHEEL_UP"/>
+		<signal key="WHEEL_DOWN"/>
 		<signal key="BTN_EXTRA"/>
 		<signal key="BTN_SIDE"/>
 	</device>
 	-->
 	
 	<!-- In KDevelop: Always use the extra buttons to switch tabs. -->
-	<!-- <window class="kdevelop" M="LEFT+A,RIGHT+A"/> -->
+	<!-- <window class="kdevelop" M="WHEEL_UP,WHEEL_DOWN,LEFT+A,RIGHT+A"/> -->
 	
 	<!-- If there was another device to configure, this might look like -->
-	<!-- <window class="kdevelop" M="LEFT+A,RIGHT+A" F="a,b,_,END"/> -->
+	<!-- <window class="kdevelop" M="WHEEL_UP,WHEEL_DOWN,LEFT+A,RIGHT+A" F="a,MOUSE_UP,_,END"/> -->
 	
 	<!-- Opera (Version 12) does not need any special treatment to use additional mouse buttons,
-		 but to we might want to give them another function when playing flash games.
+		 but we might want to give them another function when playing flash games.
 		 As the window title is changed, depending on the currently open tab, this can easily be
 		 achieved by using a matching regular expression for the title.
 		 This example also shows the use of the long notation form.
 	-->
 	<!--
 	<window class="opera">
-		<title regex="Decision 2.*" M="_,e" />
+		<title regex="Decision 2.*" M="WHEEL_UP,WHEEL_DOWN,_,e" />
 		<title regex="Dude and Zombies.*">
 			<long id="M">
-				BTN_EXTRA=q
-				BTN_SIDE=e
+				WHEEL_UP=q
+				WHEEL_DOWN=e
 			</long>
 		</title>
 	</window>

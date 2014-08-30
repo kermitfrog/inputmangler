@@ -54,11 +54,12 @@ bool InputMangler::readConf()
 	// set up key definitions as well as char mappings and multi-char commands (nethandler)
 	{
 		QDomElement e = conf.elementsByTagName("mapfiles").at(0).toElement();
-		QString k, c;
+		QString k, c, a;
 		k = e.attribute("keymap");
 		c = e.attribute("charmap");
- 		qDebug() << "using keymap = " << k << ", charmap = " << c;
-		setUpKeymaps(k, c);
+		a = e.attribute("axismap");
+ 		qDebug() << "using keymap = " << k << ", charmap = " << c << ", axismap = " << a;
+		setUpKeymaps(k, c, a);
 	}
 	// all handler-specific configuration is read by the registered parsing functions
 	foreach (QString nodeName, AbstractInputHandler::parseMap.keys())

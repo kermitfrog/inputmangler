@@ -18,6 +18,7 @@
  */
 
 #include "inputevent.h"
+#include <QDebug>
 
 InputEvent::InputEvent()
 {
@@ -26,7 +27,9 @@ InputEvent::InputEvent()
 
 InputEvent::InputEvent(const InputEvent& other)
 {
-
+	type = other.type;
+	code = other.code;
+	valueType = other.valueType;
 }
 
 InputEvent::~InputEvent()
@@ -36,10 +39,38 @@ InputEvent::~InputEvent()
 
 InputEvent& InputEvent::operator=(const InputEvent& other)
 {
-
+	type = other.type;
+	code = other.code;
+	valueType = other.valueType;
 }
 
 bool InputEvent::operator==(const InputEvent& other)
 {
 
 }
+
+bool InputEvent::operator==(const input_event& other)
+{
+// 	qDebug() << "type = " << type << ", other type = " << other.type;
+	if (type != other.type || code != other.code)
+		return false;
+	if (type == EV_REL)
+		switch (valueType){
+			case All:
+				return true;
+			case Positive:
+				return other.value > 0;
+			case Negative:
+				return other.value < 0;
+			case Zero:
+				return other.value == 0;
+		};
+	return true;
+}
+
+QString InputEvent::print()
+{
+	return "InputEvent: code = " + QString::number(code) + ", type = " + QString::number(type)
+				+ ", valueType = " + QString::number(valueType);
+}
+

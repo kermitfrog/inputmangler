@@ -20,7 +20,7 @@
 #include "keydefs.h"
 #include "abstractinputhandler.h"
 
-QHash<QString, int> keymap;
+QHash<QString, InputEvent> keymap;
 QHash<char, OutEvent> charmap;
 QHash<QString, OutEvent> specialmap;
 QMap<int, QString> keymap_reverse;
@@ -30,7 +30,7 @@ QList<QChar> sequence_starting_chars;
 /*!
  * @brief this global function reads /usr/include/linux/input.h, keymap and charmap and populates the globally used maps(see keydefs.h).
  */
-void setUpKeymaps(QString keymap_path, QString charmap_path)
+void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 {
 	// clear them all, just in case we're rereading
 	keymap.clear();
@@ -114,6 +114,72 @@ void setUpKeymaps(QString keymap_path, QString charmap_path)
 	keymap_file.close();
 	
 	/*
+	 * read ~/.config/inputMangler/axismap
+	 * empty lines are ignored, otherwise ' ' is the delimiter
+	 * REL_WHEEL + WHEEL_UP { => map positive values of "REL_WHEEL" in inputMap to "WHEEL_UP"
+	 */
+	if (axis_path.isEmpty())
+		confPath = QDir::homePath() + "/.config/inputMangler/axismap";
+	else
+		confPath = axis_path;
+	QFile axis_file(confPath);
+	if (!axis_file.open(QIODevice::ReadOnly))
+	{
+		qDebug() << "could not load keysyms from " << axis_file.fileName();
+		return;
+	}
+	QTextStream axis_stream(&axis_file);
+	QStringList axis_text = axis_stream.readAll().split("\n"); 
+	
+	li = axis_text.begin();
+	while (li != axis_text.end())
+	{
+		tmp = (*li).split(QRegExp("\\s"), QString::SkipEmptyParts);
+		if (tmp.size() >= 3)
+		{
+			int code, type;
+			ValueType vtype;
+			if (QRegExp("\\D").exactMatch(tmp[0].left(1)) )
+				code = inputMap[tmp[0]];
+			else 
+				code = tmp[0].toInt();
+			if (tmp[0].startsWith("REL_"))
+				type = EV_REL;
+			else if (tmp[0].startsWith("ABS_"))
+				type = EV_ABS;
+			else
+				continue;
+			
+			switch (tmp[1][0].toLatin1()) {
+				case '*':
+					vtype = All;
+					break;
+				case '+':
+					vtype = Positive;
+					break;
+				case '-':
+					vtype = Negative;
+					break;
+				case '0':
+					vtype = Zero;
+					break;
+			}
+			
+			keymap[tmp[2]] = InputEvent(code, type, vtype);
+ 			keymap_reverse[code+(10000*type)+(1000*vtype)] = tmp[2];
+		}
+		li++;
+	}
+	axis_file.close();
+	
+#ifdef DEBUGME
+	foreach (QString t, keymap.keys())
+	{
+		qDebug() << t << " == " << keymap[t].print();
+	}
+#endif
+	
+	/*
 	 * read ~/.config/inputMangler/charmap and populate charmap or specialmap.
 	 * there are three possibilities per line:
 	 * 1. "$" : Character '$' is mapped to the output event associated with itself in keymap. (charmap)
@@ -170,7 +236,7 @@ void setUpKeymaps(QString keymap_path, QString charmap_path)
 		{
 			charmap[tmp[0][0].toLatin1()] = OutEvent(keymap[tmp[0]]);
 #ifdef DEBUGME
-			qDebug() << tmp[0] << "=" << tmp[0] << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
+			qDebug() << tmp[0] << "=" << tmp[0] << " --> " << charmap[tmp[0][0].toLatin1()].print();
 #endif
 		}
 		else 
@@ -181,7 +247,7 @@ void setUpKeymaps(QString keymap_path, QString charmap_path)
 			{
 				charmap[left[0].toLatin1()] = OutEvent(right);
 	#ifdef DEBUGME
-				qDebug() << tmp[0] << "=" << s << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
+				qDebug() << tmp[0] << "=" << "s" << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
 	#endif
 			}
 			else // case 3. "^D PAGEDOWN"

@@ -21,16 +21,22 @@
 #include "keydefs.h"
 #include <QStringList>
 #include <QDebug>
+#include <QTest>
 #include <fcntl.h>
 #include <unistd.h>
 
 int OutEvent::fd_kbd;
 int OutEvent::fd_mouse;
+int OutEvent::fds[4];
 
 void OutEvent::generalSetup()
 {
 	fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
 	fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
+	fds[0] = 0;
+	fds[1] = fd_kbd;
+	fds[2] = fd_mouse;
+	fds[3] = 0;
 }
 
 
@@ -42,19 +48,19 @@ OutEvent::OutEvent(QString s)
 #ifdef DEBUGME
 	initString = s;
 #endif
-	keycode = 0;
+	eventcode = 0;
 	if (s.startsWith("~"))
 	{
-		// read macro
+		// TODO: read macro
 		return;
 	}
 	QStringList l = s.split("+");
 	if (l.empty())
 		return;
-	keycode = keymap[l[0]];
+	fromInputEvent(keymap[l[0]]);
 	if (l.length() > 1)
 	{
-		type = Combo;
+		outType = Combo;
 		for(unsigned int i = 0; i < l[1].length(); i++)
 			if (i >= NUM_MOD)
 			{
@@ -64,30 +70,79 @@ OutEvent::OutEvent(QString s)
 			else if (!keymap.contains(l[1].at(i)))
 				qDebug() << "Unknown modifier " << l[1][i];
 			else
-				modifiers.append(keymap[l[1].at(i)]);
+				modifiers.append(keymap[l[1].at(i)].code);
 		/*if(l[1].contains("~"))
 			modifiers = modifiers | MOD_REPEAT;
 		if(l[1].contains(""))
 			modifiers = modifiers | MOD_MACRO;*/
 	}
 	else
-		type = Simple;
+		outType = Simple;
+}
+
+void OutEvent::fromInputEvent(InputEvent& e)
+{
+	eventtype = e.type;
+	valueType = e.valueType;
+	eventcode = e.code;
+}
+
+OutEvent::OutEvent(InputEvent& e)
+{
+	outType = Simple;
+	fromInputEvent(e);
+}
+
+void OutEvent::send(int value, __u16 sourceType)
+{
+	if (eventtype == sourceType)
+	{
+		if (eventtype == EV_KEY || valueType == All)
+		{
+			send(value);
+		}
+		else
+		{
+			if ( (valueType == Positive && value < 0) 
+				|| (valueType == Negative && value > 0) )
+			{
+				send(value * -1);
+			}
+			else
+			{
+				send(value);
+			}
+		}
+	}
+	else if (sourceType == EV_REL && eventtype == EV_KEY)
+	{
+		send();
+	}
+	else if (sourceType == EV_KEY && eventtype == EV_REL)
+	{
+		if (value == 0)
+			return;
+		if (valueType == Negative)
+			send(-1);
+		else
+			send(1);
+	}
 }
 
 void OutEvent::send(int value)
 {
 	VEvent e[NUM_MOD+1];
-	if (type == Simple)
+	if (outType == Simple)
 	{
-		e[0].type = EV_KEY;
-		e[0].code = keycode;
+		e[0].type = eventtype;
+		e[0].code = eventcode;
 		e[0].value = value;
-		if (keycode >= BTN_MISC)
+		if (eventcode >= BTN_MISC)
 			sendMouseEvent(e);
 		else
-			sendKbdEvent(e);
+			sendEvent(e);
 	} 
-	else if (type == Combo)
+	else if (outType == Combo)
 	{
 		int k = 0;
 		if (value != 2)
@@ -98,7 +153,7 @@ void OutEvent::send(int value)
 				e[k].value = value;
 			}
 		e[k].type = EV_KEY;
-		e[k].code = keycode;
+		e[k].code = eventcode;
 		e[k].value = value;
 		
 		if (e[k].code >= BTN_MOUSE)
@@ -109,9 +164,9 @@ void OutEvent::send(int value)
 		else
 			sendKbdEvent(e, modifiers.size() + 1);
 	}
-	else if (type == Macro)
+	else if (outType == Macro)
 		sendMacro();
-	usleep(5000); // wait x * 0.000001 seconds
+// 	usleep(5000); // wait x * 0.000001 seconds
 }
 
 void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
@@ -129,10 +184,10 @@ void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
 			sendMouseEvent(&e);
 			break;
 		case Auto:
-			if (type != EV_KEY || code >= BTN_MOUSE)
+			if (code >= BTN_MOUSE)
 				sendMouseEvent(&e);
 			else
-				sendKbdEvent(&e);
+				sendEvent(&e);
 			break;
 	};
 	
@@ -161,6 +216,12 @@ void OutEvent::send()
     */
 	send(1);
 	send(0);
+	usleep(5000); // wait x * 0.000001 seconds
+}
+
+void OutEvent::sendEvent(OutEvent::VEvent* e, int num)
+{
+	write(fds[e[0].type], e, num*sizeof(VEvent));
 }
 
 /*!
@@ -170,7 +231,6 @@ void OutEvent::send()
 void OutEvent::sendMouseEvent(VEvent* e, int num)
 {
 #ifdef DEBUGME
-	if (e->type == EV_KEY)
 		qDebug() << "Mouse sending: " 
 		<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
 #endif
@@ -189,23 +249,15 @@ void OutEvent::sendKbdEvent(VEvent* e, int num)
 	write(fd_kbd, e, num*sizeof(VEvent));
 }
 
-// OutEvent::OutEvent(__s32 code, bool shift, bool alt, bool ctrl)
-// {
-// 	if (shift)
-// 		modifiers.append(KEY_LEFTSHIFT);
-// 	if (alt)
-// 		modifiers.append(KEY_RIGHTALT);
-// 	if (ctrl)
-// 		modifiers.append(KEY_LEFTCTRL);
-// 	this->keycode = code;
-// }
-
 /*!
  * @brief return a QString describing the Output.
  */
 QString OutEvent::toString() const
 {
-	QString s = keymap_reverse[keycode] + "(" + QString::number(keycode) + ")[";
+	int searchcode = eventcode;
+	if (eventtype != EV_KEY)
+		searchcode = eventcode+(10000*eventtype)+(1000*valueType);
+	QString s = keymap_reverse[searchcode] + "(" + QString::number(searchcode) + ")[";
 		for(int i = 0; i < modifiers.count(); i++)
 		{
 			s += keymap_reverse[modifiers[i]] + " (" + QString::number(modifiers[i]) + ")";

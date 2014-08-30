@@ -20,6 +20,7 @@
 #pragma once
 
 #include <linux/input.h> //__u16...
+#include "inputevent.h"
 #include <QString>
 #include <QVector>
 #include <QHash>
@@ -50,30 +51,38 @@ class OutEvent
 	friend class TransformationStructure;
 public:
 	OutEvent() {};
-	OutEvent(int c) {keycode = c;};
+	OutEvent(int c) {eventcode = c;};
+	OutEvent(InputEvent& e);
 	OutEvent(QString s);
 // 	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false); 
 	QString toString() const;
+	QString print() const{return toString();};
 	QVector<__u16> modifiers;
-	__u16 keycode;
-	__u16 code() const {return keycode;};
-	OutType type;
+	__u16 eventtype;
+	__u16 eventcode;
+	__u16 code() const {return eventcode;};
+	OutType outType;
+	ValueType valueType;
 	void send();
 	void send(int value);
+	void send(int value, __u16 sourceType);
 	// protected?
 	static void sendMouseEvent(VEvent *e, int num = 1);
 	static void sendKbdEvent(VEvent *e, int num = 1);
+	static void sendEvent(VEvent *e, int num = 1);
 	
 	static void sendRaw(__s32 type, __s32 code, __s32 value, DType dtype = Auto);
 	
 	static void generalSetup();
 	static int fd_kbd;
 	static int fd_mouse;
+	static int fds[4]; //!< None, Keyboard, Mouse, Absolute
 #ifdef DEBUGME
 	QString initString;
 #endif
 protected:
 	void sendMacro();
+	void fromInputEvent(InputEvent& e);
 	
 };
 

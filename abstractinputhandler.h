@@ -26,6 +26,7 @@ class TransformationStructure;
 
 #include <QThread>
 #include "inputmangler.h"
+#include "inputevent.h"
 #include <linux/input.h>
 #include <QVector>
 #include <unistd.h> //@TODO: still needed here?
@@ -70,7 +71,7 @@ public:
 	virtual void setOutputs(QVector<OutEvent> o);
 	virtual QVector<OutEvent> getOutputs() const {return outputs;};
 // 	static QList<AbstractInputHandler*> parseXml(QDomNode nodes) {};
-	int inputIndex(QString s) const {return inputs.indexOf(keymap[s]);};
+	int inputIndex(QString s) const {return inputs.indexOf(InputEvent(keymap[s]));};
 	int getNumInputs() const {return inputs.size();};
 	int getNumOutputs() const {return outputs.size();};
 	bool hasWindowSpecificSettings() const {return _hasWindowSpecificSettings;};
@@ -86,9 +87,9 @@ signals:
 protected:
 	QString _id;
 	QVector<OutEvent> outputs;	// current target events
-	QVector<__u16> inputs;		// codes of the keys to be transformed
-	virtual int addInputCode(__u16 in);
-	virtual int addInputCode(__u16 in, OutEvent def);
+	QVector<InputEvent> inputs;	// input events to be transformed
+	virtual int addInput(InputEvent in);
+	virtual int addInput(InputEvent in, OutEvent def);
 	bool _hasWindowSpecificSettings;
 	static QList<idevs> parseInputDevices();
 	

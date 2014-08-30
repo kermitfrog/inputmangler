@@ -24,10 +24,11 @@
 #include <QMap>
 #include <QString>
 class OutEvent;
+class InputEvent;
 
 const int NUM_MOD = 5; //!<  maximum number of mmodifiers in an OutEvent[K]
 
-extern QHash<QString, int> keymap; //!< Used to map a key in the configuration file to a keycode.
+extern QHash<QString, InputEvent> keymap; //!< Used to map a key in the configuration file to a keycode.
 extern QHash<char, OutEvent> charmap; //!<  Used to map a character to a key sequence, e.g. A -> Shift+a in NetHandler
 extern QHash<QString, OutEvent> specialmap; //!< Used to map multicharacter sequences to a key sequence, e.g. ^R -> Ctrl+RIGHT
 extern unsigned int max_sequence_length; //!<  length of the longest multicharacter input sequence in charmap.
@@ -35,7 +36,7 @@ extern QList<QChar> sequence_starting_chars; //!< list of all the characters, us
 
 extern QMap<int, QString> keymap_reverse; //!< Reverse mapped keymap (for debugging output)
 
-void setUpKeymaps(QString keymap_path, QString charmap_path);
+void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path);
 
 // Flags - currently not used, and maybe never will be.
 // const int MOD_NONE		= 0x0;

@@ -34,36 +34,34 @@ void AbstractInputHandler::generalSetup()
 	// set up shared data 
 	sd.terminating = false;
 #ifdef DEBUGME	
-	qDebug() << "kbd: " << sd.fd_kbd << ", mouse: " << sd.fd_mouse;
+	qDebug() << "kbd: " << OutEvent::fd_kbd << ", mouse: " << OutEvent::fd_mouse;
 #endif
 }
 
 /*!
- * @brief Add a code to the list of expected inputs. The associated output is set to the same code.
- * @param in Input code.
+ * @brief Add an input event to the list of expected inputs. The associated output is set to the same code.
+ * @param in Input event.
  * @return Number of expected inputs after the operation.
  */
-int AbstractInputHandler::addInputCode(__u16 in)
+int AbstractInputHandler::addInput(InputEvent in)
 {
 	inputs.append(in);
 	outputs.append(OutEvent(in));
 	return inputs.size();
 }
 
-
 /*!
- * @brief Add a code to the list of expected inputs.
- * @param in Input code.
+ * @brief Add an input event to the list of expected inputs.
+ * @param in Input event.
  * @param def The default output.
  * @return Number of expected inputs after the operation.
  */
-int AbstractInputHandler::addInputCode(__u16 in, OutEvent def)
+int AbstractInputHandler::addInput(InputEvent in, OutEvent def)
 {
 	inputs.append(in);
 	outputs.append(def);
 	return inputs.size();
 }
-
 /*!
  * @brief set current outputs.
  */
@@ -73,7 +71,7 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 	{
 		qDebug() << "setOutputs: in|out sizes do not match in " << id();
 		for (int i = 0; i < inputs.size(); i++)
-			qDebug() << "inputs[" << i << "].code = " << inputs.at(i);
+			qDebug() << "inputs[" << i << "].code = " << inputs.at(i).code;
 		for (int i = 0; i < o.size(); i++)
 			qDebug() << "outputs[" << i << "].code = " << o.at(i).code();
 	}	

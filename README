@@ -170,6 +170,8 @@ Inputmanglers configuration consists of 3 files in its config directory: keymap,
 keymap:
 Describes your keyboard layout. Since inputmangler works at a very low level, it is not aware of your keyboard layout settings and needs its own definition. If you use a German(de), US(us) or Programmer Dvorak(dvp) layout, just copy the one you like from the keymaps directory to ~/.config/inputMangler/keymap (or let ./setupHelper.sh do it for you). It is not necessary to use the correct keymap, but it makes configuration more intuitive. See section ##KEY## on how to modify it, or just use the one most similar to yours.
 
+axismap:
+Similar to keymap, but for relative and absolute movements. In most cases this does not need to be changed, but you maywant to your prefered names to events. Also see ##KEY##.
 
 charmap:
 This is only needed if you intend to use the net module. For choosing the right one, it's the same as with keymap, with the exceptions that the dvp version is made for my personal, slightly modified, keyboard layout (The difference is in the handling of the german letters "äöüÄÖÜß".) and that you'll probably want to change it to your needs, anyway. See section ##NET## on how to modify it.
@@ -342,6 +344,22 @@ So, if you are ready to modify the keymap definition to fit your layout (or if y
 3. Test it!
 4. If it is for a standard layout: send it to me, so i can include it in the next release. :)
 
+The Axismap is similar to this, but every line has another field in between.
+REL_WHEEL * REL_WHEEL
+REL_WHEEL + WHEEL_UP
+REL_WHEEL - WHEEL_DOWN
+
+The middle symbol defines which values are meant and can be:
+
+Use this when translating a complete axis.
+ * Any	
+
+Use these two when translating from/to a key. As source only positive/negative event values will be translated, as target the event values will be translated to a positive or negative value if neccessary. You could also use this to switch up and down mouse movement...
++ Positive
+- Negative
+
+
+
 
 ##NET## Using the Net module
 The net module listens on TCP port and converts incoming data to linux input events.
@@ -406,9 +424,6 @@ Some things I want to do are:
 
 WHAT?                             | WHY?                                        | WHEN?
 ------------------------------------------------------------------------------------------------
-Full support for relative         | Mouse Wheel support.                        | 2014
-movements.                        | Triggering Mouse movement.                  |
-                                  |                                             |
 Passing on absolute movements.    | Support for Flightsticks and tablets.       | 2014
                                   |                                             |
 Making this README available as   | Because i can! ...                          | 2014
