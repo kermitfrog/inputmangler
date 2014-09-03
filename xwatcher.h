@@ -31,7 +31,7 @@ class XWatcher : public AbstractInputHandler
 public:
     XWatcher();
     ~XWatcher();
-	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
+	static QList<AbstractInputHandler*> parseXml(QXmlStreamReader &xml);
 
 signals:
 	void windowChanged(QString wclass, QString title);

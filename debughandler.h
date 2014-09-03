@@ -33,7 +33,7 @@ class DebugHandler : public AbstractInputHandler
     Q_OBJECT
 
 public:
-	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
+	static QList<AbstractInputHandler*> parseXml(QXmlStreamReader &xml);
 	DebugHandler(AbstractInputHandler::idevs device, QString outFile, bool grab = 0);
     virtual ~DebugHandler();
 

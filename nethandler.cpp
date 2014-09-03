@@ -157,17 +157,15 @@ void NetHandler::actOnData(char* b, int n)
  * @param nodes All the <net> nodes.
  * @return List containing all NetHandlers.
  */
-QList< AbstractInputHandler* > NetHandler::parseXml(QDomNodeList nodes)
+QList< AbstractInputHandler* > NetHandler::parseXml(QXmlStreamReader &xml)
 {
 	QList<AbstractInputHandler*> handlers;
 	/// nethandler
-	NetHandler *n;
-	for (int i = 0; i < nodes.length(); i++)
-	{
-	n = new NetHandler(	nodes.at(i).attributes().namedItem("addr").nodeValue(),
-						nodes.at(i).attributes().namedItem("port").nodeValue().toInt() );
+	qDebug() << "on line " << xml.lineNumber() << ", name is " << xml.name().toString();
+	NetHandler *n = new NetHandler(xml.attributes().value("addr").toString(),
+						xml.attributes().value("port").toInt() );
 	handlers.append(n);
-	}
+	xml.readNext();
 	return handlers;
 }
 

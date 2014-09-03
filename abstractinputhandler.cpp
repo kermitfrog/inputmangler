@@ -23,7 +23,7 @@
 #include <QTest>
 
 shared_data AbstractInputHandler::sd; // TODO: protect
-QMap<QString,QList<AbstractInputHandler*>(*)(QDomNodeList)> AbstractInputHandler::parseMap;
+QMap<QString,QList<AbstractInputHandler*>(*)(QXmlStreamReader&)> AbstractInputHandler::parseMap;
 
 /*!
  * @brief This static Function is called to set up the shared data structure.
@@ -85,7 +85,7 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
  * @param id Id used in config.xml to identify the subclass of AbstractInputHandler
  * @param func Function used to parse all <id>xml parts.
  */
-void AbstractInputHandler::registerParser(QString id, QList<AbstractInputHandler*>(*func)(QDomNodeList))
+void AbstractInputHandler::registerParser(QString id, QList< AbstractInputHandler* >(*func)(QXmlStreamReader&))
 {
 	parseMap[id] = func;
 }

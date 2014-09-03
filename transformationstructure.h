@@ -50,6 +50,7 @@ public:
 	~TransformationStructure();
 	QVector<OutEvent> getOutputs(QString window_class, QString window_name);
 	WindowSettings *window(QString w, bool create = false);
+	void addWindowSettings(QString s, WindowSettings* w);
 	bool sanityCheck(int numInputs, QString id, bool verbose = false);
 	QVector<OutEvent> def; //!< Default outputs for id.
 protected:

@@ -440,6 +440,14 @@ More d-bus slots.                 | Better interaction                          
 Plugin architecture.              | A whole world of awesome new possibilities! | maybe 2015
 ------------------------------------------------------------------------------------------------
 
+Ideas:
+Absolute Axis:
+	Deadzone at the center (Joy)
+	Sensitivity Curve mapping (Joy)
+	Coordinates to Button (Tablet)
+	Using Buttons/Keys as modifiers (to switch windowsettings)
+	Debughandler: Filter
+
 
 
 ##HLP## Contributing to inputmangler

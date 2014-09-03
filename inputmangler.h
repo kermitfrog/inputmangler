@@ -53,11 +53,14 @@ private:
 	QString wm_class, wm_title; //!< Current window class and title.
 	QMap<QString, TransformationStructure> wsets; //!< Map containing all window specific outputs for all ids
 	bool readConf();
-	bool hasSettingsForId(QString id, QDomElement element);
-	QVector<OutEvent> parseOutputs(QString id, QDomElement element, QVector<OutEvent> def);
+    QVector<OutEvent> parseOutputsShort(QString s);
+	QVector<OutEvent> parseOutputsLong(QXmlStreamReader &conf, QVector<OutEvent> def);
 	QMultiMap<QString, AbstractInputHandler*> handlersById;
+	bool readWindowSettings(QXmlStreamReader &conf, QStringList &ids);
 // 	void stopHandlers();
 	
+protected:
+    void xmlError(QXmlStreamReader &conf);
 };
 
 

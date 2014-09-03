@@ -41,16 +41,12 @@ XWatcher::XWatcher()
  * @param nodes All the <xwatcher> nodes.
  * @return List containing all XWatchers.
  */
-QList< AbstractInputHandler* > XWatcher::parseXml(QDomNodeList nodes)
+QList< AbstractInputHandler* > XWatcher::parseXml(QXmlStreamReader &xml)
 {
 	QList<AbstractInputHandler*> handlers;
 	/// xwatcher
-	if (nodes.length())
-	{
-		XWatcher *xw;
-		xw = new XWatcher();
-		handlers.append(xw);
-	}
+	XWatcher *xw = new XWatcher();
+	handlers.append(xw);
 	return handlers;
 }
 

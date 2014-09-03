@@ -75,10 +75,10 @@ public:
 	int getNumInputs() const {return inputs.size();};
 	int getNumOutputs() const {return outputs.size();};
 	bool hasWindowSpecificSettings() const {return _hasWindowSpecificSettings;};
-	static void registerParser(QString id, QList<AbstractInputHandler*>(*func)(QDomNodeList));
+	static void registerParser(QString id, QList<AbstractInputHandler*>(*func)(QXmlStreamReader&));
 	static void generalSetup();
 	static shared_data sd; // TODO: protect?
-	static QMap<QString,QList<AbstractInputHandler*>(*)(QDomNodeList)> parseMap;
+	static QMap<QString,QList<AbstractInputHandler*>(*)(QXmlStreamReader&)> parseMap;
 
 signals:
 	void windowChanged(QString wclass, QString title);

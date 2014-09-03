@@ -37,7 +37,7 @@ public:
     DevHandler(AbstractInputHandler::idevs device);
     virtual ~DevHandler();
 	//setTranslations()
-	static QList<AbstractInputHandler*> parseXml(QDomNodeList nodes);
+	static QList<AbstractInputHandler*> parseXml(QXmlStreamReader &xml);
 
 protected:
 	QString filename;

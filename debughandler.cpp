@@ -122,32 +122,31 @@ void DebugHandler::run()
 	outfile.close();
 }
 
-QList< AbstractInputHandler* > DebugHandler::parseXml(QDomNodeList nodes)
+QList< AbstractInputHandler* > DebugHandler::parseXml(QXmlStreamReader &xml)
 {
 	QList<AbstractInputHandler*> handlers;
 	QList<idevs> availableDevices = parseInputDevices();
 	/// debug dump, aka keylogger
 	DebugHandler *dh;
-	for (int i = 0; i < nodes.length(); i++)
+	idevs d;
+	d.vendor  = xml.attributes().value("vendor").toString();
+	d.product = xml.attributes().value("product").toString();
+	d.id      = xml.attributes().value("id").toString();
+	
+	while (availableDevices.count(d))
 	{
-		idevs d;
-		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
-		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
-		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
-		while (availableDevices.count(d))
-		{
-			int idx = availableDevices.indexOf(d);
-			// copy information obtained from /proc/bus/input/devices to complete
-			// the data in the idevs object used to construct the DevHandler
-			d.event = availableDevices.at(idx).event;
-			d.mouse = availableDevices.at(idx).mouse;
-			handlers.append(new DebugHandler ( d,
-							nodes.at(i).attributes().namedItem("log").nodeValue(), 
-						    nodes.at(i).attributes().namedItem("grab").nodeValue().toInt()
-											 ));
-			availableDevices.removeAt(idx);
-		}
+		int idx = availableDevices.indexOf(d);
+		// copy information obtained from /proc/bus/input/devices to complete
+		// the data in the idevs object used to construct the DevHandler
+		d.event = availableDevices.at(idx).event;
+		d.mouse = availableDevices.at(idx).mouse;
+		handlers.append(new DebugHandler ( d,
+						xml.attributes().value("log").toString(),
+					    xml.attributes().value("grab").toInt()
+											));
+		availableDevices.removeAt(idx);
 	}
+	xml.readNext();
 	return handlers;
 }
 

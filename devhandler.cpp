@@ -132,59 +132,82 @@ DevHandler::DevHandler(idevs device)
  * @param nodes All the <device> nodes.
  * @return List containing all DevHandlers.
  */
-QList< AbstractInputHandler* > DevHandler::parseXml(QDomNodeList nodes)
+QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 {
 	QList<AbstractInputHandler*> handlers;
 	// get a list of available devices from /proc/bus/input/devices
 	QList<idevs> availableDevices = parseInputDevices();
 	/// Devices
-	// for every configured <device...>
-	for (int i = 0; i < nodes.length(); i++)
+	/*
+	 * create an idevs structure for the configured device
+	 * vendor and product are set to match the devices in /proc/bus/...
+	 * id is the config-id 
+	 */
+	idevs d;
+	d.vendor  = xml.attributes().value("vendor").toString();
+	d.product = xml.attributes().value("product").toString();
+	d.id      = xml.attributes().value("id").toString();
+	
+	// create a devhandler for every device that matches vendor and product
+	// of the configured device,
+	while (availableDevices.count(d))
 	{
-		/*
-		 * create an idevs structure for the configured device
-		 * vendor and product are set to match the devices in /proc/bus/...
-		 * id is the config-id 
-		 */
-		idevs d;
-		d.vendor  = nodes.at(i).attributes().namedItem("vendor").nodeValue();
-		d.product = nodes.at(i).attributes().namedItem("product").nodeValue();
-		d.id      = nodes.at(i).attributes().namedItem("id").nodeValue();
+		int idx = availableDevices.indexOf(d);
+		// copy information obtained from /proc/bus/input/devices to complete
+		// the data in the idevs object used to construct the DevHandler
+		d.event = availableDevices.at(idx).event;
+		d.mouse = availableDevices.at(idx).mouse;
+		DevHandler *devhandler = new DevHandler(d);
+		availableDevices.removeAt(idx);
+		handlers.append(devhandler);
+	}
 		
-		// create a devhandler for every device that matches vendor and product
-		// of the configured device,
-		while (availableDevices.count(d))
+	/*
+	 * read the <signal> entries.
+	 * [key] will be the input event, that will be transformed
+	 * [default] will be the current output device, this is 
+	 * transformed to. If no [default] is set, the current output will
+	 * be the same as the input.
+	 * For DevHandlers with window specific settings, the current output
+	 * becomes the default output when the TransformationStructure is
+	 * constructed, otherwise it won't ever change anyway...
+	 */
+	xml.readNextStartElement();
+	while(!xml.atEnd() && !xml.hasError())
+	{
+		if (xml.isStartElement())
 		{
-			int idx = availableDevices.indexOf(d);
-			// copy information obtained from /proc/bus/input/devices to complete
-			// the data in the idevs object used to construct the DevHandler
-			d.event = availableDevices.at(idx).event;
-			d.mouse = availableDevices.at(idx).mouse;
-			DevHandler *devhandler = new DevHandler(d);
-			availableDevices.removeAt(idx);
-			
-			/*
-			 * read the <signal> entries.
-			 * [key] will be the input event, that will be transformed
-			 * [default] will be the current output device, this is 
-			 * transformed to. If no [default] is set, the current output will
-			 * be the same as the input.
-			 * For DevHandlers with window specific settings, the current output
-			 * becomes the default output when the TransformationStructure is
-			 * constructed, otherwise it won't ever change anyway...
-			 */
-			QDomNodeList codes = nodes.at(i).toElement().elementsByTagName("signal");
-			for (int j = 0; j < codes.length(); j++)
+			if (xml.name() == "signal")
 			{
-				QString key = codes.at(j).attributes().namedItem("key").nodeValue();
-				QString def = codes.at(j).attributes().namedItem("default").nodeValue();
-				if (def == "")
-					devhandler->addInput(keymap[key]);
-				else
-					devhandler->addInput(keymap[key], OutEvent(def));
+				QString key = xml.attributes().value("key").toString();
+				QString def = xml.attributes().value("default").toString();
+				foreach(AbstractInputHandler *a, handlers)
+				{
+					DevHandler *devhandler = static_cast<DevHandler*>(a);
+					if (def == "")
+						devhandler->addInput(keymap[key]);
+					else
+						devhandler->addInput(keymap[key], OutEvent(def));
+				}
+				while(!xml.atEnd() && !xml.hasError())
+				{
+					if (xml.isEndElement())
+						if (xml.name() == "signal")
+							break;
+						else
+							qDebug() << "Reading a <signal> - Warning: unexpected end of element at line " << xml.lineNumber();
+					xml.readNext();
+				}
 			}
-			handlers.append(devhandler);
+			else
+				qDebug() << "Reading a <device> - Warning: unexpected element at line " << xml.lineNumber();
 		}
+		else if (xml.isEndElement())
+			if (xml.name() == "device")
+				break;
+			else
+				qDebug() << "Reading a <device> - Warning: unexpected end of element at line " << xml.lineNumber();
+		xml.readNext();
 	}
 	return handlers;
 }

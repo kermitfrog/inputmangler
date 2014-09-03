@@ -39,6 +39,11 @@ WindowSettings* TransformationStructure::window(QString w, bool create)
 	return classes.value(w);
 }
 
+void TransformationStructure::addWindowSettings(QString s, WindowSettings* w)
+{
+	classes.insert(s, w);
+}
+
 /*!
  * @brief get output events for a given window and window title
  */

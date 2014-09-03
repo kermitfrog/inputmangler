@@ -18,7 +18,7 @@
 */
 
 #include <unistd.h>
-#include <QtXml>
+#include <QXmlStreamReader>
 #include <signal.h>
 #include "imdbusinterface.h"
 #include "inputmangler.h"
@@ -47,35 +47,57 @@ bool InputMangler::readConf()
 	else
 		confPath = QCoreApplication::arguments().at(1);
 	QFile f(confPath);
-	QDomDocument conf;
-	QDomNodeList nodes;
-	conf.setContent(&f);
+	if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+		qDebug() << "could not open configuration File for reading: " << confPath;
+	QXmlStreamReader conf(&f);
 	
 	// set up key definitions as well as char mappings and multi-char commands (nethandler)
+	// this must be done *before* anything else is parsed.
+	QString mapfileK, mapfileC, mapfileA;
+	while(!conf.atEnd() && !conf.hasError())
 	{
-		QDomElement e = conf.elementsByTagName("mapfiles").at(0).toElement();
-		QString k, c, a;
-		k = e.attribute("keymap");
-		c = e.attribute("charmap");
-		a = e.attribute("axismap");
- 		qDebug() << "using keymap = " << k << ", charmap = " << c << ", axismap = " << a;
-		setUpKeymaps(k, c, a);
-	}
-	// all handler-specific configuration is read by the registered parsing functions
-	foreach (QString nodeName, AbstractInputHandler::parseMap.keys())
-	{
-		nodes = conf.elementsByTagName(nodeName);
-		handlers.append(AbstractInputHandler::parseMap[nodeName](nodes));
-		// FIXME: write a proper interface for doing this or something
-		if (nodeName == "xwatcher")
+		if(conf.isStartElement())
 		{
-			XWatcher *xwatcher = static_cast<XWatcher*>(handlers.last());
-			connect(xwatcher, SIGNAL(windowChanged(QString,QString)),
-					SLOT(activeWindowChanged(QString,QString)));
-			connect(xwatcher, SIGNAL(windowTitleChanged(QString)),
-					SLOT(activeWindowTitleChanged(QString)));
+			if (conf.name() == "mapfiles")
+			{
+				QXmlStreamAttributes mapfiles = conf.attributes();
+				if(mapfiles.hasAttribute("keymap"))
+					mapfileK = mapfiles.value("keymap").toString();
+				if(mapfiles.hasAttribute("charmap"))
+					mapfileC = mapfiles.value("charmap").toString();
+				if(mapfiles.hasAttribute("axismap"))
+					mapfileA = mapfiles.value("axismap").toString();
+			}
 		}
+		conf.readNextStartElement();
 	}
+	qDebug() << "using keymap = " << mapfileK << ", charmap = " << mapfileC << ", axismap = " << mapfileA;
+	setUpKeymaps(mapfileK, mapfileC, mapfileA);
+	
+	// on the second pass, configure all the handlers
+	f.seek(0);
+	conf.setDevice(&f);
+	conf.readNextStartElement();
+	while(!conf.atEnd() && !conf.hasError())
+	{
+		if (AbstractInputHandler::parseMap.contains(conf.name().toString()))
+		{
+			qDebug() << "found <" << conf.name().toString(); 
+			// all handler-specific configuration is read by the registered parsing functions
+			handlers.append(AbstractInputHandler::parseMap[conf.name().toString()](conf));
+			// FIXME: write a proper interface for doing this or something
+			if (conf.name() == "xwatcher")
+			{
+				XWatcher *xwatcher = static_cast<XWatcher*>(handlers.last());
+				connect(xwatcher, SIGNAL(windowChanged(QString,QString)),
+						SLOT(activeWindowChanged(QString,QString)));
+				connect(xwatcher, SIGNAL(windowTitleChanged(QString)),
+						SLOT(activeWindowTitleChanged(QString)));
+			}
+		}
+		conf.readNextStartElement();
+	}
+	
 	foreach (AbstractInputHandler* handler, handlers)
 	{
 		if (handler->id() != "")
@@ -90,7 +112,6 @@ bool InputMangler::readConf()
 		exit(1);
 	}
 	
-	/// Window-specific settings
 	QStringList ids;
 	foreach(AbstractInputHandler *a, handlers)
 	{
@@ -104,59 +125,17 @@ bool InputMangler::readConf()
 	}
 	ids.removeDuplicates();
 	
-	nodes = conf.elementsByTagName("window");
-	// for each <window>
-	for (int i = 0; i < nodes.length(); i++) 
+	/// Now everything is prepared to read the Window-specific settings
+	f.seek(0);
+	conf.setDevice(&f);
+	conf.readNextStartElement();
+	while(!conf.atEnd() && !conf.hasError())
 	{
-		QDomElement element = nodes.at(i).toElement(); // representing a <window> structure
-		foreach(QString id, ids) // where id = M|F|? -> for each id
+		if (conf.name() == "window")
 		{
-			/*
-			 * if the <window> has no default settings for the id,
-			 * it is still possible, there are are settings for 
-			 * special titles.
-			 * We need to check that to decide if a WindowSettings
-			 * object needs to be created.
-			 */
-			bool hasNoIdInWindowButTitlesWithId = false;
-			QDomNodeList titles = element.elementsByTagName("title");
-			if (!hasSettingsForId(id, element))
-			{
-				for (int k = 0; k < titles.length(); k++)
-				{
-					QDomElement t = titles.at(k).toElement(); // representing a <title> structure
-					if (hasSettingsForId(id, t))
-					{
-						hasNoIdInWindowButTitlesWithId = true;
-						break;
-					}
-				}
-				if (!hasNoIdInWindowButTitlesWithId)
-					continue;
-			}
-			
-			// create WindowSettings
-			WindowSettings *windowSetting = wsets[id].window(element.attribute("class"), true);
-			/*
-			 * set default outputs for that window class.
-			 * in the special case mentioned above, the window default output
-			 * events are same as the id default.
-			 */
-			if (hasNoIdInWindowButTitlesWithId)
-				windowSetting->def = wsets[id].def;
-			else
-				windowSetting->def = parseOutputs(id, element, wsets[id].def);
-
-			// for each <title> inside the current <window>
-			for (int k = 0; k < titles.length(); k++)
-			{
-				QDomElement t = titles.at(k).toElement(); // <title>
-				if (!t.hasAttribute(id))
-					continue;
-				windowSetting->titles.append(new QRegularExpression(QString("^") + t.attribute("regex") + "$"));
-				windowSetting->events.append(parseOutputs(id, t, windowSetting->def));
-			}
+			readWindowSettings(conf, ids);
 		}
+		conf.readNextStartElement();
 	}
 	
 	// Prepare and actualy start threads. Also roll a sanity check.
@@ -184,22 +163,124 @@ bool InputMangler::readConf()
 	f.close();
 }
 
-/*!
- * @brief Check if element has any output definition for TransformationStructure with id
- * @param id Id of a TransformationStructure
- * @param element XML element, typicaly <window> or <title>
- */
-bool InputMangler::hasSettingsForId(QString id, QDomElement element)
+bool InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 {
-	// short version
-	if (element.hasAttribute(id))
-		return true;
-	// long version
-	QDomNodeList nodes = element.elementsByTagName("long");
-	for (int i = 0; i < nodes.length(); i++)
-		if (nodes.at(i).attributes().namedItem("id").nodeValue() == id)
-			return true;
-	return false;
+	QString windowClass = conf.attributes().value("class").toString();
+	QMap<QString, WindowSettings*> wsettings;
+	QMap<QString, bool> used;
+	// create WindowSettings
+	foreach(QString id, ids)
+	{
+		wsettings.insert(id, new WindowSettings());
+		used[id] = false;
+		// set default outputs for that window class to ids default.
+		wsettings[id]->def = wsets[id].def;
+	}
+	
+	foreach (QXmlStreamAttribute attr, conf.attributes())
+	{
+		if (attr.name() == "class")
+			 continue;
+		else if (ids.contains(attr.name().toString()))
+		{
+			wsettings[attr.name().toString()]->def = parseOutputsShort(attr.value().toString());
+			used[attr.name().toString()] = true;
+		}
+		else
+			qDebug() << "Warning: unexpected attribute at line " << conf.lineNumber();
+	}
+	
+	while(!conf.atEnd() && !conf.hasError())
+	{
+		if (conf.isEndElement())
+		{
+			if (conf.name() != "window")
+				xmlError(conf);
+			break;
+		}
+		if (!conf.isStartElement())
+		{
+			conf.readNext();
+			continue;
+		}
+		if (conf.name() == "long")
+		{
+			WindowSettings *w = wsettings[conf.attributes().value("id").toString()];
+			w->def = parseOutputsLong(conf, w->def);
+		}
+		if (conf.name() == "title")
+		{
+			QString regex = conf.attributes().value("regex").toString();
+			foreach (QXmlStreamAttribute attr, conf.attributes())
+			{
+				if (attr.name().toString() == "regex")
+					continue;
+				else if (ids.contains(attr.name().toString()))
+				{
+					// attr.name == id
+					wsettings[attr.name().toString()]->titles.append(new QRegularExpression(QString("^") + regex + "$"));
+					wsettings[attr.name().toString()]->events.append(parseOutputsShort(attr.value().toString()));
+					used[attr.name().toString()] = true;
+				}
+				else
+					qDebug() << "Reading <title> - Warning: unexpected attribute at line " << conf.lineNumber();
+			}
+			conf.readNext();
+			while(!conf.atEnd() && !conf.hasError())
+			{
+				if (conf.isEndElement())
+				{
+					if (conf.name() == "title")
+						break;
+					if (conf.name() != "long")
+						xmlError(conf);
+					break;
+				}
+				if (!conf.isStartElement())
+				{
+					conf.readNext();
+					continue;
+				}
+				
+				if (conf.name() != "long")
+				{
+					qDebug() << "Reading <long> - Warning: unexpected element at line " << conf.lineNumber();
+					conf.readNext();
+					continue;
+				}
+				
+				QString id = conf.attributes().value("id").toString();
+				wsettings[id]->titles.append(new QRegularExpression(QString("^") + regex + "$"));
+				wsettings[id]->events.append(parseOutputsLong(conf, wsettings[id]->def));
+				used[id] = true;
+				conf.readNext();
+			}
+		}
+		conf.readNext();
+	}
+	foreach(QString id, ids)
+	{
+		if (used[id] == true)
+			wsets[id].addWindowSettings(windowClass, wsettings[id]);
+		else
+			delete wsettings[id];
+	}
+	return true;
+}
+
+
+void InputMangler::xmlError(QXmlStreamReader& conf)
+{
+	qDebug() << "Error in configuration at line " << conf.lineNumber();
+}
+
+QVector< OutEvent > InputMangler::parseOutputsShort(QString s)
+{
+	QVector<OutEvent> vec;
+	QStringList l = s.split(",");
+	foreach(QString s, l)
+		vec.append(OutEvent(s));
+	return vec;
 }
 
 /*!
@@ -210,49 +291,29 @@ bool InputMangler::hasSettingsForId(QString id, QDomElement element)
  * @param def Default value. Returned when no output definition is found. Result of
  * <long> description is based on this.
  */
-QVector< OutEvent > InputMangler::parseOutputs(QString id, QDomElement element, QVector< OutEvent > def)
+QVector< OutEvent > InputMangler::parseOutputsLong(QXmlStreamReader& conf, QVector< OutEvent > def)
 {
-	// short version
-	if (element.hasAttribute(id))
+	if (conf.readNext() != QXmlStreamReader::Characters)
 	{
-		def.clear();
-		QStringList l = element.attributes().namedItem(id).nodeValue().split(",");
-		foreach(QString s, l)
-			def.append(OutEvent(s));
-		return def;
+		xmlError(conf);
+		return QVector<OutEvent>();
 	}
-	// long version
-	QDomNodeList nodes = element.elementsByTagName("long");
-	for(int i =  0; i < nodes.length(); i++)
+	
+	// valid seperators are '\n' and ','
+	QStringList lines = conf.text().toString().split(QRegExp("(\n|,)"));
+	foreach (QString s, lines)
 	{
-		if (nodes.at(i).attributes().namedItem("id").nodeValue() != id)
-			continue;
-		// valid seperators are '\n' and ','
-		QStringList lines = nodes.at(i).toElement().text().split(QRegExp("(\n|,)"));
-		foreach (QString s, lines)
-		{
-			// we want allow a dual use of '=', e.g. <long> ==c, r== </long>
-			s = s.trimmed();
-			int pos = s.indexOf('=', 1);
-			QString left = s.left(pos);
-			QString right = s.mid(pos + 1);
-			if (left.isEmpty() && right.isEmpty())
-				return def;
-			
-			// find the right input index
-			QMap<QString,AbstractInputHandler*>::iterator handler = handlersById.find(id);
-			while(handler != handlersById.end() && handler.key() == id)
-			{
-				int idx = handler.value()->inputIndex(left);
-				if (idx >= 0)
-				{
-					def[idx] = OutEvent(right);
-					break;
-				}
-				++handler;
-			}
-		}
+		// we want allow a dual use of '=', e.g. <long> ==c, r== </long>
+		s = s.trimmed();
+		int pos = s.indexOf('=', 1);
+		QString left = s.left(pos);
+		QString right = s.mid(pos + 1);
+		if (left.isEmpty() && right.isEmpty())
+			break;
 	}
+	if (conf.readNext() != QXmlStreamReader::EndElement)
+		xmlError(conf);
+	
 	return def;
 }
 
