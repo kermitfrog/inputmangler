@@ -17,15 +17,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <unistd.h>
-#include <QXmlStreamReader>
-#include <signal.h>
 #include "imdbusinterface.h"
 #include "inputmangler.h"
 #include "handlers.h"
 #include "keydefs.h"
+#include <unistd.h>
+#include <QXmlStreamReader>
+#include <signal.h>
 
-
+/*!
+ * @brief Constructor. Calls registerHandlers and readConf.
+ */
 InputMangler::InputMangler()
 {
 	registerHandlers();
@@ -37,7 +39,7 @@ InputMangler::InputMangler()
  */
 bool InputMangler::readConf()
 {
-	// open output devices
+	// open output devices and set up some global variables.
 	OutEvent::generalSetup();
 	AbstractInputHandler::generalSetup();
 	//parse config
@@ -163,7 +165,12 @@ bool InputMangler::readConf()
 	f.close();
 }
 
-bool InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
+/*!
+ * @brief read window specific settings (a <window> element)
+ * @var conf QXmlStreamReader object at the position of a <window> element
+ * @var ids List of known handler IDs. IDs not in this list will be ignored.
+ */
+void InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 {
 	QString windowClass = conf.attributes().value("class").toString();
 	QMap<QString, WindowSettings*> wsettings;
@@ -265,15 +272,20 @@ bool InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 		else
 			delete wsettings[id];
 	}
-	return true;
+	return;
 }
 
-
+// TODO: extend or delete? 
 void InputMangler::xmlError(QXmlStreamReader& conf)
 {
 	qDebug() << "Error in configuration at line " << conf.lineNumber();
 }
 
+/*!
+ * @brief Parse an output definition for window specific settings.
+ * @param s string containing the output definitions.
+ * @return the parsed vector of OutEvents.
+ */
 QVector< OutEvent > InputMangler::parseOutputsShort(QString s)
 {
 	QVector<OutEvent> vec;
@@ -284,10 +296,9 @@ QVector< OutEvent > InputMangler::parseOutputsShort(QString s)
 }
 
 /*!
- * @brief Parse output definition for TransformationStructure with id. 
+ * @brief Parse output definition for TransformationStructure. 
  * Returns def when nothing is found.
- * @param id Id of a TransformationStructure
- * @param element XML element, typicaly <window> or <title>
+ * @param element QXmlStreamReader object at the position of a <window> or <title> element.
  * @param def Default value. Returned when no output definition is found. Result of
  * <long> description is based on this.
  */
@@ -357,8 +368,7 @@ void InputMangler::cleanUp()
 	qDebug() << "waiting for Threads to finish";
 	foreach (AbstractInputHandler *h, handlers)
 		h->wait(4000);
-	close(OutEvent::fd_kbd);
-	close(OutEvent::fd_mouse);
+	OutEvent::closeVirtualDevices();
 	foreach (AbstractInputHandler *h, handlers)
 		delete h;
 	handlers.clear();
@@ -368,12 +378,20 @@ void InputMangler::cleanUp()
 /*!
  * @brief Print the current window class and title to console.
  * Called by sending a USR1 signal.
- * TODO: make it work as a dbus call, returning the string.
  */
 void InputMangler::printWinInfo()
 {
-	qDebug() << "Class = " << wm_class << ", Title = " << wm_title;
+	qDebug() << winInfoToString();
 }
+
+/*!
+ * @brief get a string describing the current window
+ */
+QString InputMangler::winInfoToString()
+{
+	return "class = \"" + wm_class + "\", title = \"" + wm_title + "\"";
+}
+
 
 /*!
  * @brief Print the current window specific config to console.

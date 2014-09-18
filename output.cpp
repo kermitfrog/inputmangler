@@ -24,20 +24,49 @@
 #include <QTest>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cerrno>
 
-int OutEvent::fd_kbd;
-int OutEvent::fd_mouse;
-int OutEvent::fds[4];
+int OutEvent::fds[5];
 
+/*!
+ * @brief opens virtual devices for output
+ */
 void OutEvent::generalSetup()
 {
-	fd_kbd = open("/dev/virtual_kbd", O_WRONLY|O_APPEND);
-	fd_mouse = open("/dev/virtual_mouse", O_WRONLY|O_APPEND);
-	fds[0] = 0;
-	fds[1] = fd_kbd;
-	fds[2] = fd_mouse;
-	fds[3] = 0;
+	openVDevice("/dev/virtual_kbd", 1);
+	openVDevice("/dev/virtual_mouse", 2);
+	openVDevice("/dev/virtual_tablet", 3);
+	openVDevice("/dev/virtual_joystick", 4);
+#ifdef DEBUGME	
+	qDebug() << "kbd: " << OutEvent::fds[1] << ", mouse: " << OutEvent::fds[2];
+	qDebug() << "tablet: " << OutEvent::fds[4] << ", joystick: " << OutEvent::fds[4];
+#endif
 }
+
+/*!
+ * @brief opens a virtual device for output.
+ */
+void OutEvent::openVDevice(char* path, int num)
+{
+	int fd = -1, numtries = 100000;
+	while (numtries-- && fd < 0)
+	{
+		fd = open(path, O_WRONLY|O_APPEND);
+	}
+	fds[num] = fd;
+	qDebug() << path << ": errno = " << errno << "  tries left before giving up: " << numtries;
+
+}
+
+/*!
+ * @brief closes virtual devices
+ */
+void OutEvent::closeVirtualDevices()
+{
+	for (int i = 1; i <= 4; i++)
+		close(fds[i]);
+}
+
 
 
 /*!
@@ -80,6 +109,9 @@ OutEvent::OutEvent(QString s)
 		outType = Simple;
 }
 
+/*!
+ * @brief initialize Values from an InputEvent
+ */
 void OutEvent::fromInputEvent(InputEvent& e)
 {
 	eventtype = e.type;
@@ -87,12 +119,22 @@ void OutEvent::fromInputEvent(InputEvent& e)
 	eventcode = e.code;
 }
 
+/*!
+ * @brief construct from an InputEvent
+ */
 OutEvent::OutEvent(InputEvent& e)
 {
 	outType = Simple;
 	fromInputEvent(e);
 }
 
+/*!
+ * @brief Sends the OutEvent to the correct Output device.
+ * If valueType is set Positive or Negative, the value will be multiplied by -1 if neccessary.
+ * Calls send or send(int).
+ * @param value The value of the input event (see linux/input.h). 
+ * @param sourceType The type of device, this was triggered from.
+ */
 void OutEvent::send(int value, __u16 sourceType)
 {
 	if (eventtype == sourceType)
@@ -129,6 +171,13 @@ void OutEvent::send(int value, __u16 sourceType)
 	}
 }
 
+/*!
+ * @brief Sends an OutEvent with a value. 
+ * send(i) for a Simple event will just send the event with the value.
+ * send(i) for a Combo event will also triggered all modifiers before/after the target 
+ * key and split output between mouse and keyboard when neccessary.
+ * @param value The value of the input event (see linux/input.h). 
+ */
 void OutEvent::send(int value)
 {
 	VEvent e[NUM_MOD+1];
@@ -169,8 +218,17 @@ void OutEvent::send(int value)
 // 	usleep(5000); // wait x * 0.000001 seconds
 }
 
+/*!
+ * @brief Sends a raw event to the device corrosponding to dtype.
+ * @param type event type - see linux/input.h
+ * @param code event code - see linux/input.h
+ * @param value event value - see linux/input.h
+ * @param dtype Type of the device on which the event should be generated.
+ */
 void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
 {
+// 	qDebug() << "sendRaw: type= " << type << ", code= " << code << ", value= " << value 
+// 			 << ", dtype= " << dtype;
 	VEvent e;
 	e.type = type;
 	e.code = code;
@@ -189,20 +247,32 @@ void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
 			else
 				sendEvent(&e);
 			break;
+		case Tablet:
+			write(fds[3], &e, sizeof(VEvent));
+			break;
+		case Joystick:
+			write(fds[4], &e, sizeof(VEvent));
+			break;
+		case TabletOrJoystick:
+			write(fds[3], &e, sizeof(VEvent));
+			write(fds[4], &e, sizeof(VEvent));
+			break;
 	};
 	
 }
 
+/*!
+ * @brief Not yet implemented.
+ */
 void OutEvent::sendMacro()
 {
 
 }
 
 /*!
- * @brief Transforms an OutEvent (keycode and maybe modifiers) to a Vector 
- * of raw VEvents and sends it to the virtual keyboard driver.
- * TEvent -> send VEvent[]:
- * @param t Event to be generated.
+ * @brief Triggers the OutEvent, as in press and release.
+ * calls send(1), then send(0) followed by a 5 microsecond sleep.
+ * Mostly used by Net module.
  */
 void OutEvent::send()
 {
@@ -219,6 +289,14 @@ void OutEvent::send()
 	usleep(5000); // wait x * 0.000001 seconds
 }
 
+/*!
+ * @brief Sends num VEvents to the virtual output determined by the event type.
+ * EV_KEY -> Keyboard
+ * EV_REL -> Mouse
+ * EV_ABS -> Tablet
+ * @param e buffer with VEvents
+ * @param num number of VEvents
+ */
 void OutEvent::sendEvent(OutEvent::VEvent* e, int num)
 {
 	write(fds[e[0].type], e, num*sizeof(VEvent));
@@ -226,6 +304,8 @@ void OutEvent::sendEvent(OutEvent::VEvent* e, int num)
 
 /*!
  * @brief sends num raw input events to be generated the virtual mouse device.
+ * @param e buffer with VEvents
+ * @param num number of VEvents
  */
 //FIXME: should be inline, but then code does not link -> WTF???
 void OutEvent::sendMouseEvent(VEvent* e, int num)
@@ -234,11 +314,13 @@ void OutEvent::sendMouseEvent(VEvent* e, int num)
 		qDebug() << "Mouse sending: " 
 		<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
 #endif
-	write(fd_mouse, e, num*sizeof(VEvent));
+	write(fds[2], e, num*sizeof(VEvent));
 }
 
 /*!
  * @brief sends num raw input events to be generated the virtual keyboard device.
+ * @param e buffer with VEvents
+ * @param num number of VEvents
  */
 void OutEvent::sendKbdEvent(VEvent* e, int num)
 {
@@ -246,7 +328,7 @@ void OutEvent::sendKbdEvent(VEvent* e, int num)
 	qDebug() << "Kbd sending: " 
 	<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
 #endif
-	write(fd_kbd, e, num*sizeof(VEvent));
+	write(fds[1], e, num*sizeof(VEvent));
 }
 
 /*!

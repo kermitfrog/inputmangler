@@ -22,13 +22,15 @@
 #include <QObject>
 #include <QSocketNotifier>
 
-
+/*!
+ * @brief This class sends qt signals when the application receives a linux signal.
+ */
 class QtSignalHandler : public QObject
 {
 Q_OBJECT
 
 	public:
-	QtSignalHandler(QObject *parent = 0, const char *name = 0);
+	QtSignalHandler(QObject* parent = 0);
 	~QtSignalHandler() {};
 
 	static void signalHandler(int signum);

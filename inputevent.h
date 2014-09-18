@@ -21,8 +21,11 @@
 #pragma once
 #include <linux/input.h>
 #include <QString>
-enum ValueType {All, Positive, Negative, Zero};
+#include "definitions.h"
 
+/*!
+ * @brief Class containing an input event.
+ */
 class InputEvent
 {
 	
@@ -38,9 +41,9 @@ public:
     bool operator==(const __u16 other) {return other == code;};
 	QString print();
 	
-	__u16 type = EV_KEY;
-	__u16 code = 0;
-	ValueType valueType = All;
+	__u16 type = EV_KEY;        //!< event type (see linux/input.h)
+	__u16 code = 0;             //!< event code (see linux/input.h) 
+	ValueType valueType = All;  //!< filter for values (see definitions.h)
 	
 	
 };

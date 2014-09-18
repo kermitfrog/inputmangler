@@ -20,12 +20,12 @@
 
 #pragma once
 
-#include <QFile>
 #include "abstractinputhandler.h"
 #include "output.h"
+#include <QFile>
 
 /*!
- * @brief DevHandler reads input from one keyboard or mouse device and transforms it 
+ * @brief DevHandler reads input from one input device and transforms it 
  * according to the rules set in the configuration file. (Saved in outputs)
  */
 class DevHandler : public AbstractInputHandler
@@ -36,14 +36,17 @@ class DevHandler : public AbstractInputHandler
 public:
     DevHandler(AbstractInputHandler::idevs device);
     virtual ~DevHandler();
-	//setTranslations()
 	static QList<AbstractInputHandler*> parseXml(QXmlStreamReader &xml);
 
 protected:
 	QString filename;
 	int fd;        // file descriptor
 	DType devtype; // keyboard or mouse
+	input_absinfo * absmap[ABS_CNT]; // min/max values, etc. of absolute axes
+	double absfac[ABS_CNT]; //!< multiplicator for absolute values
+	int maxVal, minVal;     //!< min/max values of absolute axes in virtual output device
+	
 	void run();
-//     void createEvent(OutEvent *out, input_event *buf);
+    void sendAbsoluteValue(__u16 code, __s32 value);
 };
 

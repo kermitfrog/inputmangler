@@ -17,27 +17,29 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#include "imdbusinterface.h"
-#include <QDBusConnection>
-#include <QDebug>
+#pragma once
 
 /*!
- * @brief Register on d-bus.
+ * @brief Device Type.
  */
-imDbusInterface::imDbusInterface(InputMangler* im)
-{
-	this->im = im;
- 	QDBusConnection::sessionBus().registerService("org.inputManglerInterface");
- 	QDBusConnection::sessionBus().registerObject("/org/inputMangler/Interface", this, QDBusConnection::ExportAllSlots);
-}
-
-imDbusInterface::~imDbusInterface()
-{
-	QDBusConnection::sessionBus().unregisterObject("/org/inputMangler/Interface", QDBusConnection::UnregisterTree);
-	QDBusConnection::sessionBus().unregisterService("org.inputManglerInterface");
-}
+enum DType{
+	Auto, 			//!< Auto Detect - currently not used
+	Keyboard, 		//!< Keyboard - a device that sends only keys and may have LEDs
+	Mouse, 			//!< Mouse - a device that sends keys and relative movements
+	Tablet, 		//!< Tablet or Touchscreen - a device that sends special keys and absolute movements.
+	Joystick, 		//!< Joystick - a device that sends keys and absolute movements.
+	TabletOrJoystick //!< A device that can't be clearly distinguished between tablet or joystick (eg VirtualBox Tablet)
+};
 
 
-
-// #include "moc_imdbusinterface.cpp"
+/*!
+ * @brief ValueType: which values should be matched.
+ */
+enum ValueType {
+	All, 			//!< all values
+	Positive, 		//!<  >0 (e.g. mouse wheel down)
+	Negative, 		//!<  <0 (e.g. mouse wheel up)
+	Zero, 			//!< ==0 currently not used
+	TabletAxis, 	//!< axis of a tablet device
+	JoystickAxis	//!< axis of a joystick device
+};

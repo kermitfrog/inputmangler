@@ -32,12 +32,13 @@ static ssize_t device_read(struct file *, char *, size_t, loff_t *);
 static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
 
 static int Major;            /* Major number assigned to our device driver */
-static int Device_Open[2] = {0,0};  /* Is device open?  Used to prevent multiple access to the device */
+static int Device_Open[4] = {0,0,0,0};  /* Is device open?  Used to prevent multiple access to the device */
 
 struct class * cl;
 struct device * dev;
 
 struct file_operations fops = {
+	   owner: THIS_MODULE,
        read: device_read,
        write: device_write,
        open: device_open,
@@ -105,7 +106,7 @@ static int __init inputdummy_init(void)
 	vkbd_dev->phys = "inputdummy/input0";
 	
 	err = input_register_device(vkbd_dev);
-    printk ("inputdummy: registered=%d\n", err);
+    printk (KERN_INFO "inputdummy: registered=%d\n", err);
 	if (err)
 		goto fail1;
 
@@ -118,25 +119,28 @@ static int __init inputdummy_init(void)
 	vmouse_dev->phys = "inputdummy/input1";
 
 	err = input_register_device(vmouse_dev);
-    printk ("inputdummy: registered=%d\n", err);
+    printk (KERN_INFO "inputdummy: registered=%d\n", err);
 	if (err)
 		goto fail2;
 
 
 	// Tablet
-	vtablet_dev->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+	//vtablet_dev->propbit[0] = BIT_MASK(INPUT_PROP_POINTER);
+	vtablet_dev->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) //| BIT_MASK(EV_REL)
+	                      | BIT_MASK(EV_ABS) | BIT_MASK(EV_MSC);
 	setAllBits(vtablet_dev->keybit, BTN_MISC, BTN_GEAR_UP);
+//  	setAllBits(vtablet_dev->relbit, REL_HWHEEL, REL_CNT);
  	setAllBits(vtablet_dev->absbit, ABS_X, ABS_MISC);
+	vtablet_dev->mscbit[0] = BIT_MASK(MSC_SERIAL);
 	for (i = ABS_X; i <= ABS_MISC; i++)
 	{
- 		input_set_abs_params(vtablet_dev, i, 0, 32000, 0, 0);
- 		input_set_abs_params(vtablet_dev, i, 0, 20000, 0, 0);
+ 		input_set_abs_params(vtablet_dev, i, 0, 32767, 0, 0);
 	}
 	vtablet_dev->name = "Virtual Tablet";
 	vtablet_dev->phys = "inputdummy/input2";
 
 	err = input_register_device(vtablet_dev);
-    printk ("inputdummy: registered=%d\n", err);
+    printk (KERN_INFO "inputdummy: registered=%d\n", err);
 	if (err)
 		goto fail3;
 
@@ -153,7 +157,7 @@ static int __init inputdummy_init(void)
 	vjoy_dev->phys = "inputdummy/input3";
 
 	err = input_register_device(vjoy_dev);
-    printk ("inputdummy: registered=%d\n", err);
+    printk (KERN_INFO "inputdummy: registered=%d\n", err);
 	if (err)
 		goto fail4;
 
@@ -162,10 +166,10 @@ static int __init inputdummy_init(void)
 
     Major = register_chrdev(0, "virtual_input", &fops);	
     if (Major < 0) {
-		printk ("Registering the character device failed with %d\n", Major);
+		printk (KERN_ERR "Registering the character device failed with %d\n", Major);
 	    goto fail1;
     }
-    printk ("inputdummy: Major=%d\n", Major);
+    printk (KERN_INFO "inputdummy: Major=%d\n", Major);
 
     cl = class_create(THIS_MODULE, "virtual_input");
     if (!IS_ERR(cl)) {
@@ -187,8 +191,9 @@ static int __init inputdummy_init(void)
 }
 
 static int device_open(struct inode *inode, struct file *filp) {
-    if (Device_Open[0] && Device_Open[1]) return -EBUSY;
-    ++Device_Open[iminor(filp->f_path.dentry->d_inode)];
+	int devNum = iminor(filp->f_path.dentry->d_inode);
+    if (Device_Open[devNum]) return -EBUSY;
+    ++Device_Open[devNum];
     return 0;
 }
 	
@@ -238,7 +243,7 @@ static ssize_t device_write(struct file *filp, const char *buff, size_t len, lof
 			dev = vjoy_dev;
 			break;
 		default:
-			printk("inputdumy: minor number of %d requested", minor);
+			printk(KERN_NOTICE "inputdumy: minor number of %d requested", minor);
 			return -1;
 	}
 	int *myinput;
@@ -251,7 +256,7 @@ static ssize_t device_write(struct file *filp, const char *buff, size_t len, lof
             input_event(dev, command, arg1, arg2);
 			if (minor < 2)
 				input_sync(dev);
-// 			printk("vkbd_dev: %d %d %d\n", command, arg1, arg2);
+//  			printk("vkbd_dev: %d %d %d\n", command, arg1, arg2);
     }
 
     return len;
@@ -278,7 +283,8 @@ module_init(inputdummy_init);
 module_exit(inputdummy_exit) ;
 
 MODULE_AUTHOR("Arkadiusz Guzinski, kermit@ag.de1.cc, based on code from Vitaly Shukela, vi0oss@gmail.com");
-MODULE_DESCRIPTION("Virtual keyboard and mouse driver");
+MODULE_DESCRIPTION("Virtual input device driver");
 MODULE_LICENSE("GPL");
+MODULE_VERSION("1.1");
 
 

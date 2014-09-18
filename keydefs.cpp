@@ -150,6 +150,7 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 			else
 				continue;
 			
+			// see definitions.h for documentation of value types.
 			switch (tmp[1][0].toLatin1()) {
 				case '*':
 					vtype = All;
@@ -162,6 +163,12 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 					break;
 				case '0':
 					vtype = Zero;
+					break;
+				case 'T':
+					vtype = TabletAxis;
+					break;
+				case 'J':
+					vtype = JoystickAxis;
 					break;
 			}
 			

@@ -19,24 +19,32 @@
 
 #pragma once
 
-#include <linux/input.h> //__u16...
 #include "inputevent.h"
+#include "definitions.h"
+#include <linux/input.h> //__u16...
 #include <QString>
 #include <QVector>
 #include <QHash>
 
-
-enum DType{Auto, Keyboard, Mouse};
 
 /*!
  * @brief An output event, e.g: 
  * "S" for press shift
  * "g" for press g
  * "d+C" for press Ctrl-D
+ * more Complex Types will be supported in the future (maybe via plugins)
  */
 class OutEvent 
 {
-	enum OutType {Simple, Combo, Macro, Custom};
+	/*!
+	 * @brief OutType is the type of the OutEvent.
+	 */
+	enum OutType {
+		Simple,	//!< A single event. e.g. "key a" - the value is determined by source
+		Combo,	//!< Combo event. e.g. "ctrl+c"
+		Macro,	//!< Complex event sequence. Not yet implemented.
+		Custom	//!< Handle via plugin. Not yet implemented.
+	};
 	/*!
 	* @brief Data that wil be sent to inputdummy, aka low level input event
 	* See linux/input.h for Details on Variables.
@@ -74,15 +82,15 @@ public:
 	static void sendRaw(__s32 type, __s32 code, __s32 value, DType dtype = Auto);
 	
 	static void generalSetup();
-	static int fd_kbd;
-	static int fd_mouse;
-	static int fds[4]; //!< None, Keyboard, Mouse, Absolute
+	static void closeVirtualDevices();
+	static int fds[5]; //!< file descriptors for /dev/virtual_*: None, Keyboard, Mouse, Tablet, Joystick
 #ifdef DEBUGME
 	QString initString;
 #endif
 protected:
 	void sendMacro();
 	void fromInputEvent(InputEvent& e);
+	static void openVDevice(char * path, int num);
 	
 };
 

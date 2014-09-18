@@ -44,7 +44,32 @@ void DevHandler::run()
 	// grab the device, otherwise there will be double events
 	ioctl(fd, EVIOCGRAB, 1);
 	
-	
+	//get abs information. minVal and maxVal corrospond to what is set in inputdummy
+	if (devtype == Tablet || devtype == Joystick || devtype == TabletOrJoystick)
+	{
+		if (devtype == Tablet)
+		{
+			minVal =     0;
+			maxVal = 32767;
+		}
+		else
+		{
+			minVal = -255;
+			maxVal =  255;
+		}
+		
+		for (int i = 0; i < ABS_CNT; i++)
+		{
+			absmap[i] = new input_absinfo;
+			if (ioctl(fd, EVIOCGABS(i), absmap[i]) == -1)
+				qDebug() << "Unable to get absinfo for axis " << i;
+			
+			if (absmap[i]->maximum == absmap[i]->minimum)
+				absfac[i] = 0.0;
+			else
+				absfac[i] = ((double)maxVal - (double)minVal) / ((double)absmap[i]->maximum - (double)absmap[i]->minimum);
+		}
+	}
 	struct pollfd p;
 	p.fd = fd;
 	p.events = POLLIN;
@@ -78,12 +103,10 @@ void DevHandler::run()
 			n = read(fd, buf, 4*sizeof(input_event));
 			for (int i = 0; i < n/sizeof(input_event); i++)
 			{
-				//if (id() == "M")// && buf[i].type == EV_REL && buf[i].code > 1 )
-				//	qDebug()<< "yup " << buf[i].type << " " << buf[i].code << " " << buf[i].value;
 				matches = false;
 				// Key/Button and movements(relative and absolute) only
 				// We do not handle misc and sync events
-				if(buf[i].type >= EV_KEY && buf[i].type <= EV_ABS) 
+				if(buf[i].type >= EV_KEY && buf[i].type <= EV_REL) 
 					for(int j = 0; j < outputs.size(); j++)
 					{	
 	 					//qDebug() << j << " of " << outputs.size() << " in " << id();
@@ -97,18 +120,40 @@ void DevHandler::run()
 							break;
 						}
 					}
-				// Pass through
-				if (!matches)
+				// Pass through - absolute movements need translation
+				if (buf[i].type == EV_ABS)
+					sendAbsoluteValue(buf[i].code, buf[i].value);
+				else if (!matches)
 					OutEvent::sendRaw(buf[i].type, buf[i].code, buf[i].value, devtype);
 // 				qDebug("type: %d, code: %d, value: %d", buf[i].type, buf[i].code, buf[i].value );
 			}
 			//qDebug() << id << ":" << n;
 		}
 	}
+	
 	// unlock & close
 	ioctl(fd, EVIOCGRAB, 0);
 	close(fd);
-	
+}
+
+/*!
+ * @brief translate and send an absolute value. Translation is needed because
+ * source and destination devices have different minimum and maximum values for axes.
+ * @param code Axis
+ * @param value Value
+ */
+void DevHandler::sendAbsoluteValue(__u16 code, __s32 value)
+{
+// 	qDebug() << "sendAbsoluteValue: orig = "  << value;
+	int orig = value;
+	value -= absmap[code]->minimum;
+	value *= absfac[code];
+	value += minVal;
+// 	if (devtype == Tablet)
+// 		qDebug() << "sendAbsoluteValue(" << type << code << orig 
+// 		  << ") min1: " << absmap[code]->minimum << "fac: " << absfac[code] 
+// 		  << "minVal: " << minVal << "==> " << value;
+	OutEvent::sendRaw(EV_ABS, code, value, devtype);
 }
 
 /*!
@@ -121,16 +166,16 @@ DevHandler::DevHandler(idevs device)
 	_id = device.id;
 	_hasWindowSpecificSettings = _id != "";
 	filename = QString("/dev/input/") + device.event;
-	if (device.mouse)
-		devtype = Mouse;
-	else
-		devtype = Keyboard;
+	devtype = device.type;
+	QStringList dnames = {"Auto", "Keyboard", "Mouse", "Tablet", "Joystick", "Tablet and Joystick"};
+	qDebug() << "Opening " << device.event << " as " << dnames.at(devtype);
 }
 
 /*!
- * @brief Parses all the <device> parts of the configuration and constructs DevHandler objects.
- * @param nodes All the <device> nodes.
- * @return List containing all DevHandlers.
+ * @brief Parses a <device> part of the configuration and constructs DevHandler objects.
+ * @param xml QXmlStreamReader object at current position of a <device> element.
+ * @return List containing all DevHandlers. This can contain multiple objects because some
+ * devices have multiple event handlers. In this case a thread is created for every event handlers.
  */
 QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 {
@@ -144,9 +189,7 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 	 * id is the config-id 
 	 */
 	idevs d;
-	d.vendor  = xml.attributes().value("vendor").toString();
-	d.product = xml.attributes().value("product").toString();
-	d.id      = xml.attributes().value("id").toString();
+	d.readAttributes(xml.attributes());
 	
 	// create a devhandler for every device that matches vendor and product
 	// of the configured device,
@@ -156,7 +199,7 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 		// copy information obtained from /proc/bus/input/devices to complete
 		// the data in the idevs object used to construct the DevHandler
 		d.event = availableDevices.at(idx).event;
-		d.mouse = availableDevices.at(idx).mouse;
+		d.type = availableDevices.at(idx).type;
 		DevHandler *devhandler = new DevHandler(d);
 		availableDevices.removeAt(idx);
 		handlers.append(devhandler);
@@ -203,10 +246,12 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 				qDebug() << "Reading a <device> - Warning: unexpected element at line " << xml.lineNumber();
 		}
 		else if (xml.isEndElement())
+		{
 			if (xml.name() == "device")
 				break;
 			else
 				qDebug() << "Reading a <device> - Warning: unexpected end of element at line " << xml.lineNumber();
+		}
 		xml.readNext();
 	}
 	return handlers;

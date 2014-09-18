@@ -21,11 +21,17 @@
 #include "inputevent.h"
 #include <QDebug>
 
+/*!
+ * @brief Default constructor
+ */
 InputEvent::InputEvent()
 {
 
 }
 
+/*!
+ * @brief Copy constructor
+ */
 InputEvent::InputEvent(const InputEvent& other)
 {
 	type = other.type;
@@ -33,11 +39,17 @@ InputEvent::InputEvent(const InputEvent& other)
 	valueType = other.valueType;
 }
 
+/*!
+ * @brief Default destructor
+ */
 InputEvent::~InputEvent()
 {
 
 }
 
+/*!
+ * @brief Copy operator
+ */
 InputEvent& InputEvent::operator=(const InputEvent& other)
 {
 	type = other.type;
@@ -45,11 +57,19 @@ InputEvent& InputEvent::operator=(const InputEvent& other)
 	valueType = other.valueType;
 }
 
+/*!
+ * @brief Compares with another InputEvent.
+ */
 bool InputEvent::operator==(const InputEvent& other)
 {
-
+	type = other.type;
+	code = other.code;
+	valueType = other.valueType;
 }
 
+/*!
+ * @brief Compares with a linux input event (see linux/input.h)
+ */
 bool InputEvent::operator==(const input_event& other)
 {
 // 	qDebug() << "type = " << type << ", other type = " << other.type;
@@ -58,6 +78,8 @@ bool InputEvent::operator==(const input_event& other)
 	if (type == EV_REL)
 		switch (valueType){
 			case All:
+			case TabletAxis:
+			case JoystickAxis:
 				return true;
 			case Positive:
 				return other.value > 0;
@@ -69,6 +91,10 @@ bool InputEvent::operator==(const input_event& other)
 	return true;
 }
 
+/*!
+ * @brief Print InputEvent to a QString.
+ * @return the formated QString.
+ */
 QString InputEvent::print()
 {
 	return "InputEvent: code = " + QString::number(code) + ", type = " + QString::number(type)

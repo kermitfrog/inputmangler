@@ -45,7 +45,7 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path);
 // const int MOD_CONTROL	= 0x4;
 // const int MOD_META		= 0x8;
 // const int MOD_ALTGR		= 0x10;
-// const int MOD_REPEAT	= 0x100;
+// const int MOD_REPEAT		= 0x100;
 // const int MOD_MACRO		= 0x1000;
 
 

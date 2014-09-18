@@ -25,9 +25,9 @@
 
 int main(int argc, char **argv) {
 	QCoreApplication a(argc,argv);
-	imDbusInterface dbus;	//for some unknown reason it has to be constructed in main...
 	InputMangler im;
-	QtSignalHandler s;		//handles TERM, HUP, USR1 and USR2
+	imDbusInterface dbus(&im); //for some unknown reason it has to be constructed in main...
+	QtSignalHandler s;		   //handles TERM, HUP, USR1 and USR2
 	QObject::connect(&dbus, SIGNAL(windowChanged(QString, QString)),
 					 &im, SLOT(activeWindowChanged(QString, QString)));
 	QObject::connect(&dbus, SIGNAL(windowTitleChanged(QString)), 

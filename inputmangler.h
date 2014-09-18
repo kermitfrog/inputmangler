@@ -23,11 +23,10 @@
 
 class AbstractInputHandler;
 
-#include <qobject.h>
-#include <QtDBus/QtDBus>
-#include <QtXml>
 #include "abstractinputhandler.h"
 #include "transformationstructure.h"
+#include <QtDBus/QtDBus>
+#include <QtXml>
 
 struct shared_data;
 
@@ -38,7 +37,9 @@ class InputMangler : public QObject
 public:
 	InputMangler();
 	virtual ~InputMangler();
-	//QString getThatStupidWindowTitleFromX(Window* window);
+	QString winInfoToString();
+	//QString configToString();
+	
 
 public slots:
 	void cleanUp();
@@ -56,7 +57,7 @@ private:
     QVector<OutEvent> parseOutputsShort(QString s);
 	QVector<OutEvent> parseOutputsLong(QXmlStreamReader &conf, QVector<OutEvent> def);
 	QMultiMap<QString, AbstractInputHandler*> handlersById;
-	bool readWindowSettings(QXmlStreamReader &conf, QStringList &ids);
+	void readWindowSettings(QXmlStreamReader &conf, QStringList &ids);
 // 	void stopHandlers();
 	
 protected:

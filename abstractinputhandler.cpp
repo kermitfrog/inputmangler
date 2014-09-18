@@ -19,23 +19,20 @@
 
 #include "abstractinputhandler.h"
 #include "inputmangler.h"
+#include "definitions.h"
 #include <QDebug>
 #include <QTest>
 
-shared_data AbstractInputHandler::sd; // TODO: protect
+shared_data AbstractInputHandler::sd; // TODO: protect?
 QMap<QString,QList<AbstractInputHandler*>(*)(QXmlStreamReader&)> AbstractInputHandler::parseMap;
 
 /*!
  * @brief This static Function is called to set up the shared data structure.
- * This includes opening the output devices.
  */
 void AbstractInputHandler::generalSetup()
 {
-	// set up shared data 
+	// set up shared data
 	sd.terminating = false;
-#ifdef DEBUGME	
-	qDebug() << "kbd: " << OutEvent::fd_kbd << ", mouse: " << OutEvent::fd_mouse;
-#endif
 }
 
 /*!
@@ -62,6 +59,7 @@ int AbstractInputHandler::addInput(InputEvent in, OutEvent def)
 	outputs.append(def);
 	return inputs.size();
 }
+
 /*!
  * @brief set current outputs.
  */
@@ -78,8 +76,6 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 	outputs = o;
 }
 
-
-
 /*!
  * @brief Register a static parser function.
  * @param id Id used in config.xml to identify the subclass of AbstractInputHandler
@@ -93,7 +89,9 @@ void AbstractInputHandler::registerParser(QString id, QList< AbstractInputHandle
 /* 
  * parses /proc/bus/input/devices for relevant information, where relevant is:
  * I: Vendor=1395 Product=0020
- * H: Handlers=kbd event9     <-- kbd or mouse? which event file in /dev/input/ is it?
+ * P: Phys=usb-0000:00:1d.0-1/input3
+ * H: Handlers=kbd event9     <-- kbd, mouse or js? which event file in /dev/input/ is it?
+ * B: ABS=    <-- does it have absolute axes?
  */
 QList< AbstractInputHandler::idevs > AbstractInputHandler::parseInputDevices()
 {
@@ -105,7 +103,7 @@ QList< AbstractInputHandler::idevs > AbstractInputHandler::parseInputDevices()
 		return QList<idevs>();
 	}
 	QTextStream t(&d);
-	// we read it line by line
+	// we parse it line by line
 	QStringList devs = t.readAll().split("\n"); 
 	QList<idevs> l;
 	idevs i;
@@ -115,6 +113,8 @@ QList< AbstractInputHandler::idevs > AbstractInputHandler::parseInputDevices()
 	QList<QString>::iterator li = devs.begin();
 	while (li != devs.end())
 	{
+		//   Handlers=js, B:ABS=.*   , Handlers=mouse
+		bool js = false , abs = false, mouse = false;
 		// "I:" marks the beginning of a new section
 		// and also contains information we want
 		if(!(*li).startsWith("I"))
@@ -129,22 +129,55 @@ QList< AbstractInputHandler::idevs > AbstractInputHandler::parseInputDevices()
 		i.product = tmp.at(idx).right(4);
 		while (li != devs.end())
 		{
-			// "H:" marks the line with the rest
-			if(!(*li).startsWith("H"))
+			if ((*li).startsWith("P:"))
+				i.phys = (*li).mid(8);
+			else if ((*li).startsWith("H:"))
 			{
-				++li;
-				continue;
+				tmp = (*li).split(QRegExp("[\\s=]"));
+				idx = tmp.indexOf(QRegExp("event.*"));
+				i.event = tmp.at(idx);
+				mouse = (tmp.indexOf(QRegExp("mouse.*")) != -1);
+				js = (tmp.indexOf(QRegExp("js.*")) != -1);
 			}
-			tmp = (*li).split(QRegExp("[\\s=]"));
-			idx = tmp.indexOf(QRegExp("event.*"));
-			i.event = tmp.at(idx);
-			i.mouse = (tmp.indexOf(QRegExp("mouse.*")) != -1);
+			else if ((*li).startsWith("B: ABS="))
+				abs = true;
+			else if ((*li).isEmpty())
+				break;
 			++li;
-			break;
 		}
+		if (js && mouse)
+			i.type = TabletOrJoystick;
+		else if (js)
+			i.type = Joystick;
+		else if (abs)
+			i.type = Tablet;
+		else if (mouse)
+			i.type = Mouse;
+		else
+			i.type = Keyboard;
 		l.append(i);
 	}
 	return l;
+}
+
+/*!
+ * @brief Reads attributes of idevs to values in XML element at attr
+ */
+void AbstractInputHandler::idevs::readAttributes(QXmlStreamAttributes attr)
+{
+	vendor  = attr.value("vendor").toString();
+	product = attr.value("product").toString();
+	id      = attr.value("id").toString();
+	phys    = attr.value("phys").toString();
+}
+
+/*!
+ * @brief Returns true if o is a match to the current objects attributes.
+ * Implemented for use in QList::count(), QList::indexOf().
+ */
+bool AbstractInputHandler::idevs::operator==(AbstractInputHandler::idevs o) const
+{
+	return (phys == o.phys || ( vendor == o.vendor && product == o.product) );
 }
 
 

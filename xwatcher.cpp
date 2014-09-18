@@ -34,12 +34,12 @@ XWatcher::XWatcher()
 }
 
 /*!
- * @brief Parses all the <xwatcher> parts of the configuration and constructs XWatcher objects.
+ * @brief Parses a <xwatcher> part of the configuration and constructs a XWatcher object.
  * If XWatcher needs any Parameters, they should be read here.
  * See the parseXml functions of DevHandler, DebugHandler and NetHandler
  * for examples.
- * @param nodes All the <xwatcher> nodes.
- * @return List containing all XWatchers.
+ * @param xml QXmlStreamReader object at current position of a <xwatcher> element.
+ * @return List containing a XWatcher.
  */
 QList< AbstractInputHandler* > XWatcher::parseXml(QXmlStreamReader &xml)
 {

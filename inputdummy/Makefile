@@ -9,4 +9,5 @@ clean:
 
 install:
 	install -m 0644 *.ko /lib/modules/${KVERSION}/kernel/drivers/input
+	install -m 0644 *.ko /lib/modules/${KVERSION}/updates/dkms/inputdummy.ko
 	depmod -a

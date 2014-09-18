@@ -24,7 +24,7 @@
 /*!
  * @brief get the window structure for window w
  * @param w window class
- * @param create if true: create a new window, when none is found
+ * @param create if true: create a new window, when none is found (may be obsolete since rewrite of the parsing code)
  */
 WindowSettings* TransformationStructure::window(QString w, bool create)
 {
@@ -39,6 +39,11 @@ WindowSettings* TransformationStructure::window(QString w, bool create)
 	return classes.value(w);
 }
 
+/*!
+ * @brief add WindowSettings w for window class s
+ * @param s
+ * @param w 
+ */
 void TransformationStructure::addWindowSettings(QString s, WindowSettings* w)
 {
 	classes.insert(s, w);

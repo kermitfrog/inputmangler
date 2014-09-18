@@ -27,7 +27,10 @@
 
 int QtSignalHandler::mySocketPairFd[2];
 
-QtSignalHandler::QtSignalHandler(QObject* parent, const char* name): QObject(parent)
+/*!
+ * @brief Constructor
+ */
+QtSignalHandler::QtSignalHandler(QObject* parent): QObject(parent)
 {
 	socketpair(AF_UNIX, SOCK_STREAM, 0, mySocketPairFd);
 	socNot = new QSocketNotifier(mySocketPairFd[1], QSocketNotifier::Read, this);
@@ -40,18 +43,29 @@ QtSignalHandler::QtSignalHandler(QObject* parent, const char* name): QObject(par
 	signal(SIGINT, signalHandler);
 }
 
+/*!
+ * @brief This function is called when a unix signalis received...
+ */
 void QtSignalHandler::signalHandler(int signum)
 {
+	// write the signal number to the socket
 	write(mySocketPairFd[0], &signum, sizeof(signum));
 }
 
+/*!
+ * @brief ... then this function is called because something was writen to the socket ...
+ */
 void QtSignalHandler::socketReady()
 {
 	int signum;
+	// read what was written by signalHandler
 	read(mySocketPairFd[1], &signum, sizeof(signum));
 	socketEmitter(signum);
 }
 
+/*!
+ * @brief ... and finaly socketEmitter does the work of sending the right signals in qt
+ */
 void QtSignalHandler::socketEmitter(int signum)
 {
 	switch (signum)

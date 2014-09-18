@@ -27,6 +27,7 @@ class TransformationStructure;
 #include <QThread>
 #include "inputmangler.h"
 #include "inputevent.h"
+#include "definitions.h"
 #include <linux/input.h>
 #include <QVector>
 #include <unistd.h> //@TODO: still needed here?
@@ -54,14 +55,14 @@ protected:
 	class idevs 
 	{
 	public:
-		QString vendor;
-		QString product;
-		QString event;
-		QString id;
-		bool mouse; // TODO: make an enum -> more possible types
-		bool operator==(idevs o) const{
-			return (vendor == o.vendor && product == o.product);
-		};
+		QString vendor;  //!< 4-Hex-Digit Vendor id
+		QString product; //!< 4-Hex-Digit Product id
+		QString phys;    //!< Phys path
+		QString event;   //!< Event file in /dev/input
+		QString id;      //!< id set in config.xml
+		DType type;      //!< Device Type
+		bool operator==(idevs o) const;
+		void readAttributes(QXmlStreamAttributes attr);
 	};
 	
 public:
@@ -85,7 +86,7 @@ signals:
 	void windowTitleChanged(QString wclass);
 	
 protected:
-	QString _id;
+	QString _id; // id set in config.xml
 	QVector<OutEvent> outputs;	// current target events
 	QVector<InputEvent> inputs;	// input events to be transformed
 	virtual int addInput(InputEvent in);

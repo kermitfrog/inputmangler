@@ -153,9 +153,9 @@ void NetHandler::actOnData(char* b, int n)
 }
 
 /*!
- * @brief Parses the corresponding xml parts and creates NetHandler objects.
- * @param nodes All the <net> nodes.
- * @return List containing all NetHandlers.
+ * @brief Parses a <net> part of the configuration and constructs a NetHandler object.
+ * @param xml QXmlStreamReader object at current position of a <net> element.
+ * @return List containing a NetHandler.
  */
 QList< AbstractInputHandler* > NetHandler::parseXml(QXmlStreamReader &xml)
 {

@@ -22,6 +22,8 @@
 
 #include <QtDBus>
 #include <QCoreApplication>
+#include "inputmangler.h"
+#include "output.h"
 
 /*!
  * @brief Inputmanglers d-bus interface.
@@ -33,7 +35,8 @@ class imDbusInterface : public QObject
 
 	
 public:
-    explicit imDbusInterface(QObject* parent = 0);
+    explicit imDbusInterface(InputMangler *im);
+    virtual ~imDbusInterface();
 	QDBusInterface *db;
 	
 public slots:
@@ -43,13 +46,26 @@ public slots:
 	Q_NOREPLY void activeWindowTitleChanged(QString wclass) {
 		emit windowTitleChanged(wclass);
 	};
+	Q_NOREPLY void sendRaw(int type, int code, int value, int dtype)
+	{
+		OutEvent::sendRaw(type, code, value, static_cast<DType>(dtype));
+	};
+	Q_NOREPLY void sendRawString(QString type, QString code, QString value, QString dtype)
+	{
+		OutEvent::sendRaw(type.toUShort(), code.toUShort(), value.toUInt(), static_cast<DType>(dtype.toInt()));
+		// TODO: extend, so that names can be used
+	};
+	QString printWinInfo()
+	{
+		return im->winInfoToString();
+	};
 
 signals:
 	void windowChanged(QString wclass, QString title);
 	void windowTitleChanged(QString wclass);
 
 private:
-
+	InputMangler * im;
 };
 
 

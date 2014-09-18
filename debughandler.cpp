@@ -38,7 +38,7 @@ DebugHandler::DebugHandler(idevs device, QString outFile, bool grab)
 {
 	_id = device.id;
 	_grab = grab;
-	_hasWindowSpecificSettings = _id != "";
+	_hasWindowSpecificSettings = false;
 	filename = QString("/dev/input/") + device.event;
 	qDebug() << filename << " opened with DebugHandler - logging to " << outFile;
 	outfile.setFileName(outFile);
@@ -49,7 +49,7 @@ DebugHandler::~DebugHandler()
 }
 
 /*!
- * @brief 
+ * @brief This thread will read from one input device and output everything to a file.
  */
 void DebugHandler::run()
 {
@@ -57,14 +57,15 @@ void DebugHandler::run()
 	fd = open(filename.toLatin1(), O_RDONLY);
 	if (fd == -1)
 	{
-		qDebug() << "?could (not?) open " << filename;
+		qDebug() << "?could (not?) open " << filename <<   "errno = " << errno;
 		return;
 	}
+	else
+		qDebug() << "DebugHandler opened " << filename << "   errno = " << errno;
 	
 	// grab the device.
 	if (_grab)
 		ioctl(fd, EVIOCGRAB, 1);
-	
 	
 	struct pollfd p;
 	p.fd = fd;
@@ -122,6 +123,12 @@ void DebugHandler::run()
 	outfile.close();
 }
 
+/*!
+ * @brief Parses a <debug> part of the configuration and constructs DebugHandler objects.
+ * @param xml QXmlStreamReader object at current position of a <debug> element.
+ * @return List containing all DebugHandlers. This can contain multiple objects because some
+ * devices have multiple event handlers. In this case a thread is created for every event handlers.
+ */
 QList< AbstractInputHandler* > DebugHandler::parseXml(QXmlStreamReader &xml)
 {
 	QList<AbstractInputHandler*> handlers;
@@ -129,9 +136,7 @@ QList< AbstractInputHandler* > DebugHandler::parseXml(QXmlStreamReader &xml)
 	/// debug dump, aka keylogger
 	DebugHandler *dh;
 	idevs d;
-	d.vendor  = xml.attributes().value("vendor").toString();
-	d.product = xml.attributes().value("product").toString();
-	d.id      = xml.attributes().value("id").toString();
+	d.readAttributes(xml.attributes());
 	
 	while (availableDevices.count(d))
 	{
@@ -139,7 +144,7 @@ QList< AbstractInputHandler* > DebugHandler::parseXml(QXmlStreamReader &xml)
 		// copy information obtained from /proc/bus/input/devices to complete
 		// the data in the idevs object used to construct the DevHandler
 		d.event = availableDevices.at(idx).event;
-		d.mouse = availableDevices.at(idx).mouse;
+		d.type = availableDevices.at(idx).type;
 		handlers.append(new DebugHandler ( d,
 						xml.attributes().value("log").toString(),
 					    xml.attributes().value("grab").toInt()
