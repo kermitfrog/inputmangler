@@ -358,7 +358,13 @@ Use these two when translating from/to a key. As source only positive/negative e
 + Positive
 - Negative
 
+For Absolute Axes the Notation is like
+ABS_X J JOY_X  
+ABS_Y J JOY_Y
+ABS_X T ABS_X
+ABS_Y T ABS_Y
 
+This means JOY_X will generate an absolute movement on the X axis of the virtual Joystick device while ABS_X will generate it on the virtual Tablet.
 
 
 ##NET## Using the Net module
@@ -401,7 +407,7 @@ cac   | dbcacac  | 631313 |        | no problem with a & c
 
 Inputmangler takes exactly one parameter, and that this the path to an alternative config file.
 
-While running, you can interact with it through d-bus (at the moment only the two calls mentioned above to set the current window class and title are supported), or you can send UNIX signals. The following signals are supported:
+While running, you can interact with it through d-bus, or you can send UNIX signals. The following unix signals are supported:
 
 TERM  Tells inputmangler to graciously end itself.
 HUP   Reread the configuration.
@@ -416,6 +422,25 @@ $ watch killall -USR1 inputmangler
 In #2 show the output:
 $ tail -f /tmp/.inputmangler.log | uniq
 
+The following dbus calls are supported (examples as called per command line)
+
+Notify inputmangler about a change of the window title: 
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowTitleChanged "    TITLE"
+
+Notify inputmangler about a change of the active window:
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowChanged "CLASS" "TITLE"
+
+Print class and title of current Window, as seen by inputmangler. (You might want to start it in a shell loop for tracking)
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.printWinInfo 
+
+Generate an input event. Do not use this, unless you know what you're doing!
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.sendRaw $type $code $value $device
+All Paramenters are integers. See linux/input.h for $type $code and $value
+$device is	0 Keyboard
+			1 Mouse
+			2 Tablet
+			3 Joystick
+
 
 
 ##FUT## Future Plans
@@ -423,12 +448,11 @@ $ tail -f /tmp/.inputmangler.log | uniq
 Some things I want to do are:
 
 WHAT?                             | WHY?                                        | WHEN?
-------------------------------------------------------------------------------------------------
-Passing on absolute movements.    | Support for Flightsticks and tablets.       | 2014
-                                  |                                             |
-Making this README available as   | Because i can! ...                          | 2014
-man page (and maybe pdf).         | Can tex generate man pages?                 |
-                                  |                                             |
+----------------------------------------------------------------------------------------------------
+Making this README available as   | Because i can! ...                          | 2014? (mostly done 
+man page (and maybe pdf).         | Can tex generate man pages?                 | - not quite happy 
+                                  |                                             | with the result.)
+                                  |                                             | 
 Identify devices by Phys property.| Support for seperatly configuring multiple  | probably 2014
                                   | identical devices.                          |
                                   |                                             |                                 
@@ -438,7 +462,7 @@ and maybe making output modular.  |                                             
 More d-bus slots.                 | Better interaction                          | maybe 2014
                                   |                                             |
 Plugin architecture.              | A whole world of awesome new possibilities! | maybe 2015
-------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 
 Ideas:
 Absolute Axis:
@@ -456,7 +480,7 @@ There are a few things I would appreciate help with.
 
 If you are an experienced kernel hacker (which i definitely am not...):
 The inputdummy kernel module seems to be working fine, but would you mind taking a look at the code? Do I do something terribly stupid? Could something cause problems with other kernel modules?
-input.h defines two event types, EV_SYN and EV_MSC. So far I completely ignore them, which does not seem to be causing any problems. What do they do and are there any reasons I should care about them?
+input.h defines two event types, EV_SYN and EV_MSC. So far I completely ignore them (except for Absolute Movements), which does not seem to be causing any problems. Are there any reasons I should care more about them?
 
 If you are familiar with X:
 You could implement the xwatcher (see xwatcher.cpp).
