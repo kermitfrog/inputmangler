@@ -20,6 +20,16 @@
 		<signal key="#"   default="=" />
 	</device> 
 	-->
+
+	<!-- 
+		Another way of identifiyng a device is by its phys property (==where is it connected to).
+		This allows you to configure multiple identical devices with different settings.
+	-->
+	<!--
+	<device name="Keypad" phys="usb-0000:00:1a.1-2.3/input0">
+		<signal key="#"   default="=" />
+	</device> 
+	-->
 	
 	<!-- Configure an Evoluent VerticalMouse 3 for using window specific settings for its extra buttons,
 		 using the id "M". -->

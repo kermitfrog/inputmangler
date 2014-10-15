@@ -14,6 +14,7 @@
 ##FUT## Future Plans
 ##HLP## Contributing to inputmangler
 ##SPM## Contact
+##CHN## Changes
 
 
 
@@ -234,6 +235,11 @@ Configures a device to be read from. The device is identified by its "vendor" an
 <signal key="@" [default="&"] /> Tells inputmangler to watch for a key. Only Events for keys, that are mentioned in a <signal> element are transformed.
 "default" specifies the default output that will be generated for the key. If not set, the default will be the same as key.
 </device>
+
+<device [name] phys [id={ID}]>
+As above, but device is identified by its phys property (where is it connected to). See "/proc/bus/input/devices".
+This allows you to configure multiple identical devices with different settings, but has the disadvantage that your device will not be recognized if you plug it e.g. into another USB port.
+
 
 <net addr port />
 Configures inputmangler to listen at "port" of the ip(or hostname?) "addr". See ##NET##
@@ -492,12 +498,27 @@ I tried using dkms to rebuild the kernel module when neccessary, but i don't yet
 
 Just write me an e-mail if you are interested :).
 
+The Repository is at https://github.com/kermitfrog/inputmangler
+
 
 
 ##SPM## Contact
 
 Arkadiusz Guzinski <kermit@ag.de1.cc>
 
+
+
+##CHN## Changes
+
+1.1:
+
+ * Full support for relative movements (e.g. mouse wheel)
+ * Passing through of absolute movements (-> joystick & tablet support)
+ * New xml parsing code now gives warning messages on some configuration errors (i simply *had* to do this after spending another 2 hours searching for a bug in the source code that was caused by nothing more than a missing '/' in the config file)
+ * Support for multiple identical devices with different configurations (through phys property)
+ * Fixed some minor bugs in kernel module
+ * 2 New d-bus slots 
+ * Internal changes
 
 
 
