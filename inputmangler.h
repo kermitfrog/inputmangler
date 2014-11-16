@@ -55,7 +55,7 @@ private:
 	QMap<QString, TransformationStructure> wsets; //!< Map containing all window specific outputs for all ids
 	bool readConf();
     QVector<OutEvent> parseOutputsShort(QString s);
-	QVector<OutEvent> parseOutputsLong(QXmlStreamReader &conf, QVector<OutEvent> def);
+	QVector<OutEvent> parseOutputsLong(QXmlStreamReader& conf, QMap< QString, unsigned int > inputs, QVector< OutEvent > def);
 	QMultiMap<QString, AbstractInputHandler*> handlersById;
 	void readWindowSettings(QXmlStreamReader &conf, QStringList &ids);
 // 	void stopHandlers();

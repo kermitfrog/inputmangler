@@ -39,6 +39,7 @@ class TransformationStructure;
 struct shared_data
 {
 	bool terminating;
+	QMap<QString, void*> infoCache;
 };
 
 

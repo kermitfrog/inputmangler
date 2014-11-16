@@ -179,6 +179,16 @@ DevHandler::DevHandler(idevs device)
  */
 QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 {
+	QMap<QString, QMap<QString, unsigned int>> *inputsForIds;
+	if (!sd.infoCache.contains("inputsForIds"))
+	{
+		inputsForIds = new QMap<QString, QMap<QString, unsigned int>>();
+		sd.infoCache["inputsForIds"] = inputsForIds;
+	}
+	else
+		inputsForIds = static_cast<QMap<QString, QMap<QString, unsigned int>>*>(sd.infoCache["inputsForIds"]);
+	int counter = 0;
+	
 	QList<AbstractInputHandler*> handlers;
 	// get a list of available devices from /proc/bus/input/devices
 	QList<idevs> availableDevices = parseInputDevices();
@@ -241,6 +251,8 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 							qDebug() << "Reading a <signal> - Warning: unexpected end of element at line " << xml.lineNumber();
 					xml.readNext();
 				}
+				
+				inputsForIds->operator[](d.id)[key] = counter++;
 			}
 			else
 				qDebug() << "Reading a <device> - Warning: unexpected element at line " << xml.lineNumber();
@@ -254,6 +266,7 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 		}
 		xml.readNext();
 	}
+	
 	return handlers;
 }
 

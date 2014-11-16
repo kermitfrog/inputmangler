@@ -80,7 +80,17 @@ OutEvent::OutEvent(QString s)
 	eventcode = 0;
 	if (s.startsWith("~"))
 	{
-		// TODO: read macro
+		int leftBrace = s.indexOf('(');
+		int rightBrace = s.lastIndexOf("~)");
+		QString type = s.left(leftBrace);
+		if (type == "~Seq(" || type == "~Sequence(" || type == "~Macro(" )
+		{
+			outType = Macro;
+			QStringList l = s.mid(leftBrace, rightBrace - leftBrace).split(",");
+			if (l.empty())
+				return;
+			parseMacro(l);
+		}
 		return;
 	}
 	QStringList l = s.split("+");
@@ -90,23 +100,67 @@ OutEvent::OutEvent(QString s)
 	if (l.length() > 1)
 	{
 		outType = Combo;
-		for(unsigned int i = 0; i < l[1].length(); i++)
-			if (i >= NUM_MOD)
-			{
-				qDebug() << "Too many modifiers in " << s;
-				break;
-			}
-			else if (!keymap.contains(l[1].at(i)))
-				qDebug() << "Unknown modifier " << l[1][i];
-			else
-				modifiers.append(keymap[l[1].at(i)].code);
-		/*if(l[1].contains("~"))
-			modifiers = modifiers | MOD_REPEAT;
-		if(l[1].contains(""))
-			modifiers = modifiers | MOD_MACRO;*/
+		parseCombo(l);
 	}
 	else
 		outType = Simple;
+}
+
+OutEvent::~OutEvent()
+{
+	if (next != nullptr)
+		delete next;
+}
+
+void OutEvent::parseMacro(QStringList l)
+{
+	qDebug() << "parseMacro: " << l;
+	QString s = l.takeFirst().trimmed();
+	if (s.isEmpty())
+		return;
+	if (!s.startsWith('~'))
+	{
+		outType = OutEvent::Macro;
+		QStringList parts = s.split(' ');
+		parseCombo(parts[0].split("+"));
+		if (parts.size() > 1)
+		{
+			hasCustomValue = true;
+			customValue = parts[1].toUInt();
+		}
+	}
+	else if (s.startsWith("~s"))
+	{
+		outType = OutEvent::Wait;
+		customValue = s.mid(2).toInt();
+	}
+	else
+		qDebug() << "parseMacro: unsupported operation: " << s;
+	if (l.count())
+		next = new OutEvent(l);
+}
+
+OutEvent::OutEvent(QStringList macroParts)
+{
+	parseMacro(macroParts);
+}
+
+void OutEvent::parseCombo(QStringList l)
+{
+	for(unsigned int i = 0; i < l[1].length(); i++)
+		if (i >= NUM_MOD)
+		{
+			qDebug() << "Too many modifiers in " << l;
+			break;
+		}
+		else if (!keymap.contains(l[1].at(i)))
+			qDebug() << "Unknown modifier " << l[1][i];
+		else
+			modifiers.append(keymap[l[1].at(i)].code);
+	/*if(l[1].contains("~"))
+		modifiers = modifiers | MOD_REPEAT;
+	if(l[1].contains(""))
+		modifiers = modifiers | MOD_MACRO;*/
 }
 
 /*!
@@ -181,40 +235,56 @@ void OutEvent::send(int value, __u16 sourceType)
 void OutEvent::send(int value)
 {
 	VEvent e[NUM_MOD+1];
-	if (outType == Simple)
+	switch (outType)
 	{
-		e[0].type = eventtype;
-		e[0].code = eventcode;
-		e[0].value = value;
-		if (eventcode >= BTN_MISC)
-			sendMouseEvent(e);
-		else
-			sendEvent(e);
-	} 
-	else if (outType == Combo)
-	{
-		int k = 0;
-		if (value != 2)
-			for (; k < modifiers.size(); k++)
-			{
-				e[k].type = EV_KEY;
-				e[k].code = modifiers.at(k);
-				e[k].value = value;
-			}
-		e[k].type = EV_KEY;
-		e[k].code = eventcode;
-		e[k].value = value;
-		
-		if (e[k].code >= BTN_MOUSE)
+		case OutEvent::Simple:
+			e[0].type = eventtype;
+			e[0].code = eventcode;
+			e[0].value = value;
+			if (eventcode >= BTN_MISC)
+				sendMouseEvent(e);
+			else
+				sendEvent(e);
+		break;
+		case OutEvent::Combo:
 		{
-			sendKbdEvent(e, modifiers.size());
-			sendMouseEvent(&e[k], 1);
+			int k = 0;
+			if (value != 2)
+				for (; k < modifiers.size(); k++)
+				{
+					e[k].type = EV_KEY;
+					e[k].code = modifiers.at(k);
+					e[k].value = value;
+				}
+			e[k].type = EV_KEY;
+			e[k].code = eventcode;
+			e[k].value = value;
+			
+			if (e[k].code >= BTN_MOUSE)
+			{
+				sendKbdEvent(e, modifiers.size());
+				sendMouseEvent(&e[k], 1);
+			}
+			else
+				sendKbdEvent(e, modifiers.size() + 1);
 		}
-		else
-			sendKbdEvent(e, modifiers.size() + 1);
-	}
-	else if (outType == Macro)
-		sendMacro();
+		break;
+		case OutEvent::Macro:
+			if (value == 1)
+			{
+				sendMacro();
+				proceed();
+			}
+			break;
+		case OutEvent::Wait:
+			if (value == 1)
+			{
+				usleep(customValue); //TODO: make it non-blocking!
+				proceed();
+			}
+			break;
+	};
+			
 // 	usleep(5000); // wait x * 0.000001 seconds
 }
 
@@ -258,7 +328,6 @@ void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
 			write(fds[4], &e, sizeof(VEvent));
 			break;
 	};
-	
 }
 
 /*!
@@ -266,7 +335,19 @@ void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
  */
 void OutEvent::sendMacro()
 {
+	if (!hasCustomValue)
+		send();
+	else 
+		send(customValue);
+}
 
+/*!
+ * @brief go to next part of macro
+ */
+void OutEvent::proceed()
+{
+	if (next && outType != OutEvent::Custom)
+		static_cast<OutEvent*>(next)->send(1);
 }
 
 /*!

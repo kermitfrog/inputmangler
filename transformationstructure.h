@@ -20,6 +20,7 @@
 #pragma once
 
 #include "output.h"
+#include <QMap>
 
 /*!
  * @brief WindowSettings contains the Output settings for one window class.
@@ -53,6 +54,7 @@ public:
 	void addWindowSettings(QString s, WindowSettings* w);
 	bool sanityCheck(int numInputs, QString id, bool verbose = false);
 	QVector<OutEvent> def; //!< Default outputs for id.
+	QMap<QString,unsigned int> inputs;
 protected:
 	QHash<QString, WindowSettings*> classes; //!< HashMap of window classes.
 };

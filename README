@@ -286,7 +286,7 @@ In most cases you will only need ".*", which matches to anything. Inputmangler u
 The output format is actually quite simple. There are two variations:
 1. no modifiers - just the key
 @
-you can use any key, defined in keymap (see ##KEY##)
+you can use any key defined in keymap (see ##KEY##)
 
 2. with modifiers
 @+MOD
@@ -310,7 +310,7 @@ release Left Control
 Note that you can also trigger mouse buttons, e.g.
 "BTN_LEFT+C" for Ctrl+Left Button. In the keymap file, search for "BTN_" for a list. In theory, every key and button supported by Linux should work with inputmangler.
 
-If you're not sure what that keys are called, use the debug module or take a look at the keymap file.
+If you're not sure what the keys are called, use the debug module or take a look at the keymap file.
 
 
 

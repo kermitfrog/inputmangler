@@ -175,6 +175,10 @@ void InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 	QString windowClass = conf.attributes().value("class").toString();
 	QMap<QString, WindowSettings*> wsettings;
 	QMap<QString, bool> used;
+	QMap<QString, QMap<QString, unsigned int>> *inputsForIds;
+	inputsForIds = static_cast<QMap<QString, QMap<QString, unsigned int>>*>(AbstractInputHandler::sd.infoCache["inputsForIds"]);
+	if (inputsForIds->count() == 0)
+		return;
 	// create WindowSettings
 	foreach(QString id, ids)
 	{
@@ -212,8 +216,9 @@ void InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 		}
 		if (conf.name() == "long")
 		{
-			WindowSettings *w = wsettings[conf.attributes().value("id").toString()];
-			w->def = parseOutputsLong(conf, w->def);
+			QString id = conf.attributes().value("id").toString();
+			WindowSettings *w = wsettings[id];
+			w->def = parseOutputsLong(conf, inputsForIds->value(id), w->def);
 		}
 		if (conf.name() == "title")
 		{
@@ -258,7 +263,7 @@ void InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 				
 				QString id = conf.attributes().value("id").toString();
 				wsettings[id]->titles.append(new QRegularExpression(QString("^") + regex + "$"));
-				wsettings[id]->events.append(parseOutputsLong(conf, wsettings[id]->def));
+				wsettings[id]->events.append(parseOutputsLong(conf, wsets[id].inputs, wsettings[id]->def));
 				used[id] = true;
 				conf.readNext();
 			}
@@ -302,7 +307,8 @@ QVector< OutEvent > InputMangler::parseOutputsShort(QString s)
  * @param def Default value. Returned when no output definition is found. Result of
  * <long> description is based on this.
  */
-QVector< OutEvent > InputMangler::parseOutputsLong(QXmlStreamReader& conf, QVector< OutEvent > def)
+QVector< OutEvent > InputMangler::parseOutputsLong(QXmlStreamReader& conf, 
+						QMap<QString, unsigned int> inputs, QVector< OutEvent > def)
 {
 	if (conf.readNext() != QXmlStreamReader::Characters)
 	{
@@ -311,16 +317,23 @@ QVector< OutEvent > InputMangler::parseOutputsLong(QXmlStreamReader& conf, QVect
 	}
 	
 	// valid seperators are '\n' and ','
-	QStringList lines = conf.text().toString().split(QRegExp("(\n|,)"));
+	QRegExp splitter;
+	if (conf.text().contains('~'))
+		splitter = QRegExp("(\n)");
+	else
+		splitter = QRegExp("(\n|,)");
+	
+	QStringList lines = conf.text().toString().split(splitter);
 	foreach (QString s, lines)
 	{
-		// we want allow a dual use of '=', e.g. <long> ==c, r== </long>
+		// we want to allow dual use of '=', e.g. <long> ==c, r== </long>
 		s = s.trimmed();
 		int pos = s.indexOf('=', 1);
 		QString left = s.left(pos);
 		QString right = s.mid(pos + 1);
 		if (left.isEmpty() && right.isEmpty())
-			break;
+			continue;
+		def[inputs[left]] = OutEvent(right);
 	}
 	if (conf.readNext() != QXmlStreamReader::EndElement)
 		xmlError(conf);

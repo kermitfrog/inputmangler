@@ -42,7 +42,8 @@ class OutEvent
 	enum OutType {
 		Simple,	//!< A single event. e.g. "key a" - the value is determined by source
 		Combo,	//!< Combo event. e.g. "ctrl+c"
-		Macro,	//!< Complex event sequence. Not yet implemented.
+		Macro,	//!< Complex event sequence. Not yet implemented.vv
+		Wait,	//!< Wait a while
 		Custom	//!< Handle via plugin. Not yet implemented.
 	};
 	/*!
@@ -62,7 +63,8 @@ public:
 	OutEvent(int c) {eventcode = c;};
 	OutEvent(InputEvent& e);
 	OutEvent(QString s);
-// 	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false); 
+	~OutEvent();
+// 	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false);
 	QString toString() const;
 	QString print() const{return toString();};
 	QVector<__u16> modifiers;
@@ -71,6 +73,8 @@ public:
 	__u16 code() const {return eventcode;};
 	OutType outType;
 	ValueType valueType;
+	bool hasCustomValue = false; //!<used only for Macros
+	int customValue = 0;  		//!< on Macro: custom value, on Wait: time in microseconds
 	void send();
 	void send(int value);
 	void send(int value, __u16 sourceType);
@@ -91,6 +95,11 @@ protected:
 	void sendMacro();
 	void fromInputEvent(InputEvent& e);
 	static void openVDevice(char * path, int num);
+	void *next = nullptr;  //!< Next event in macro sequence or pointer to custom event
+	void proceed();
+	void parseCombo(QStringList l);
+	void parseMacro(QStringList l);
+	OutEvent(QStringList macroParts);
 	
 };
 
