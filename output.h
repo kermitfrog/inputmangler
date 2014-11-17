@@ -63,6 +63,8 @@ public:
 	OutEvent(int c) {eventcode = c;};
 	OutEvent(InputEvent& e);
 	OutEvent(QString s);
+	OutEvent(const OutEvent &other);
+	OutEvent(OutEvent &other);
 	~OutEvent();
 // 	OutEvent(__s32 code, bool shift, bool alt = false, bool ctrl = false);
 	QString toString() const;
@@ -91,8 +93,12 @@ public:
 #ifdef DEBUGME
 	QString initString;
 #endif
+	//OutEvent& operator=(OutEvent &other);
+	OutEvent& operator=(const OutEvent &other);
 protected:
 	void sendMacro();
+	void sendSimple(int value);
+	void sendCombo(int value);
 	void fromInputEvent(InputEvent& e);
 	static void openVDevice(char * path, int num);
 	void *next = nullptr;  //!< Next event in macro sequence or pointer to custom event

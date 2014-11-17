@@ -146,7 +146,6 @@ bool InputMangler::readConf()
 	// Make sure outputs and window & class name are set to something...
 	// May be unneccessary, but better safe than sorry.
 	activeWindowTitleChanged("");
-	
 	bool sane;
 	foreach (AbstractInputHandler *h, handlers)
 	{
@@ -219,6 +218,7 @@ void InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 			QString id = conf.attributes().value("id").toString();
 			WindowSettings *w = wsettings[id];
 			w->def = parseOutputsLong(conf, inputsForIds->value(id), w->def);
+			used[id] = true;
 		}
 		if (conf.name() == "title")
 		{
@@ -270,6 +270,7 @@ void InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 		}
 		conf.readNext();
 	}
+	
 	foreach(QString id, ids)
 	{
 		if (used[id] == true)
@@ -337,6 +338,8 @@ QVector< OutEvent > InputMangler::parseOutputsLong(QXmlStreamReader& conf,
 	}
 	if (conf.readNext() != QXmlStreamReader::EndElement)
 		xmlError(conf);
+	foreach (OutEvent o, def)
+		qDebug() << ":::" << o.print();
 	
 	return def;
 }

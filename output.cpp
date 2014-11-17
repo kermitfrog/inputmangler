@@ -80,7 +80,7 @@ OutEvent::OutEvent(QString s)
 	eventcode = 0;
 	if (s.startsWith("~"))
 	{
-		int leftBrace = s.indexOf('(');
+		int leftBrace = s.indexOf('(') + 1;
 		int rightBrace = s.lastIndexOf("~)");
 		QString type = s.left(leftBrace);
 		if (type == "~Seq(" || type == "~Sequence(" || type == "~Macro(" )
@@ -109,7 +109,7 @@ OutEvent::OutEvent(QString s)
 OutEvent::~OutEvent()
 {
 	if (next != nullptr)
-		delete next;
+		delete static_cast<OutEvent*>(next);
 }
 
 void OutEvent::parseMacro(QStringList l)
@@ -122,7 +122,10 @@ void OutEvent::parseMacro(QStringList l)
 	{
 		outType = OutEvent::Macro;
 		QStringList parts = s.split(' ');
-		parseCombo(parts[0].split("+"));
+		QStringList comboParts = parts[0].split("+");
+		fromInputEvent(keymap[comboParts[0]]);
+		if (comboParts.size() > 1)
+			parseCombo(comboParts);
 		if (parts.size() > 1)
 		{
 			hasCustomValue = true;
@@ -132,12 +135,15 @@ void OutEvent::parseMacro(QStringList l)
 	else if (s.startsWith("~s"))
 	{
 		outType = OutEvent::Wait;
-		customValue = s.mid(2).toInt();
+		customValue = s.mid(2).toInt()*1000;
 	}
 	else
 		qDebug() << "parseMacro: unsupported operation: " << s;
 	if (l.count())
-		next = new OutEvent(l);
+	{	next = new OutEvent(l);
+		OutEvent *o = static_cast<OutEvent*>(next);
+		qDebug() << "something";
+	}
 }
 
 OutEvent::OutEvent(QStringList macroParts)
@@ -234,40 +240,13 @@ void OutEvent::send(int value, __u16 sourceType)
  */
 void OutEvent::send(int value)
 {
-	VEvent e[NUM_MOD+1];
 	switch (outType)
 	{
 		case OutEvent::Simple:
-			e[0].type = eventtype;
-			e[0].code = eventcode;
-			e[0].value = value;
-			if (eventcode >= BTN_MISC)
-				sendMouseEvent(e);
-			else
-				sendEvent(e);
+			sendSimple(value);
 		break;
 		case OutEvent::Combo:
-		{
-			int k = 0;
-			if (value != 2)
-				for (; k < modifiers.size(); k++)
-				{
-					e[k].type = EV_KEY;
-					e[k].code = modifiers.at(k);
-					e[k].value = value;
-				}
-			e[k].type = EV_KEY;
-			e[k].code = eventcode;
-			e[k].value = value;
-			
-			if (e[k].code >= BTN_MOUSE)
-			{
-				sendKbdEvent(e, modifiers.size());
-				sendMouseEvent(&e[k], 1);
-			}
-			else
-				sendKbdEvent(e, modifiers.size() + 1);
-		}
+			sendCombo(value);
 		break;
 		case OutEvent::Macro:
 			if (value == 1)
@@ -287,6 +266,48 @@ void OutEvent::send(int value)
 			
 // 	usleep(5000); // wait x * 0.000001 seconds
 }
+
+void OutEvent::sendSimple(int value)
+{
+	qDebug() << "Simple: " << value << " -- " << print() << " -- " << BTN_MISC << " " << eventcode;
+	VEvent e[NUM_MOD+1];
+	e[0].type = eventtype;
+	e[0].code = eventcode;
+	e[0].value = value;
+	if (eventcode >= BTN_MISC)
+	{
+		sendMouseEvent(e);
+		qDebug () << "mouse";
+	}
+	else
+		sendEvent(e);
+}
+
+void OutEvent::sendCombo(int value)
+{
+	qDebug() << "Combo: " << value<< " -- " << print();
+	VEvent e[NUM_MOD+1];
+	int k = 0;
+	if (value != 2)
+		for (; k < modifiers.size(); k++)
+		{
+			e[k].type = EV_KEY;
+			e[k].code = modifiers.at(k);
+			e[k].value = value;
+		}
+	e[k].type = EV_KEY;
+	e[k].code = eventcode;
+	e[k].value = value;
+	
+	if (e[k].code >= BTN_MOUSE)
+	{
+		sendKbdEvent(e, modifiers.size());
+		sendMouseEvent(&e[k], 1);
+	}
+	else
+		sendKbdEvent(e, modifiers.size() + 1);
+}
+
 
 /*!
  * @brief Sends a raw event to the device corrosponding to dtype.
@@ -336,9 +357,12 @@ void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
 void OutEvent::sendMacro()
 {
 	if (!hasCustomValue)
-		send();
+	{
+		sendCombo(1);
+		sendCombo(0);
+	}
 	else 
-		send(customValue);
+		sendSimple(customValue);
 }
 
 /*!
@@ -427,5 +451,33 @@ QString OutEvent::toString() const
 			if (i < modifiers.count() - 1)
 				s += ", ";
 		}
-		return s + "]";
+		return s + "], Type = " + QString::number(outType);
 }
+
+OutEvent& OutEvent::operator=(const OutEvent& other)
+{
+	qDebug () << "copying " << other.print();
+	eventtype = other.eventtype;
+	eventcode = other.eventcode;
+	outType = other.outType;
+	valueType = other.valueType;
+	hasCustomValue = other.hasCustomValue;
+	customValue = other.customValue;
+	modifiers = other.modifiers;
+	if (other.next)
+		next = new OutEvent(*static_cast<OutEvent*>(other.next));
+	qDebug () << "  result = " << print();
+	return *this;
+}
+
+OutEvent::OutEvent(const OutEvent& other)
+{
+	operator=(other);
+}
+
+OutEvent::OutEvent(OutEvent& other)
+{
+	operator=(other);
+}
+
+
