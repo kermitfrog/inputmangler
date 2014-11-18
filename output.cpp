@@ -114,7 +114,6 @@ OutEvent::~OutEvent()
 
 void OutEvent::parseMacro(QStringList l)
 {
-	qDebug() << "parseMacro: " << l;
 	QString s = l.takeFirst().trimmed();
 	if (s.isEmpty())
 		return;
@@ -129,7 +128,7 @@ void OutEvent::parseMacro(QStringList l)
 		if (parts.size() > 1)
 		{
 			hasCustomValue = true;
-			customValue = parts[1].toUInt();
+			customValue = parts[1].toInt();
 		}
 	}
 	else if (s.startsWith("~s"))
@@ -142,7 +141,6 @@ void OutEvent::parseMacro(QStringList l)
 	if (l.count())
 	{	next = new OutEvent(l);
 		OutEvent *o = static_cast<OutEvent*>(next);
-		qDebug() << "something";
 	}
 }
 
@@ -269,23 +267,18 @@ void OutEvent::send(int value)
 
 void OutEvent::sendSimple(int value)
 {
-	qDebug() << "Simple: " << value << " -- " << print() << " -- " << BTN_MISC << " " << eventcode;
 	VEvent e[NUM_MOD+1];
 	e[0].type = eventtype;
 	e[0].code = eventcode;
 	e[0].value = value;
 	if (eventcode >= BTN_MISC)
-	{
 		sendMouseEvent(e);
-		qDebug () << "mouse";
-	}
 	else
 		sendEvent(e);
 }
 
 void OutEvent::sendCombo(int value)
 {
-	qDebug() << "Combo: " << value<< " -- " << print();
 	VEvent e[NUM_MOD+1];
 	int k = 0;
 	if (value != 2)
@@ -456,7 +449,6 @@ QString OutEvent::toString() const
 
 OutEvent& OutEvent::operator=(const OutEvent& other)
 {
-	qDebug () << "copying " << other.print();
 	eventtype = other.eventtype;
 	eventcode = other.eventcode;
 	outType = other.outType;
@@ -466,7 +458,6 @@ OutEvent& OutEvent::operator=(const OutEvent& other)
 	modifiers = other.modifiers;
 	if (other.next)
 		next = new OutEvent(*static_cast<OutEvent*>(other.next));
-	qDebug () << "  result = " << print();
 	return *this;
 }
 

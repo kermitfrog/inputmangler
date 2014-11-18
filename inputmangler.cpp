@@ -338,8 +338,6 @@ QVector< OutEvent > InputMangler::parseOutputsLong(QXmlStreamReader& conf,
 	}
 	if (conf.readNext() != QXmlStreamReader::EndElement)
 		xmlError(conf);
-	foreach (OutEvent o, def)
-		qDebug() << ":::" << o.print();
 	
 	return def;
 }
