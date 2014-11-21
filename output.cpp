@@ -120,7 +120,7 @@ void OutEvent::parseMacro(QStringList l)
 	if (!s.startsWith('~'))
 	{
 		outType = OutEvent::Macro;
-		QStringList parts = s.split(' ');
+		QStringList parts = s.split(' ', QString::SkipEmptyParts);
 		QStringList comboParts = parts[0].split("+");
 		fromInputEvent(keymap[comboParts[0]]);
 		if (comboParts.size() > 1)
