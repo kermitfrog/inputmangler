@@ -1,7 +1,7 @@
 #!/bin/bash
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release ../src/
 make
 
 if [[ $? -gt 0 ]] ; then
