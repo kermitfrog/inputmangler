@@ -3,7 +3,7 @@
 ##DEV## Device Support
 ##REQ## Requierements
 ##INS## Installation
-##CDE## Configuring Your Desktop
+##CDE## Configuring your Desktop
 ##CIM## Configuring inputmangler
   #XML#   A few XML-Basics
   #CNF#   The configuration file
@@ -24,13 +24,13 @@
 # Installation and system setup
 sudo apt-get install g++ cmake qtbase5-dev linux-headers-`uname -r`
 ./install.sh
-plasmapkg --type kwinscript -i kwinNotifyOnWindowChange.kwinscript # for KDE; if not see ##CDE##
+plasmapkg --type kwinscript -i kwinNotifyOnWindowChange.kwinscript # for KDE; if not see "Configurin your Desktop" (##CDE##)
 echo "/path/to/inputmangler 2> /tmp/.inputmangler.log &" >> your_autostart_file
 reboot
 
 # configure and start
 ./setupHelper.sh
-$EDITOR ~/.config/inputMangler/config.xml # (for more Information go to section ##CIM##, the part starting with "config.xml:").
+$EDITOR ~/.config/inputMangler/config.xml # (for more Information go to section "Configuring Inputmangler" (##CIM##), the part starting with "config.xml:").
 build/inputmangler
 
 
@@ -68,11 +68,15 @@ Patrial: device fully works, but not every event transformation is possible.
 Unsupported: inputmangler will likely break some of the devices functionality if configured to use it.
 
 At the moment these are:
-Full: keyboards, probably (not tested) joypads and joysticks that do not need calibration.
-Partial: mice, touchpads (no movement/wheel events)
-Unsupported: tablets, joypads and joysticks that need calibration.
+Full: keyboards, mice, touchpads, joypads and joysticks that do not need calibration.
+Partial: joypads and joysticks that need calibration.
+Unsupported: tablets (theoreticaly, this seems to be working, but a practical test at painting in Krita shows otherwise...)
 
-In technical terms: So far only keys are fully supported. Relative mouse movements (or wheel events, which are the same, as far as the linux input API is concerned) are passed through, but thats all - but it's the first thing on my TODO list ;). Absolute movements will go to /dev/null.
+In technical terms: So far keys and relative movements (mouse movents and wheel) are fully supported. Absolute movements (e.g. tablets, analog joystick movements) are passed through and can be generated, but not used to trigger events. The problem with tablets seems to be caused by applications not properly utilizing the virtual tablet, as all events seem to be generated as they should be. Maybe this can be solved by tweeking the capabilities reported by the kernel module, but i don't have a clue how exactly...
+Does anyone need to transform tablet events anyway?
+
+
+
 
 
 
@@ -125,7 +129,7 @@ and do something with only that device for a few seconds. If you get a lot of ou
 
 
 
-##CDE## Configuring Your Desktop #######
+##CDE## Configuring your Desktop #######
 
 Somewhere in your autostart skript, (KDE: Systemsettings -> "Startup and Shutdown" -> "Autostart" to add one) put the following line (modify path):
 /path/to/inputmangler 2> /tmp/.inputmangler.log &
@@ -169,7 +173,7 @@ $ ./setupHelper.sh
 Inputmanglers configuration consists of 3 files in its config directory: keymap, charmap and config.xml.
 
 keymap:
-Describes your keyboard layout. Since inputmangler works at a very low level, it is not aware of your keyboard layout settings and needs its own definition. If you use a German(de), US(us) or Programmer Dvorak(dvp) layout, just copy the one you like from the keymaps directory to ~/.config/inputMangler/keymap (or let ./setupHelper.sh do it for you). It is not necessary to use the correct keymap, but it makes configuration more intuitive. See section ##KEY## on how to modify it, or just use the one most similar to yours.
+Describes your keyboard layout. Since inputmangler works at a very low level, it is not aware of your keyboard layout settings and needs its own definition. If you use a German(de), US(us) or Programmer Dvorak(dvp) layout, just copy the one you like from the keymaps directory to ~/.config/inputMangler/keymap (or let ./setupHelper.sh do it for you). It is not necessary to use the correct keymap, but it makes configuration more intuitive. See the section on Editing the keymap (##KEY##) on how to modify it, or just use the one most similar to yours.
 
 axismap:
 Similar to keymap, but for relative and absolute movements. In most cases this does not need to be changed, but you maywant to your prefered names to events. Also see ##KEY##.
@@ -242,7 +246,7 @@ This allows you to configure multiple identical devices with different settings,
 
 
 <net addr port />
-Configures inputmangler to listen at "port" of the ip(or hostname?) "addr". See ##NET##
+Configures inputmangler to listen at "port" of the ip(or hostname?) "addr". See "Using the Net module" (##NET##)
 
 <debug [name] vendor product [id] log grab />
 Logs all events from the input device, identified by "vendor" and "product" (see <device>).
@@ -255,7 +259,7 @@ This is meant to help you find the correct keynames and problems with your keyma
 
 <window class [{ID="&,&,..."}] [/]>
 This element defines the transformations for a specific window class. A window class is an identifier, set for a window by its application. Most times it is equal to the name of the application. Different windows of the same application do not need to have the same class value. SDL applications usually have an empty value as class and for Java applications it's usually bogus like "focusProxy".
-To find out what class a window has you can either use the xprop tool (sudo apt-get install x11-utils) - look for the second value of "WM_CLASS", or send a SIGUSR1 to inputmangler (see ##SIG##).
+To find out what class a window has you can either use the xprop tool (sudo apt-get install x11-utils) - look for the second value of "WM_CLASS", or send a SIGUSR1 to inputmangler (see "Invocation and Interaction" ##SIG##).
 
 ID="&,&,..." stands for the short notation of output definitions for this case for input comming from a device, identified by ID.
 If you configured a device like
@@ -266,7 +270,7 @@ If you configured a device like
 </device>
 then
 A="c+C,b,a+S"
-means that pressing the key "a" on that device will trigger the key combination CTRL+C, "c" will be translated to SHIFT+A and "b" will just do what everyone expects it to do. Assuming, of course, you stick to the same naming of your keys and modifiers as I do (see ##KEY##, #OUT#).
+means that pressing the key "a" on that device will trigger the key combination CTRL+C, "c" will be translated to SHIFT+A and "b" will just do what everyone expects it to do. Assuming, of course, you stick to the same naming of your keys and modifiers as I do (see "Editing keymap" (##KEY##) and "Defining outputs" (#OUT#)).
 The value of {ID} always has to have the exact number of fields, separated by ',' as the device has <signal> elements.
 You can define multiple {ID} attributes in one <window> element.
 As an alternative to the short notation, you can use:
@@ -283,7 +287,7 @@ In most cases you will only need ".*", which matches to anything. Inputmangler u
 
 #OUT# Defining outputs.
 
-The output format is actually quite simple. There are two variations:
+The output format is actually quite simple. There are three variations:
 1. no modifiers - just the key
 @
 you can use any key defined in keymap (see ##KEY##)
@@ -309,6 +313,35 @@ release Left Control
 
 Note that you can also trigger mouse buttons, e.g.
 "BTN_LEFT+C" for Ctrl+Left Button. In the keymap file, search for "BTN_" for a list. In theory, every key and button supported by Linux should work with inputmangler.
+
+3. Macros (Sequences)
+~Seq(@ [#], [~s#,] @ [#], ... ~)
+where: ~Seq( marks the start of a Sequence
+       ~)    its end
+       []    something optional
+       #     a numerical value
+       ~s#   a delay (in 1/1000 seconds)
+             Delays are sometimes neccessary to give the application time to respond.
+
+Macros must be defined inside a long notation.
+Example, Drag & Drop to Upper Right, then press Alt-Tab:
+    a=~Seq( BTN_LEFT 1, s~50, MOUSE_X 300, MOUSE_Y -200, BTN_LEFT 0, A 1, TAB, A 0 ~)
+    
+    in Detail: ~Seq           Start Sequence
+               BTN_LEFT 1     Press Left mouse Button
+               s~50           Wait 50 miliseconds
+               MOUSE_X 300    Move mouse 300 pixels to the right
+               MOUSE_Y -200   Move mouse 200 pixels to the top
+               BTN_LEFT 0     Release Left mouse Button
+               A 1            Press Alt
+               TAB            Press and Release Tab
+               A 0            Release Alt
+               ~)             End Sequence
+               
+    Note that you can also use TAB+A for the last part.
+    
+    WARNING: use Delays sparingly. Until a sequence is finished, all other input from the device that triggered it, is postponed.
+               
 
 If you're not sure what the keys are called, use the debug module or take a look at the keymap file.
 
@@ -411,7 +444,7 @@ cac   | dbcacac  | 631313 |        | no problem with a & c
 
 ##SIG## Invocation and Interaction
 
-Inputmangler takes exactly one parameter, and that this the path to an alternative config file.
+Inputmangler takes exactly one parameter, and that is the path to an alternative configuration file.
 
 While running, you can interact with it through d-bus, or you can send UNIX signals. The following unix signals are supported:
 
@@ -431,7 +464,7 @@ $ tail -f /tmp/.inputmangler.log | uniq
 The following dbus calls are supported (examples as called per command line)
 
 Notify inputmangler about a change of the window title: 
-$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowTitleChanged "    TITLE"
+$ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowTitleChanged "TITLE"
 
 Notify inputmangler about a change of the active window:
 $ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.activeWindowChanged "CLASS" "TITLE"
@@ -442,10 +475,10 @@ $ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.A
 Generate an input event. Do not use this, unless you know what you're doing!
 $ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.sendRaw $type $code $value $device
 All Paramenters are integers. See linux/input.h for $type $code and $value
-$device is	0 Keyboard
-			1 Mouse
-			2 Tablet
-			3 Joystick
+$device is  0 Keyboard
+            1 Mouse
+            2 Tablet
+            3 Joystick
 
 
 
@@ -459,10 +492,9 @@ Making this README available as   | Because i can! ...                          
 man page (and maybe pdf).         | Can tex generate man pages?                 | - not quite happy 
                                   |                                             | with the result.)
                                   |                                             | 
-Identify devices by Phys property.| Support for seperatly configuring multiple  | probably 2014
-                                  | identical devices.                          |
-                                  |                                             |                                 
-More complex output sequences     | Support for Macros.                         | 2015 ?
+Packaging                         | To make Installation easier                 | 03/2015
+                                  |                                             | 
+More complex output sequences     | Better support for Macros.                  | 2015 ?
 and maybe making output modular.  |                                             |
                                   |                                             |
 More d-bus slots.                 | Better interaction                          | maybe 2014
@@ -475,9 +507,11 @@ Absolute Axis:
 	Deadzone at the center (Joy)
 	Sensitivity Curve mapping (Joy)
 	Coordinates to Button (Tablet)
-	Using Buttons/Keys as modifiers (to switch windowsettings)
-	Debughandler: Filter
 
+Using Buttons/Keys as modifiers (to switch windowsettings)
+Debughandler: Filter
+
+Configuration GUI
 
 
 ##HLP## Contributing to inputmangler
@@ -509,6 +543,13 @@ Arkadiusz Guzinski <kermit@ag.de1.cc>
 
 
 ##CHN## Changes
+
+1.2:
+ * Basic Macro Support
+ * Minor documentation improvements.
+ * 
+ * 
+ * 
 
 1.1:
 

@@ -106,6 +106,9 @@ OutEvent::OutEvent(QString s)
 		outType = Simple;
 }
 
+/*!
+ * @brief  Deconstructs an output event. Deletes children if neccessary.
+ */
 OutEvent::~OutEvent()
 {
 	if (next != nullptr)

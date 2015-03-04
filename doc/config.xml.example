@@ -65,4 +65,14 @@
 		</title>
 	</window>
 	-->
+
+	<!-- An excerpt from my config to improve controls in Dragonflight with macros -->
+	<!--
+	<window class="dosbox">
+		<long id="K">
+			KP1=~Seq(MOUSE_X 300, MOUSE_Y 200, MOUSE_X -150, MOUSE_Y -5, ~s50, BTN_LEFT 1, ~s100, BTN_LEFT 0 ~)
+			KP2=~Seq(MOUSE_X 300, MOUSE_Y 200, MOUSE_X -80, MOUSE_Y -5, ~s50, BTN_LEFT 1, ~s100, BTN_LEFT 0 ~)
+		</long>
+	</window>
+	-->
 </inputmanglerConf>

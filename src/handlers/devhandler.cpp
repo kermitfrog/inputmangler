@@ -27,6 +27,8 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
+const int buffer_size = 4;
+
 /*!
  * @brief This thread will read from one input device and transform input
  * events according to previosly set rules.
@@ -79,7 +81,7 @@ void DevHandler::run()
 	int n;   // number of events to read / act upon
 	bool matches; // does it match an input code that we want to act upon?
 
-	input_event buf[4];
+	input_event buf[buffer_size];
 	while (1)
 	{
 		//wait until there is data or 1.5 seconds have passed to look at sd.terminating 
@@ -100,7 +102,7 @@ void DevHandler::run()
 		//if we did not wake up due to timeout...
 		if(ret)
 		{
-			n = read(fd, buf, 4*sizeof(input_event));
+			n = read(fd, buf, buffer_size*sizeof(input_event));
 			for (int i = 0; i < n/sizeof(input_event); i++)
 			{
 				matches = false;
