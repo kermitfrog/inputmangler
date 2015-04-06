@@ -1,0 +1,29 @@
+Source: inputdummy
+Section: kernel
+Priority: optional
+Maintainer: Arkadiusz Guzinski <kermit@ag.de1.cc>
+Build-Depends: debhelper (>= 9), linux-headers
+Standards-Version: 3.9.5
+Homepage: https://github.com/kermitfrog/inputmangler
+Vcs-Git: git://github.com/kermitfrog/inputmangler.git
+#Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/inputmangler.git;a=summary
+
+Package: inputdummy-source
+Section: kernel
+Architecture: linux-any
+Depends: 
+Suggests: inputmangler
+Description: Kernel module for inputmangler
+ inputdummy generates virtual input devices (one of mouse, keyboard, joystick, tablet) and device files, whose input is used as output for these devices.
+ 
+Package: inputdummy-dkms
+Section: kernel
+Architecture: linux-any
+Depends: 
+Suggests: inputmangler
+Description: Kernel module for inputmangler
+ inputdummy generates virtual input devices (one of mouse, keyboard, joystick, tablet) and device files, whose input is used as output for these devices.
+ 
+ 
+
+

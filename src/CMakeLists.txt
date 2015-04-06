@@ -42,7 +42,7 @@ INSTALL(FILES ${keymaps} DESTINATION share/inputmangler/keymaps/)
 FILE(GLOB doc "${CMAKE_CURRENT_SOURCE_DIR}/../doc/*")
 INSTALL(FILES ${doc} DESTINATION share/doc/inputmangler/)
 FILE(GLOB scripts "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/*")
-INSTALL(FILES ${scripts} DESTINATION share/inputmangler/)
+INSTALL(PROGRAMS ${scripts} DESTINATION share/inputmangler/)
 
 qt5_use_modules(inputmangler Core Xml DBus Network Test)
 

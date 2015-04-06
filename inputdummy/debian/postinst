@@ -1,0 +1,8 @@
+#!/bin/sh
+# postinst script for phpmyadmin
+
+set -e
+
+addgroup --system inputmangler
+
+exit 0

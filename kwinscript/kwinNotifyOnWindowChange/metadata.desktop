@@ -1,0 +1,18 @@
+[Desktop Entry]
+Name=WindowChange Notifier
+Comment=Notify InputMangler on Window or Title change
+Icon=preferences-system-windows-script-keepaboverestored
+
+X-Plasma-API=javascript
+X-Plasma-MainScript=code/main.js
+
+X-KDE-PluginInfo-Author=Arkadiusz Guzinski
+X-KDE-PluginInfo-Email=kermit@ag.de1.cc
+X-KDE-PluginInfo-Name=kwinNotifyOnWindowChange
+X-KDE-PluginInfo-Version=1.2
+
+X-KDE-PluginInfo-Depends=
+X-KDE-PluginInfo-License=GPL
+X-KDE-ServiceTypes=KWin/Script
+Type=Service
+
