@@ -1,4 +1,5 @@
 kwinscript/kwinNotifyOnWindowChange/contents/code/main.js /usr/share/kde4/apps/kwin/scripts/contents/code
 kwinscript/kwinNotifyOnWindowChange/metadata.desktop /usr/share/kde4/apps/kwin/scripts
 kwinscript/kwin-script-notifyonwindowchange.desktop /usr/share/kde4/services
+inputdummy/98-inputdummy.rules /lib/udev/rules.d
 
