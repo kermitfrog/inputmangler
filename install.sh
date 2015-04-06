@@ -40,7 +40,7 @@ fi
 echo "Append lines to rc.local, to set the correct rights to the inputdummy devices? [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo sed -ie "s/^exit 0$/chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse\nchmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse\nexit 0/" /etc/rc.local
+	sudo sed --in-place --expression "s/^exit 0$/chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse\nchmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse\nexit 0/" /etc/rc.local
 fi
 
 echo "Done!"
