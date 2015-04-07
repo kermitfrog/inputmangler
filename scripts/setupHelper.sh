@@ -31,7 +31,7 @@ cp -v $KEYMAP_PATH/keymap.$LAYOUT $CONFIG_PATH/keymap
 cp -v $KEYMAP_PATH/charmap.$LAYOUT $CONFIG_PATH/charmap
 cp -v $KEYMAP_PATH/axismap $CONFIG_PATH/axismap
 
-if [ ! -e "/usr/share/kde4/apps/kwin/scripts/contents/code/main.js" ]; then
+if [ ! -e "/usr/share/kde4/apps/kwin/scripts/kwinNotifyOnWindowChange/contents/code/main.js" ]; then
 	echo "install notification script for the KDE window manager? [Y|n]"
 	read INP
 	if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == '' ]]; then
