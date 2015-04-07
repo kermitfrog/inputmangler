@@ -31,16 +31,18 @@ if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || 
 fi
 
 echo ""
-echo "which user group should have rights to access the input devices? [$USER]"
+echo "which user group should have rights to access the input devices? (it will be created if neccessary) [inputmangler]"
 read GRP
 if [[ "$GRP" == "" ]] ; then
-	GRP=$USER
+	GRP=inputmangler
 fi
 
-echo "Append lines to rc.local, to set the correct rights to the inputdummy devices? [Y|n]"
+echo "install udev rules for the kernel module into /etc/udev/rules.d? [Y|n]"
 read INP
 if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo sed --in-place --expression "s/^exit 0$/chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse\nchmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse\nexit 0/" /etc/rc.local
+	sudo cp inputdummy/40-inputdummy.rules /etc/udev/rules.d/
+	sed --in-place "s/inputmangler/$GRP/" /etc/udev/rules.d/40-inputdummy.rules
+
 fi
 
 echo "Done!"

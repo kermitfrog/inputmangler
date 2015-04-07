@@ -15,7 +15,7 @@ echo inputdummy > /etc/modules-load.d/inputmangler.conf
 
 echo inputmangler installed!
 echo to use it, you must do the following:
-echo edit /etc/udev/rules.d/45-inputmangler.rules and uncomment the lines describing the devices you wish inputmangler to use
+echo edit /etc/udev/rules.d/80-inputmangler.rules and uncomment the lines describing the devices you wish inputmangler to use
 echo add the users that should be able to use inputmangler to its group with 
 echo $ adduser username inputmangler
 echo as user run /usr/share/inputmangler/setupHelper.sh to create a default configuration 
