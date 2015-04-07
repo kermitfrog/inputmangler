@@ -1,2 +1,0 @@
-DRIVERS=="inputdummy", MODE="0660", GROUP="inputmangler"
-

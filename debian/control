@@ -11,7 +11,7 @@ Vcs-Git: git://github.com/kermitfrog/inputmangler.git
 Package: inputmangler
 Architecture: linux-any
 #Depends: ${shlibs:Depends}, ${misc:Depends}, linux-headers, inputdummy-dkms
-Depends: libqt5core5a (>= 5.1), libqt5dbus5 (>= 5.1), libqt5network5 (>= 5.1), libqt5xml5 (>= 5.1), linux-headers, inputdummy-dkms
+Depends: libqt5core5a (>= 5.1), libqt5dbus5 (>= 5.1), libqt5network5 (>= 5.1), linux-headers, inputdummy-dkms
 Suggests: qdbus | qdbus-qt5
 Description: Daemon that transforms input events.
  Inputmangler is a daemon that intercepts and transforms linux input events, depending on the active window. It aims to be highly configurable, reliable and not too hard to use. You can use it to remap those extra mouse buttons, properly utilize a footswitch or even remap your second keyboard to trigger all kinds of shortcuts! If you are left-handed, you can switch left and right mouse buttons for applications that ignore your Desktops settings (like dosbox and fs-uae). And you can have a different configuration for each window!

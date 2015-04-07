@@ -3,7 +3,7 @@
 
 #set -e
 
-rm /etc/udev/rules.d/99-inputmangler.rules
+rm /etc/udev/rules.d/45-inputmangler.rules
 rm /etc/modules-load.d/inputmangler.conf
 
 #DEBHELPER#
