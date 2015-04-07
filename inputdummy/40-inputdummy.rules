@@ -1,2 +1,5 @@
-DRIVERS=="inputdummy", MODE="0660", GROUP="inputmangler"
+DEVPATH=="/devices/virtual/virtual_input/virtual_kbd", MODE="0660", GROUP="inputmangler"
+DEVPATH=="/devices/virtual/virtual_input/virtual_mouse", MODE="0660", GROUP="inputmangler"
+DEVPATH=="/devices/virtual/virtual_input/virtual_tablet", MODE="0660", GROUP="inputmangler"
+DEVPATH=="/devices/virtual/virtual_input/virtual_joystick", MODE="0660", GROUP="inputmangler"
 
