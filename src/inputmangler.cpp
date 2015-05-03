@@ -216,9 +216,12 @@ void InputMangler::readWindowSettings(QXmlStreamReader& conf, QStringList& ids)
 		if (conf.name() == "long")
 		{
 			QString id = conf.attributes().value("id").toString();
-			WindowSettings *w = wsettings[id];
-			w->def = parseOutputsLong(conf, inputsForIds->value(id), w->def);
-			used[id] = true;
+			if (ids.contains(id))
+			{
+				WindowSettings *w = wsettings[id];
+				w->def = parseOutputsLong(conf, inputsForIds->value(id), w->def);
+				used[id] = true;
+			}
 		}
 		if (conf.name() == "title")
 		{
