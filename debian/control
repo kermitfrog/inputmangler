@@ -2,7 +2,7 @@ Source: inputmangler
 Section: misc
 Priority: optional
 Maintainer: Arkadiusz Guzinski <kermit@ag.de1.cc>
-Build-Depends: debhelper (>= 9), cmake (>= 2.8), qtbase5-dev (>= 5.1), linux-headers
+Build-Depends: debhelper (>= 9), cmake (>= 2.8), qtbase5-dev (>= 5.1), linux-headers, cdbs
 Standards-Version: 3.9.5
 Homepage: https://github.com/kermitfrog/inputmangler
 Vcs-Git: git://github.com/kermitfrog/inputmangler.git
@@ -10,7 +10,7 @@ Vcs-Git: git://github.com/kermitfrog/inputmangler.git
 
 Package: inputmangler
 Architecture: linux-any
-Depends: ${shlibs:Depends}, ${misc:Depends}, linux-headers, inputdummy-dkms
+Depends: ${shlibs:Depends}, ${misc:Depends}, linux-libc-dev, inputdummy-dkms
 #Depends: libqt5core5a (>= 5.3), libqt5dbus5 (>= 5.3), libqt5network5 (>= 5.3), linux-headers, inputdummy-dkms
 Suggests: qdbus | qdbus-qt5
 Description: Daemon that transforms input events.
