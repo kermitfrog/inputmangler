@@ -1,3 +1,10 @@
+inputmangler (1.2.2-1) unstable; urgency=low
+
+  * fixed incompatibility with newer linux-libc-dev
+  * corrected dependencies
+
+ -- arek <kermit@ag.de1.cc>  Mon, 04 May 2015 09:52:32 +0100
+
 inputmangler (1.2.1-1) unstable; urgency=low
 
   * fixed possible crash at startup 
