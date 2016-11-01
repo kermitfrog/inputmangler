@@ -45,8 +45,13 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 	 * and make a mapping of "KEY_MINUS" to 12
 	 */
 	QMap<QString, int> inputMap; // Mappings from input.h
-	QFile input_h_file("/usr/include/linux/input.h");
-	if (!input_h_file.open(QIODevice::ReadOnly))
+
+    QString input_h_file_name = "/usr/include/linux/input-event-codes.h";
+    if (!QFile::exists(input_h_file_name)) // before the input.h - split
+        input_h_file_name = "/usr/include/linux/input.h";
+
+    QFile input_h_file(input_h_file_name);
+    if (!input_h_file.open(QIODevice::ReadOnly))
 	{
 		qDebug() << "could not load keysyms from " << input_h_file.fileName();
 		return;

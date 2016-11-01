@@ -48,14 +48,16 @@ void OutEvent::generalSetup()
  */
 void OutEvent::openVDevice(char* path, int num)
 {
-	int fd = -1, numtries = 100000;
-	while (numtries-- && fd < 0)
+	int fd = -1, numtries = 100;
+	while (fd < 0 && numtries--)
 	{
 		fd = open(path, O_WRONLY|O_APPEND);
 	}
 	fds[num] = fd;
-	qDebug() << path << ": errno = " << errno << "  tries left before giving up: " << numtries;
+	//qDebug() << path << ": errno = " << errno << "  tries left before giving up: " << numtries;
 
+	if (fd < 0)
+		QString message = "Could not open device " + QString::fromUtf8(path) + ", Error: " + QString::fromUtf8(strerror(errno));
 }
 
 /*!
@@ -90,6 +92,12 @@ OutEvent::OutEvent(QString s)
 			if (l.empty())
 				return;
 			parseMacro(l);
+		}
+		else if (type == "~A(" || type == "~Auto(" )
+		{
+			outType = Repeat;
+			fromInputEvent(keymap[s.mid(leftBrace, rightBrace - leftBrace)]);
+			customValue = 0;
 		}
 		return;
 	}
@@ -245,10 +253,25 @@ void OutEvent::send(int value)
 	{
 		case OutEvent::Simple:
 			sendSimple(value);
-		break;
+			break;
 		case OutEvent::Combo:
 			sendCombo(value);
-		break;
+			break;
+		case OutEvent::Repeat:
+			switch(value)
+			{
+				case 1:
+					sendSimple(1);
+					customValue = 0;
+					break;
+				case 2:
+					sendSimple(customValue);
+					customValue ^= 1;
+					break;
+				default:
+					sendSimple(0);
+			}
+			break;
 		case OutEvent::Macro:
 			if (value == 1)
 			{

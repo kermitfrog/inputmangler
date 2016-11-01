@@ -223,7 +223,7 @@ and ends with
 
 Everything in between is optional, but if you don't configure anything, of course nothing will happen.
 
---> I will putt optional Attributes in '[' ']'. The braces are not meant to be written in the config file.
+--> I will put optional Attributes in '[' ']'. The braces are not meant to be written in the config file.
 --> [/] means the element can stop here or have child elements.
 --> Attributes always want to followed by ="value". If i ommit it, the value is some String.
 --> '@' means a key as defined in keymap (see ##KEY##).

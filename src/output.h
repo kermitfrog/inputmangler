@@ -44,6 +44,7 @@ class OutEvent
 		Combo,	//!< Combo event. e.g. "ctrl+c"
 		Macro,	//!< Complex event sequence. Not yet implemented.vv
 		Wait,	//!< Wait a while
+		Repeat,	//!< Autofire / Repeat
 		Custom	//!< Handle via plugin. Not yet implemented.
 	};
 	/*!
