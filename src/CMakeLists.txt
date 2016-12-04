@@ -1,5 +1,5 @@
-project(inputmangler)
-cmake_minimum_required(VERSION 2.8.11)
+#project(inputmangler)
+#cmake_minimum_required(VERSION 2.8.11)
 
 
 find_package(Qt5Core)
@@ -34,6 +34,7 @@ set(INPUTMANGLER_SRCS
 						${handlers_srcs}
 						)
 
+add_library(pugixml)
 add_executable(inputmangler ${INPUTMANGLER_SRCS})
 
 install(TARGETS inputmangler RUNTIME DESTINATION bin)
