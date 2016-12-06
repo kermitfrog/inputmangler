@@ -59,7 +59,6 @@ QVector< OutEvent > TransformationStructure::getOutputs(QString window_class, QS
 	if (w == NULL)
 		return def;
 	//qDebug() << "Window found with " << w->titles.size() << "titles";
-	int idx;
 	for (int i = 0; i < w->titles.size(); i++)
 	{
 		//qDebug() << "Title: " << w->titles.at(i)->pattern();
@@ -132,24 +131,27 @@ bool TransformationStructure::sanityCheck(int numInputs, QString id, bool verbos
 		}
 		for(int i = 0; i < w->events.size(); i++)
 		{
-			if (verbose)
-			{
-				qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
-				QString s = "    ";
-				for (int j = 0; j < w->events.at(i).size(); j++)
-				{
-					s += w->events.at(i).at(j).toString();
-					if (j < w->events.at(i).size() - 1)
-						s += ", ";
+            try {
+				if (verbose) {
+					qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
+					QString s = "    ";
+					for (int j = 0; j < w->events.at(i).size(); j++) {
+						s += w->events.at(i).at(j).toString();
+						if (j < w->events.at(i).size() - 1)
+							s += ", ";
+					}
+					qDebug() << s;
 				}
-				qDebug() << s;
-			}
-			if (w->events.at(i).size() != numInputs)
-			{
-				qDebug() << "WindowSettings for " << classes.key(w) << ":" 
-						 << "Regex = \"" << w->titles.at(i)->pattern() << "\", size = " 
-						 << w->events.at(i).size();
-				result = false;
+				if (w->events.at(i).size() != numInputs) {
+					qDebug() << "WindowSettings for " << classes.key(w) << ":"
+							 << "Regex = \"" << w->titles.at(i)->pattern() << "\", size = "
+							 << w->events.at(i).size();
+					result = false;
+				}
+			} catch (std::bad_alloc& ba) {
+				qDebug() << ba.what();
+			} catch (void *) {
+				qDebug() << "something else went terribly wrong while checking Output events in a <title>";
 			}
 		}
 	}

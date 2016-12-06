@@ -54,7 +54,7 @@ public:
 	void addWindowSettings(QString s, WindowSettings* w);
 	bool sanityCheck(int numInputs, QString id, bool verbose = false);
 	QVector<OutEvent> def; //!< Default outputs for id.
-	QMap<QString,unsigned int> inputs;
+	QMap<__u16 ,unsigned int> inputs;
 protected:
 	QHash<QString, WindowSettings*> classes; //!< HashMap of window classes.
 };

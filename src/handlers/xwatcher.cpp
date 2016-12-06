@@ -38,10 +38,10 @@ XWatcher::XWatcher()
  * If XWatcher needs any Parameters, they should be read here.
  * See the parseXml functions of DevHandler, DebugHandler and NetHandler
  * for examples.
- * @param xml QXmlStreamReader object at current position of a <xwatcher> element.
+ * @param xml pugi::xml_node object at current position of a <xwatcher> element.
  * @return List containing a XWatcher.
  */
-QList< AbstractInputHandler* > XWatcher::parseXml(QXmlStreamReader &xml)
+QList< AbstractInputHandler* > XWatcher::parseXml(pugi::xml_node &xml)
 {
 	QList<AbstractInputHandler*> handlers;
 	/// xwatcher

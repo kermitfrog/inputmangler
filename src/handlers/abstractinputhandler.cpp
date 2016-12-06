@@ -24,7 +24,7 @@
 #include <QTest>
 
 shared_data AbstractInputHandler::sd; // TODO: protect?
-QMap<QString,QList<AbstractInputHandler*>(*)(QXmlStreamReader&)> AbstractInputHandler::parseMap;
+QMap<QString,QList<AbstractInputHandler*>(*)(pugi::xml_node&)> AbstractInputHandler::parseMap;
 
 /*!
  * @brief This static Function is called to set up the shared data structure.
@@ -81,7 +81,7 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
  * @param id Id used in config.xml to identify the subclass of AbstractInputHandler
  * @param func Function used to parse all <id>xml parts.
  */
-void AbstractInputHandler::registerParser(QString id, QList< AbstractInputHandler* >(*func)(QXmlStreamReader&))
+void AbstractInputHandler::registerParser(QString id, QList< AbstractInputHandler* >(*func)(pugi::xml_node&))
 {
 	parseMap[id] = func;
 }
@@ -163,12 +163,12 @@ QList< AbstractInputHandler::idevs > AbstractInputHandler::parseInputDevices()
 /*!
  * @brief Reads attributes of idevs to values in XML element at attr
  */
-void AbstractInputHandler::idevs::readAttributes(QXmlStreamAttributes attr)
+void AbstractInputHandler::idevs::readAttributes(pugi::xml_node attr)
 {
-	vendor  = attr.value("vendor").toString();
-	product = attr.value("product").toString();
-	id      = attr.value("id").toString();
-	phys    = attr.value("phys").toString();
+	vendor  = attr.attribute("vendor").value();
+	product = attr.attribute("product").value();
+	id      = attr.attribute("id").value();
+	phys    = attr.attribute("phys").value();
 }
 
 /*!
@@ -180,5 +180,14 @@ bool AbstractInputHandler::idevs::operator==(AbstractInputHandler::idevs o) cons
 	return (phys == o.phys || ( vendor == o.vendor && product == o.product) );
 }
 
-
+/*!
+ * @brief Returns a map of keycodes to the corresponding index in inputs
+ * @return QMap<keycode, index in inputs>
+ */
+QMap<__u16,int> AbstractInputHandler::getInputMap() {
+    QMap<__u16,int> map;
+    for(int i = 0; i < inputs.size(); i++)
+        map[inputs[i].code] = i;
+	return map;
+}
 

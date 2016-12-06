@@ -32,10 +32,11 @@ class NetHandler : public AbstractInputHandler
 
 public:
     NetHandler(QString address, int port);
-	static QList<AbstractInputHandler*> parseXml(QXmlStreamReader &xml);
+	static QList<AbstractInputHandler*> parseXml(pugi::xml_node &xml);
     virtual ~NetHandler();
 	virtual void run();
-	
+	virtual int getType() {return 100;};
+
 protected:
 	void actOnData(char *b, int n);
 	QTcpServer *s;

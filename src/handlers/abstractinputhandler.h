@@ -31,7 +31,7 @@ class TransformationStructure;
 #include <linux/input.h>
 #include <QVector>
 #include <unistd.h> //@TODO: still needed here?
-#include <QtXml>
+#include <pugixml.hpp>
 
 /*!
  * @brief Data shared by all Handlers
@@ -63,9 +63,9 @@ protected:
 		QString id;      //!< id set in config.xml
 		DType type;      //!< Device Type
 		bool operator==(idevs o) const;
-		void readAttributes(QXmlStreamAttributes attr);
-	};
-	
+        void readAttributes(pugi::xml_node node);
+    };
+
 public:
 	virtual ~AbstractInputHandler() {};
 	virtual void setId(QString i) {_id = i;};
@@ -75,12 +75,14 @@ public:
 // 	static QList<AbstractInputHandler*> parseXml(QDomNode nodes) {};
 	int inputIndex(QString s) const {return inputs.indexOf(InputEvent(keymap[s]));};
 	int getNumInputs() const {return inputs.size();};
+	virtual QMap<__u16,int> getInputMap();
 	int getNumOutputs() const {return outputs.size();};
 	bool hasWindowSpecificSettings() const {return _hasWindowSpecificSettings;};
-	static void registerParser(QString id, QList<AbstractInputHandler*>(*func)(QXmlStreamReader&));
+	static void registerParser(QString id, QList<AbstractInputHandler*>(*func)(pugi::xml_node&));
 	static void generalSetup();
 	static shared_data sd; // TODO: protect?
-	static QMap<QString,QList<AbstractInputHandler*>(*)(QXmlStreamReader&)> parseMap;
+	static QMap<QString,QList<AbstractInputHandler*>(*)(pugi::xml_node&)> parseMap;
+    virtual int getType() = 0;
 
 signals:
 	void windowChanged(QString wclass, QString title);
@@ -94,6 +96,6 @@ protected:
 	virtual int addInput(InputEvent in, OutEvent def);
 	bool _hasWindowSpecificSettings;
 	static QList<idevs> parseInputDevices();
-	
+
 };
 

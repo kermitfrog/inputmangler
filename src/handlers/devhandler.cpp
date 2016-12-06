@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
+using namespace pugi;
 const int buffer_size = 4;
 
 /*!
@@ -175,11 +176,11 @@ DevHandler::DevHandler(idevs device)
 
 /*!
  * @brief Parses a <device> part of the configuration and constructs DevHandler objects.
- * @param xml QXmlStreamReader object at current position of a <device> element.
+ * @param xml pugi::xml_node object at current position of a <device> element.
  * @return List containing all DevHandlers. This can contain multiple objects because some
  * devices have multiple event handlers. In this case a thread is created for every event handlers.
  */
-QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
+QList< AbstractInputHandler* > DevHandler::parseXml(pugi::xml_node &xml)
 {
 	QMap<QString, QMap<QString, unsigned int>> *inputsForIds;
 	if (!sd.infoCache.contains("inputsForIds"))
@@ -201,8 +202,8 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 	 * id is the config-id 
 	 */
 	idevs d;
-	d.readAttributes(xml.attributes());
-	
+	d.readAttributes(xml);
+
 	// create a devhandler for every device that matches vendor and product
 	// of the configured device,
 	while (availableDevices.count(d))
@@ -227,48 +228,22 @@ QList< AbstractInputHandler* > DevHandler::parseXml(QXmlStreamReader &xml)
 	 * becomes the default output when the TransformationStructure is
 	 * constructed, otherwise it won't ever change anyway...
 	 */
-	xml.readNextStartElement();
-	while(!xml.atEnd() && !xml.hasError())
-	{
-		if (xml.isStartElement())
+
+	for (xml_node signal = xml.child("signal"); signal; signal = signal.next_sibling("signal")) {
+
+		QString key = signal.attribute("key").value();
+		QString def = signal.attribute("default").value();
+		foreach(AbstractInputHandler *a, handlers)
 		{
-			if (xml.name() == "signal")
-			{
-				QString key = xml.attributes().value("key").toString();
-				QString def = xml.attributes().value("default").toString();
-				foreach(AbstractInputHandler *a, handlers)
-				{
-					DevHandler *devhandler = static_cast<DevHandler*>(a);
-					if (def == "")
-						devhandler->addInput(keymap[key]);
-					else
-						devhandler->addInput(keymap[key], OutEvent(def));
-				}
-				while(!xml.atEnd() && !xml.hasError())
-				{
-					if (xml.isEndElement())
-						if (xml.name() == "signal")
-							break;
-						else
-							qDebug() << "Reading a <signal> - Warning: unexpected end of element at line " << xml.lineNumber();
-					xml.readNext();
-				}
-				
-				inputsForIds->operator[](d.id)[key] = counter++;
-			}
+			DevHandler *devhandler = static_cast<DevHandler*>(a);
+			if (def == "")
+				devhandler->addInput(keymap[key]);
 			else
-				qDebug() << "Reading a <device> - Warning: unexpected element at line " << xml.lineNumber();
+				devhandler->addInput(keymap[key], OutEvent(def));
 		}
-		else if (xml.isEndElement())
-		{
-			if (xml.name() == "device")
-				break;
-			else
-				qDebug() << "Reading a <device> - Warning: unexpected end of element at line " << xml.lineNumber();
-		}
-		xml.readNext();
+		inputsForIds->operator[](d.id)[key] = counter++;
 	}
-	
+
 	return handlers;
 }
 

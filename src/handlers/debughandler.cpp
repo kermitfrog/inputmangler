@@ -125,18 +125,18 @@ void DebugHandler::run()
 
 /*!
  * @brief Parses a <debug> part of the configuration and constructs DebugHandler objects.
- * @param xml QXmlStreamReader object at current position of a <debug> element.
+ * @param xml pugi::xml_node object at current position of a <debug> element.
  * @return List containing all DebugHandlers. This can contain multiple objects because some
  * devices have multiple event handlers. In this case a thread is created for every event handlers.
  */
-QList< AbstractInputHandler* > DebugHandler::parseXml(QXmlStreamReader &xml)
+QList< AbstractInputHandler* > DebugHandler::parseXml(pugi::xml_node &xml)
 {
 	QList<AbstractInputHandler*> handlers;
 	QList<idevs> availableDevices = parseInputDevices();
 	/// debug dump, aka keylogger
 	DebugHandler *dh;
 	idevs d;
-	d.readAttributes(xml.attributes());
+	d.readAttributes(xml);
 	
 	while (availableDevices.count(d))
 	{
@@ -146,12 +146,11 @@ QList< AbstractInputHandler* > DebugHandler::parseXml(QXmlStreamReader &xml)
 		d.event = availableDevices.at(idx).event;
 		d.type = availableDevices.at(idx).type;
 		handlers.append(new DebugHandler ( d,
-						xml.attributes().value("log").toString(),
-					    xml.attributes().value("grab").toInt()
+						xml.attribute("log").value(),
+					    xml.attribute("grab").as_int()
 											));
 		availableDevices.removeAt(idx);
 	}
-	xml.readNext();
 	return handlers;
 }
 

@@ -32,10 +32,12 @@ set(INPUTMANGLER_SRCS
 						qtsignalhandler.cpp 
 						transformationstructure.cpp
 						${handlers_srcs}
-						)
+        ConfParser.cpp ConfParser.h)
 
-add_library(pugixml)
+find_library(PUGIXML_LIB pugixml)
+#add_library(pugixml SHARED IMPORTED)
 add_executable(inputmangler ${INPUTMANGLER_SRCS})
+target_link_libraries(inputmangler pugixml)
 
 install(TARGETS inputmangler RUNTIME DESTINATION bin)
 FILE(GLOB keymaps "${CMAKE_CURRENT_SOURCE_DIR}/../keymaps/*")

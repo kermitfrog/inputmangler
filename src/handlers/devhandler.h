@@ -36,7 +36,8 @@ class DevHandler : public AbstractInputHandler
 public:
     DevHandler(AbstractInputHandler::idevs device);
     virtual ~DevHandler();
-	static QList<AbstractInputHandler*> parseXml(QXmlStreamReader &xml);
+	static QList<AbstractInputHandler*> parseXml(pugi::xml_node &xml);
+	virtual int getType() {return 1;};
 
 protected:
 	QString filename;

@@ -154,18 +154,16 @@ void NetHandler::actOnData(char* b, int n)
 
 /*!
  * @brief Parses a <net> part of the configuration and constructs a NetHandler object.
- * @param xml QXmlStreamReader object at current position of a <net> element.
+ * @param xml pugi::xml_node object at current position of a <net> element.
  * @return List containing a NetHandler.
  */
-QList< AbstractInputHandler* > NetHandler::parseXml(QXmlStreamReader &xml)
+QList< AbstractInputHandler* > NetHandler::parseXml(pugi::xml_node &xml)
 {
 	QList<AbstractInputHandler*> handlers;
 	/// nethandler
-	qDebug() << "on line " << xml.lineNumber() << ", name is " << xml.name().toString();
-	NetHandler *n = new NetHandler(xml.attributes().value("addr").toString(),
-						xml.attributes().value("port").toInt() );
+	NetHandler *n = new NetHandler(xml.attribute("addr").value(),
+						xml.attribute("port").as_int() );
 	handlers.append(n);
-	xml.readNext();
 	return handlers;
 }
 

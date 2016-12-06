@@ -50,18 +50,14 @@ public slots:
 	void printConfig();
 	
 private:
-	QList<AbstractInputHandler*> handlers; //!< List of all handlers.
-	QString wm_class, wm_title; //!< Current window class and title.
-	QMap<QString, TransformationStructure> wsets; //!< Map containing all window specific outputs for all ids
+	QString wm_class;
+	QString wm_title;
 	bool readConf();
-    QVector<OutEvent> parseOutputsShort(QString s);
-	QVector<OutEvent> parseOutputsLong(QXmlStreamReader& conf, QMap< QString, unsigned int > inputs, QVector< OutEvent > def);
+	QList<AbstractInputHandler*> handlers; //!< List of all handlers.
+	QMap<QString, TransformationStructure> wsets; //!< Map containing all window specific outputs for all ids
 	QMultiMap<QString, AbstractInputHandler*> handlersById;
-	void readWindowSettings(QXmlStreamReader &conf, QStringList &ids);
 // 	void stopHandlers();
 	
-protected:
-    void xmlError(QXmlStreamReader &conf);
 };
 
 
