@@ -98,6 +98,17 @@ bool TransformationStructure::sanityCheck(int numInputs, QString id, bool verbos
 {
 	bool result = true;
 	qDebug() << "\nchecking " << id << " with size " << numInputs;
+
+	if (verbose) {
+		QString tmp = "Defaults: ";
+		for (int j = 0; j < def.size(); j++) {
+			tmp += def.at(j).toString();
+			if (j < def.size() - 1)
+				tmp + ", ";
+		}
+        qDebug() << tmp;
+    }
+
 	if (this->def.size() != numInputs)
 	{
 		qDebug() << "TransformationStructure.def is " << this->def.size();
