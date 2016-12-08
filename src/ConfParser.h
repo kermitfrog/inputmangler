@@ -35,10 +35,10 @@ private:
     bool readConf();
     QVector<OutEvent> parseOutputsShort(const QString str, QVector<OutEvent> &vector);
     QMap<QString, AbstractInputHandler*> handlersById; // different than in inputmangler.cpp - needs only 1 per id
-    void readWindowSettings(pugi::xml_node window, QMap<QString, QVector<OutEvent>> defaultOutputs);
+    void readWindowSettings(pugi::xml_node window, QMap<QString, QVector<OutEvent>> defaultOutputs, QMap<QString, bool> usedIds);
 
 protected:
-    void parseWindowSettings(pugi::xml_node group, QMap<QString, QVector<OutEvent>> defaultOutputs);
+    void parseWindowSettings(pugi::xml_node group, QMap<QString, QVector<OutEvent>> defaultOutputs, QMap<QString, bool> usedIds);
 
     QVector<OutEvent> parseOutputsLong(pugi::xml_node node, const AbstractInputHandler * handler, QVector<OutEvent> def);
 };

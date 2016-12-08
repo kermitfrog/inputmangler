@@ -90,22 +90,46 @@ bool ConfParser::readConf() {
 
     /// Now everything is prepared to read the Window-specific settings
     QMap<QString,QVector<OutEvent>> defOutputs;
+    QMap<QString, bool> usedIds;
     foreach(QString id, ids) {
             defOutputs[id] = wsets->operator[](id).def;
+            usedIds[id] = false;
         }
 
-    parseWindowSettings(conf.child("windowConf"), defOutputs);
-    qDebug() << "bla";
+    parseWindowSettings(conf.child("windowConf"), defOutputs, usedIds);
 
 }
 
-void ConfParser::parseWindowSettings(xml_node group, QMap<QString,QVector<OutEvent>> defaultOutputs) {
+void ConfParser::parseWindowSettings(xml_node group, QMap<QString,QVector<OutEvent>> defaultOutputs, QMap<QString, bool> used) {
 
     for (xml_node entry = group.first_child(); entry; entry= entry.next_sibling()) {
         if (QString(entry.name()) == "window") {
-            readWindowSettings(entry, defaultOutputs);
+            readWindowSettings(entry, defaultOutputs, used);
         } else if (QString(entry.name()) == "group") {
-            parseWindowSettings(entry, defaultOutputs);
+            QString s;
+            QMap<QString, bool> usedIds = used;
+            QMap<QString,QVector<OutEvent>> outputs = defaultOutputs;
+            foreach (QString id, ids) {
+                s = entry.attribute(id.toUtf8().data()).value();
+                if (!s.isEmpty()) {
+                    outputs[id] = parseOutputsShort(s, defaultOutputs[id]);
+                    usedIds[id] = true;
+                }
+            }
+            for (xml_node longDescription  = entry.child("long"); longDescription; longDescription = longDescription.next_sibling("long")) {
+                QString id = longDescription.attribute("id").value();
+                if (!longDescription.empty())
+                {
+                    outputs[id] = parseOutputsLong(longDescription, handlersById[id], defaultOutputs[id]);
+                    usedIds[id] = true;
+                }
+            }
+
+
+
+
+
+            parseWindowSettings(entry, outputs, usedIds);
         } else
             qDebug() << entry.name();
     }
@@ -118,26 +142,19 @@ void ConfParser::parseWindowSettings(xml_node group, QMap<QString,QVector<OutEve
  * @var window <window> element as xml_node object
  * @var defaultOutputs output configuration of the parent
  */
-void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEvent>> defaultOutputs) {
+void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEvent>> defaultOutputs, QMap<QString,bool> used) {
     QString windowClass = window.attribute("class").value();
     QString s;
     QMap<QString, WindowSettings*> wsettings; // <id, WindowSettings>
-    QMap<QString, bool> used;
     QMap<QString, QMap<QString, unsigned int>> *inputsForIds;
     inputsForIds = static_cast<QMap<QString, QMap<QString, unsigned int>>*>(AbstractInputHandler::sd.infoCache["inputsForIds"]);
 
     if (inputsForIds->count() == 0)
         return;
 
-    if (windowClass == "vivaldi-stable")
-        qDebug() << "bla";
-
     // create WindowSettings
     foreach(QString id, ids)
-    {
         wsettings.insert(id, new WindowSettings());
-        used[id] = false;
-    }
 
     foreach (QString id, ids) {
         s = window.attribute(id.toUtf8().data()).value();
