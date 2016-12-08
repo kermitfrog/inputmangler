@@ -40,7 +40,7 @@ private:
 protected:
     void parseWindowSettings(pugi::xml_node group, QMap<QString, QVector<OutEvent>> defaultOutputs);
 
-    QVector<OutEvent> parseOutputsLong(pugi::xml_node node, QMap<__u16 ,int> inputs, QVector<OutEvent> def);
+    QVector<OutEvent> parseOutputsLong(pugi::xml_node node, const AbstractInputHandler * handler, QVector<OutEvent> def);
 };
 
 

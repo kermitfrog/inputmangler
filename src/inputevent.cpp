@@ -62,9 +62,7 @@ InputEvent& InputEvent::operator=(const InputEvent& other)
  */
 bool InputEvent::operator==(const InputEvent& other)
 {
-	type = other.type;
-	code = other.code;
-	valueType = other.valueType;
+    return (type == other.type && code == other.code && valueType == other.valueType);
 }
 
 /*!

@@ -129,7 +129,7 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
     if (inputsForIds->count() == 0)
         return;
 
-    if (windowClass == "vivaldi-snapshot")
+    if (windowClass == "vivaldi-stable")
         qDebug() << "bla";
 
     // create WindowSettings
@@ -148,12 +148,12 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
     }
 
 
-    foreach (QString id, ids) {
-        xml_node longDescription  = window.find_child_by_attribute("long", id.toUtf8().data());
+    for (xml_node longDescription  = window.child("long"); longDescription; longDescription = longDescription.next_sibling("long")) {
+        QString id = longDescription.attribute("id").value();
         if (!longDescription.empty())
         {
             WindowSettings *w = wsettings[id];
-            w->def = parseOutputsLong(longDescription, handlersById.values(id).at(0)->getInputMap(), defaultOutputs[id]);
+            w->def = parseOutputsLong(longDescription, handlersById[id], defaultOutputs[id]);
             used[id] = true;
         }
     }
@@ -177,7 +177,7 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
             if (!longDescription.empty())
             {
                 wsettings[id]->titles.append(new QRegularExpression(QString("^") + regex + "$"));
-                wsettings[id]->events.append(parseOutputsLong(longDescription, handlersById.values(id).at(0)->getInputMap(), defaultOutputs[id]));
+                wsettings[id]->events.append(parseOutputsLong(longDescription, handlersById[id], defaultOutputs[id]));
                 used[id] = true;
             }
         }
@@ -218,9 +218,10 @@ QVector<OutEvent> ConfParser::parseOutputsShort(const QString str, QVector<OutEv
  * @param def Default value. Returned when no output definition is found. Result of
  * <long> description is based on this.
  */
-QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, QMap<__u16, int> inputs,
+QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, const AbstractInputHandler * handler,
                                                QVector<OutEvent> def) {
     QString text = node.child_value();
+    text = text.trimmed();
     if (text.isEmpty()) {
         qDebug() << "warning: empty <long> node!";
         return def;
@@ -242,9 +243,10 @@ QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, QMap<__u16, int> i
             QString right = s.mid(pos + 1);
             if (left.isEmpty() || right.isEmpty())
                 continue;
-            __u16 code = keymap[left].code;
-            if (inputs.contains(code))
-                def[inputs[code]] = OutEvent(right);
+            int index = handler->getInputIndex(left);
+
+            if (index != -1)
+                def[index] = OutEvent(right);
         }
 
     return def;

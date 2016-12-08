@@ -21,14 +21,14 @@
 ##QST## Quickstart for the very impatient #######
 
 runtime dependencies for the package can be installed with
-sudo apt-get install dkms libqt5core5a libqt5dbus5 libqt5network5 linux-libc-dev
+sudo apt-get install dkms libqt5core5a libqt5dbus5 libqt5network5 linux-libc-dev libpugixml1v5
 
-or, for older Ubuntu variants:
-sudo apt-get install dkms libqt5core5a libqt5dbus5a libqt5network5a linux-libc-dev
+or, for older Ubuntu variants (probably):
+sudo apt-get install dkms libqt5core5a libqt5dbus5a libqt5network5a linux-libc-dev libpugixml1v5
 
 (Tested on KUbuntu 14.04)
 # Installation and system setup (skip the next 2 lines if you used the package)
-sudo apt-get install g++ cmake qtbase5-dev linux-headers-`uname -r`
+sudo apt-get install g++ cmake qtbase5-dev libpugixml-dev linux-headers-`uname -r`
 ./install.sh
 
 echo "/path/to/inputmangler 2> /tmp/.inputmangler.log &" >> your_autostart_file

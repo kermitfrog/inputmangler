@@ -40,12 +40,14 @@ class OutEvent
 	 * @brief OutType is the type of the OutEvent.
 	 */
 	enum OutType {
-		Simple,	//!< A single event. e.g. "key a" - the value is determined by source
-		Combo,	//!< Combo event. e.g. "ctrl+c"
-		Macro,	//!< Complex event sequence. Not yet implemented.vv
-		Wait,	//!< Wait a while
-		Repeat,	//!< Autofire / Repeat
-		Custom	//!< Handle via plugin. Not yet implemented.
+		Simple,	    //!< A single event. e.g. "key a" - the value is determined by source
+		Combo,	    //!< Combo event. e.g. "ctrl+c"
+		Macro,	    //!< Complex event sequence. Not yet implemented.vv
+		Wait,	    //!< Wait a while
+		Repeat,	    //!< Autofire / Repeat
+		Accelerate, //!< For mouse wheel acceleration (additional presses, if triggered fast)
+        Debounce,   //!< Hack for broken buttons
+		Custom	    //!< Handle via plugin. Not yet implemented.
 	};
 	/*!
 	* @brief Data that wil be sent to inputdummy, aka low level input event
@@ -53,10 +55,24 @@ class OutEvent
 	*/
 	struct VEvent
 	{
-		__s32 type; // these two are __s16 in input.h, but input_event(), called in
-		__s32 code; // inputdummy expects int
-		__s32 value;
+		__s32   type; // these two are __s16 in input.h, but input_event(), called in
+		__s32   code; // inputdummy expects int
+		__s32   value;
 	};
+    struct AccelSettings
+    {
+        int minKeyPresses;
+        int maxDelay;
+        float accelRate;
+        float max;
+        float currentRate;
+    };
+    union CustomVar
+    {
+        void * ptr = nullptr;
+        int integer;
+    };
+
 	friend class WindowSettings;
 	friend class TransformationStructure;
 public:
@@ -74,13 +90,14 @@ public:
 	__u16 eventtype;
 	__u16 eventcode;
 	__u16 code() const {return eventcode;};
+    timeval time; // last triggered at that time
 	OutType outType;
 	ValueType valueType;
 	bool hasCustomValue = false; //!<used only for Macros
 	int customValue = 0;  		//!< on Macro: custom value, on Wait: time in microseconds
 	void send();
-	void send(int value);
-	void send(int value, __u16 sourceType);
+	void send(int value, timeval &time);
+	void send(int value, __u16 sourceType, timeval &time);
 	// protected?
 	static void sendMouseEvent(VEvent *e, int num = 1);
 	static void sendKbdEvent(VEvent *e, int num = 1);
@@ -102,12 +119,18 @@ protected:
 	void sendCombo(int value);
 	void fromInputEvent(InputEvent& e);
 	static void openVDevice(char * path, int num);
-	void *next = nullptr;  //!< Next event in macro sequence or pointer to custom event
+	CustomVar next;  //!< Next event in macro sequence or pointer to custom event or additional variable
 	void proceed();
 	void parseCombo(QStringList l);
 	void parseMacro(QStringList l);
 	OutEvent(QStringList macroParts);
-	
+    int timeDiff(timeval &newTime);
+
+    void parseAcceleration(QStringList params);
+
+    void sendAccelerated(int value, timeval &newTime);
+
+    void sendDebounced(int value, timeval &newTime);
 };
 
 

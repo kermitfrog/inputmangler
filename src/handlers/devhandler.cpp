@@ -119,7 +119,7 @@ void DevHandler::run()
 #ifdef DEBUGME
 							qDebug() << "Output : " << outputs.at(j).initString;
 #endif
-							outputs[j].send(buf[i].value, buf[i].type);
+							outputs[j].send(buf[i].value, buf[i].type, buf[i].time);
 							break;
 						}
 					}

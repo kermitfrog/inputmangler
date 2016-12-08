@@ -24,7 +24,6 @@
 #include <QTest>
 #include <fcntl.h>
 #include <unistd.h>
-#include <cerrno>
 
 int OutEvent::fds[5];
 
@@ -83,7 +82,7 @@ OutEvent::OutEvent(QString s)
 	if (s.startsWith("~"))
 	{
 		int leftBrace = s.indexOf('(') + 1;
-		int rightBrace = s.lastIndexOf("~)");
+		int rightBrace = s.lastIndexOf("~)"); // TODO why lastIndex?
 		QString type = s.left(leftBrace);
 		if (type == "~Seq(" || type == "~Sequence(" || type == "~Macro(" )
 		{
@@ -98,6 +97,24 @@ OutEvent::OutEvent(QString s)
 			outType = Repeat;
 			fromInputEvent(keymap[s.mid(leftBrace, rightBrace - leftBrace)]);
 			customValue = 0;
+		}
+		else if (type == "~+(" || type == "~Accelerate(" )
+		{
+			outType = Accelerate;
+			QStringList params = s.mid(leftBrace, rightBrace - leftBrace).split(",");
+			parseAcceleration(params);
+		}
+		else if (type == "~D(" || type == "~Debounce(")
+		{
+			outType = Debounce;
+			QStringList params = s.mid(leftBrace, rightBrace - leftBrace).split(",");
+            if (params.empty())
+				return;
+			fromInputEvent(keymap[params[0]]);
+			if (params.size() > 0)
+				customValue = params[1].toInt();
+			else
+				customValue = 150;
 		}
 		return;
 	}
@@ -119,8 +136,10 @@ OutEvent::OutEvent(QString s)
  */
 OutEvent::~OutEvent()
 {
-	if (next != nullptr)
-		delete static_cast<OutEvent*>(next);
+	if (( outType == Macro || outType == Wait ) && next.ptr != nullptr)
+		delete static_cast<OutEvent*>(next.ptr);
+	if (outType == Accelerate)
+		delete static_cast<AccelSettings*>(next.ptr);
 }
 
 void OutEvent::parseMacro(QStringList l)
@@ -150,8 +169,8 @@ void OutEvent::parseMacro(QStringList l)
 	else
 		qDebug() << "parseMacro: unsupported operation: " << s;
 	if (l.count())
-	{	next = new OutEvent(l);
-		OutEvent *o = static_cast<OutEvent*>(next);
+	{	next.ptr = new OutEvent(l);
+		OutEvent *o = static_cast<OutEvent*>(next.ptr);
 	}
 }
 
@@ -204,24 +223,25 @@ OutEvent::OutEvent(InputEvent& e)
  * @param value The value of the input event (see linux/input.h). 
  * @param sourceType The type of device, this was triggered from.
  */
-void OutEvent::send(int value, __u16 sourceType)
+void OutEvent::send(int value, __u16 sourceType, timeval &time)
 {
+	//qDebug() << "send: (" + QString::number(value) + ", " + QString::number(sourceType) + ", *): " + QString::number(eventtype) + " " + QString::number(valueType);
 	if (eventtype == sourceType)
 	{
 		if (eventtype == EV_KEY || valueType == All)
 		{
-			send(value);
+			send(value, time);
 		}
 		else
 		{
 			if ( (valueType == Positive && value < 0) 
 				|| (valueType == Negative && value > 0) )
 			{
-				send(value * -1);
+				send(value * -1, time);
 			}
 			else
 			{
-				send(value);
+				send(value, time);
 			}
 		}
 	}
@@ -234,9 +254,9 @@ void OutEvent::send(int value, __u16 sourceType)
 		if (value == 0)
 			return;
 		if (valueType == Negative)
-			send(-1);
+			send(-1, time);
 		else
-			send(1);
+			send(1, time);
 	}
 }
 
@@ -247,7 +267,7 @@ void OutEvent::send(int value, __u16 sourceType)
  * key and split output between mouse and keyboard when neccessary.
  * @param value The value of the input event (see linux/input.h). 
  */
-void OutEvent::send(int value)
+void OutEvent::send(int value, timeval &time)
 {
 	switch (outType)
 	{
@@ -286,6 +306,12 @@ void OutEvent::send(int value)
 				proceed();
 			}
 			break;
+        case OutEvent::Accelerate:
+            sendAccelerated(value, time);
+            break;
+        case OutEvent::Debounce:
+            sendDebounced(value, time);
+            break;
 	};
 			
 // 	usleep(5000); // wait x * 0.000001 seconds
@@ -293,9 +319,10 @@ void OutEvent::send(int value)
 
 void OutEvent::sendSimple(int value)
 {
+    //qDebug() << "sendSimple: " << eventtype << " " << eventcode << " " << value;
 	VEvent e[NUM_MOD+1];
 	e[0].type = eventtype;
-	e[0].code = eventcode;
+    e[0].code = eventcode;
 	e[0].value = value;
 	if (eventcode >= BTN_MISC)
 		sendMouseEvent(e);
@@ -389,8 +416,8 @@ void OutEvent::sendMacro()
  */
 void OutEvent::proceed()
 {
-	if (next && outType != OutEvent::Custom)
-		static_cast<OutEvent*>(next)->send(1);
+	if (next.ptr && outType != OutEvent::Custom)
+		static_cast<OutEvent*>(next.ptr)->send(1, time); // do we need time in a macro?
 }
 
 /*!
@@ -400,6 +427,8 @@ void OutEvent::proceed()
  */
 void OutEvent::send()
 {
+    //FIXME: should be obvious...
+    timeval ignoreMe;
     /*  
 	  if there are modifiers, populate e with a series of keyboard events, 
 	  that compose the wanted shortcut.
@@ -408,8 +437,8 @@ void OutEvent::send()
       2: Shift down, Ctrl down ,       ,     , Ctrl up, Shift up
       3: Shift down, Ctrl down , C down, C up, Ctrl up, Shift up 
     */
-	send(1);
-	send(0);
+	send(1, ignoreMe);
+	send(0, ignoreMe);
 	usleep(5000); // wait x * 0.000001 seconds
 }
 
@@ -460,6 +489,7 @@ void OutEvent::sendKbdEvent(VEvent* e, int num)
  */
 QString OutEvent::toString() const
 {
+    QString typeString;
 	int searchcode = eventcode;
 	if (eventtype != EV_KEY)
 		searchcode = eventcode+(10000*eventtype)+(1000*valueType);
@@ -470,7 +500,22 @@ QString OutEvent::toString() const
 			if (i < modifiers.count() - 1)
 				s += ", ";
 		}
-		return s + "], Type = " + QString::number(outType);
+	switch (outType) {
+		case Macro:
+		case Wait:
+			typeString = "(Macro)";
+			break;
+		case Repeat:
+			typeString = "(Repeat)";
+			break;
+		case Accelerate:
+			typeString = "(Accel)";
+			break;
+		case Debounce:
+			typeString = "(Debounce)";
+			break;
+	}
+	return s + "]" + typeString;
 }
 
 OutEvent& OutEvent::operator=(const OutEvent& other)
@@ -482,8 +527,18 @@ OutEvent& OutEvent::operator=(const OutEvent& other)
 	hasCustomValue = other.hasCustomValue;
 	customValue = other.customValue;
 	modifiers = other.modifiers;
-	if (other.next)
-		next = new OutEvent(*static_cast<OutEvent*>(other.next));
+	if ((other.outType == Macro || other.outType == Wait) && other.next.ptr)
+		next.ptr = new OutEvent(*static_cast<OutEvent*>(other.next.ptr));
+    else if (other.outType == Accelerate) {
+        AccelSettings *accelSettings = new AccelSettings();
+        AccelSettings *settings = static_cast<AccelSettings*>(other.next.ptr);
+        accelSettings->currentRate = settings->currentRate;
+        accelSettings->max = settings->max;
+        accelSettings->accelRate = settings->accelRate;
+        accelSettings->maxDelay = settings->maxDelay;
+        accelSettings->minKeyPresses = settings->minKeyPresses;
+        next.ptr = accelSettings;
+    }
 	return *this;
 }
 
@@ -497,4 +552,70 @@ OutEvent::OutEvent(OutEvent& other)
 	operator=(other);
 }
 
+int OutEvent::timeDiff(timeval &newTime) {
+	return (newTime.tv_sec - time.tv_sec) * 1000 + (newTime.tv_usec - time.tv_usec) / 1000;
+}
+
+void OutEvent::parseAcceleration(QStringList params) {
+	AccelSettings *accelSettings = new AccelSettings();
+	fromInputEvent(keymap[params[0].trimmed()]); // Key
+    //qDebug() << params;
+	if (params.size() > 1)
+		accelSettings->accelRate = params[1].toFloat();
+	else
+		accelSettings->accelRate = 2.0;
+
+	if (params.size() > 2)
+        accelSettings->max = params[2].toFloat();
+	else
+		accelSettings->max = 10.0;
+
+	if (params.size() > 3)
+		accelSettings->maxDelay = params[3].toInt();
+	else
+		accelSettings->maxDelay = 300;
+
+ 	if (params.size() > 4)
+		accelSettings->minKeyPresses = params[4].toInt();
+	else
+		accelSettings->minKeyPresses = 2;
+	customValue = 0;
+    next.ptr = accelSettings;
+}
+
+void OutEvent::sendAccelerated(int value, timeval &newTime) {
+    AccelSettings *settings = static_cast<AccelSettings*>(next.ptr);
+    if (timeDiff(newTime) > settings->maxDelay) {
+        customValue = 0;
+        settings->currentRate = 1.0;
+    }
+    else if (value == 1 || value == -1) {
+        customValue++; // times triggered
+        if (customValue >= settings->minKeyPresses) {
+            settings->currentRate += settings->accelRate;
+            if (settings->currentRate > settings->max)
+                settings->currentRate = settings->max;
+        }
+        sendSimple(value);
+        for (int i = 1; i < (int)settings->currentRate+0.5; ++i) {
+            usleep(2000);
+            sendSimple(0);
+            usleep(2000);
+            sendSimple(value);
+        }
+    }
+    sendSimple(value);
+    time.tv_sec = newTime.tv_sec;
+    time.tv_usec = newTime.tv_usec;
+}
+
+void OutEvent::sendDebounced(int value, timeval &newTime) {
+    if ( (timeDiff(newTime) >= customValue && value != 0 )
+			|| value == 0 && next.integer != 0 ) {
+		sendSimple(value);
+		next.integer = value;
+	}
+	time.tv_sec = newTime.tv_sec;
+	time.tv_usec = newTime.tv_usec;
+}
 

@@ -191,3 +191,12 @@ QMap<__u16,int> AbstractInputHandler::getInputMap() {
 	return map;
 }
 
+int AbstractInputHandler::getInputIndex(QString key) const{
+	for (int i = 0; i < inputs.size(); i++) {
+		InputEvent ie = keymap[key];
+		if (ie == inputs[i])
+			return i;
+	}
+	return -1;
+}
+

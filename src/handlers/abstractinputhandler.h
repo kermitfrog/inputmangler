@@ -50,6 +50,7 @@ struct shared_data
 class AbstractInputHandler : public QThread
 {
 	Q_OBJECT
+
 	// structure with information on input devices as read
 	// from /proc/bus/input/devices
 protected:
@@ -83,6 +84,7 @@ public:
 	static shared_data sd; // TODO: protect?
 	static QMap<QString,QList<AbstractInputHandler*>(*)(pugi::xml_node&)> parseMap;
     virtual int getType() = 0;
+	int getInputIndex(QString key) const ;
 
 signals:
 	void windowChanged(QString wclass, QString title);
