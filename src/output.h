@@ -66,6 +66,7 @@ class OutEvent
         float accelRate;
         float max;
         float currentRate;
+		float overhead = 0.0;
     };
     union CustomVar
     {

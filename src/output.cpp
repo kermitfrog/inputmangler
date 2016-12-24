@@ -560,12 +560,12 @@ void OutEvent::parseAcceleration(QStringList params) {
 	if (params.size() > 1)
 		accelSettings->accelRate = params[1].toFloat();
 	else
-		accelSettings->accelRate = 2.0;
+		accelSettings->accelRate = 2.25;
 
 	if (params.size() > 2)
         accelSettings->max = params[2].toFloat();
 	else
-		accelSettings->max = 10.0;
+		accelSettings->max = 15.0;
 
 	if (params.size() > 3)
 		accelSettings->maxDelay = params[3].toInt();
@@ -580,11 +580,16 @@ void OutEvent::parseAcceleration(QStringList params) {
     next.ptr = accelSettings;
 }
 
+/*
+ * customValue:    counts how many times the event was triggered
+ * next->integer:
+ */
 void OutEvent::sendAccelerated(int value, timeval &newTime) {
     AccelSettings *settings = static_cast<AccelSettings*>(next.ptr);
     if (timeDiff(newTime) > settings->maxDelay) {
         customValue = 0;
         settings->currentRate = 1.0;
+		settings->overhead = 0.0;
 		sendSimple(value);
     }
     else if (value == 1 || value == -1) {
@@ -597,12 +602,14 @@ void OutEvent::sendAccelerated(int value, timeval &newTime) {
 		if (eventtype != EV_KEY) {
 			sendSimple(value * (int) settings->currentRate + 0.5); // TODO does this work in *all* applications???
 		} else {
+            settings->overhead += settings->currentRate;
 			sendSimple(value);
-			for (int i = 1; i < (int) settings->currentRate + 0.5; ++i) {
+			while (settings->overhead > 1.0) {
 				usleep(2000);
 				sendSimple(0); // not neccessary for relative events
 				usleep(2000);  //
 				sendSimple(value);
+				settings->overhead -= 1.0;
 			}
 		}
     } else

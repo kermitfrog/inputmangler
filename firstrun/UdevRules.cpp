@@ -78,8 +78,8 @@ QString UdevRules::Rule::applyCommand(bool newState) {
     if (newState == active)
         return "";
     if (newState)
-        return "sed -i'' '" + lineNumber + "s/#//' /tmp/80-inputmangler.rules";
-    return "sed -i'' '" + lineNumber + "s/^/#/' /tmp/80-inputmangler.rules";
+        return "sed -i'' '" + QString::number(lineNumber) + "s/#//' /tmp/80-inputmangler.rules";
+    return "sed -i'' '" + QString::number(lineNumber) + "s/^/#/' /tmp/80-inputmangler.rules";
    //     return "sed -i'' '" + lineNumber + "s/#//' /etc/udev.d/80-inputmangler.rules";
     //return "sed -i'' '" + lineNumber + "s/^/#/' /etc/udev.d/80-inputmangler.rules";
 }
