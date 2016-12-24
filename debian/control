@@ -2,7 +2,7 @@ Source: inputmangler
 Section: misc
 Priority: optional
 Maintainer: Arkadiusz Guzinski <kermit@ag.de1.cc>
-Build-Depends: debhelper (>= 9), cmake (>= 2.8), qtbase5-dev (>= 5.1), linux-headers, cdbs
+Build-Depends: debhelper (>= 9), cmake (>= 2.8), qtbase5-dev (>= 5.1), linux-headers, cdbs, libpugixml-dev
 Standards-Version: 3.9.5
 Homepage: https://github.com/kermitfrog/inputmangler
 Vcs-Git: git://github.com/kermitfrog/inputmangler.git

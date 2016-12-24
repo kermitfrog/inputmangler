@@ -21,7 +21,6 @@
 #include "qtsignalhandler.h"
 #include <signal.h>
 #include <QCoreApplication>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -88,4 +87,3 @@ void QtSignalHandler::socketEmitter(int signum)
 
 
 
-#include "moc_qtsignalhandler.cpp"

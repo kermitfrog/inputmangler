@@ -664,10 +664,10 @@ Arkadiusz Guzinski <kermit@ag.de1.cc>
     </device>
 	<debug>
 	 ...
-	<debug>
+	</debug>
 	<net>
 	 ...
-	<net>
+	</net>
   </handlers>
 
   put all <window> elements inside a <windowConf> element:

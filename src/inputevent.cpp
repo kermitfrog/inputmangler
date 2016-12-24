@@ -55,6 +55,7 @@ InputEvent& InputEvent::operator=(const InputEvent& other)
 	type = other.type;
 	code = other.code;
 	valueType = other.valueType;
+	return *this;
 }
 
 /*!

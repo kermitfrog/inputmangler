@@ -19,7 +19,6 @@
 
 #include "output.h"
 #include "keydefs.h"
-#include <QStringList>
 #include <QDebug>
 #include <QTest>
 #include <fcntl.h>
@@ -45,7 +44,7 @@ void OutEvent::generalSetup()
 /*!
  * @brief opens a virtual device for output.
  */
-void OutEvent::openVDevice(char* path, int num)
+void OutEvent::openVDevice(const char* path, int num)
 {
 	int fd = -1, numtries = 100;
 	while (fd < 0 && numtries--)
@@ -169,9 +168,7 @@ void OutEvent::parseMacro(QStringList l)
 	else
 		qDebug() << "parseMacro: unsupported operation: " << s;
 	if (l.count())
-	{	next.ptr = new OutEvent(l);
-		OutEvent *o = static_cast<OutEvent*>(next.ptr);
-	}
+		next.ptr = new OutEvent(l);
 }
 
 OutEvent::OutEvent(QStringList macroParts)
@@ -302,7 +299,7 @@ void OutEvent::send(int value, timeval &time)
 		case OutEvent::Wait:
 			if (value == 1)
 			{
-				usleep(customValue); //TODO: make it non-blocking!
+				usleep((__useconds_t) customValue); //TODO: make it non-blocking!
 				proceed();
 			}
 			break;
@@ -588,23 +585,28 @@ void OutEvent::sendAccelerated(int value, timeval &newTime) {
     if (timeDiff(newTime) > settings->maxDelay) {
         customValue = 0;
         settings->currentRate = 1.0;
+		sendSimple(value);
     }
     else if (value == 1 || value == -1) {
-        customValue++; // times triggered
-        if (customValue >= settings->minKeyPresses) {
-            settings->currentRate += settings->accelRate;
-            if (settings->currentRate > settings->max)
-                settings->currentRate = settings->max;
-        }
-        sendSimple(value);
-        for (int i = 1; i < (int)settings->currentRate+0.5; ++i) {
-            usleep(2000);
-            sendSimple(0);
-            usleep(2000);
-            sendSimple(value);
-        }
-    }
-    sendSimple(value);
+		customValue++; // times triggered
+		if (customValue >= settings->minKeyPresses) {
+			settings->currentRate += settings->accelRate;
+			if (settings->currentRate > settings->max)
+				settings->currentRate = settings->max;
+		}
+		if (eventtype != EV_KEY) {
+			sendSimple(value * (int) settings->currentRate + 0.5); // TODO does this work in *all* applications???
+		} else {
+			sendSimple(value);
+			for (int i = 1; i < (int) settings->currentRate + 0.5; ++i) {
+				usleep(2000);
+				sendSimple(0); // not neccessary for relative events
+				usleep(2000);  //
+				sendSimple(value);
+			}
+		}
+    } else
+	    sendSimple(value);
     time.tv_sec = newTime.tv_sec;
     time.tv_usec = newTime.tv_usec;
 }

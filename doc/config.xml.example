@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<inputmanglerConf>
+<inputmanglerConf configVersion="2">
 	<!-- Comment -->
 	<!-- In this example it's all commented out, because I really can't think of any sane default configuration. -->
-	<!-- Custom path to keymap and charmap - default is ~/.config/inputMangler/(key|char)map -->
-	<!-- <mapfiles keymap="/usr/local/share/inputmangler/keymap.dvp" charmap="/usr/local/share/inputmangler/charmap.dvp"/> -->
-	
+	<!-- Custom path to maps - default is ~/.config/inputMangler/(key|char|axis)map -->
+	<!-- <mapfiles keymap="/usr/local/share/inputmangler/keymap.dvp" 
+		           charmap="/usr/local/share/inputmangler/charmap.dvp"
+				   axismap="/usr/local/share/inputmangler/axismap"/> -->
+
+	<handlers> <!-- All handlers belong in here -->
 	<!-- Listen on network - this is completely unencrypted! -->
 	<!-- <net addr="127.0.0.1" port="20000"/> -->
 	
@@ -41,6 +44,20 @@
 		<signal key="BTN_SIDE"/>
 	</device>
 	-->
+
+	<!-- Alternative: Fix broken button and enable scroll wheel acceleration. See README for parameters -->
+	<!-- 
+	<device name="Mouse" vendor="1a7c" product="0068" id="M">
+		<signal key="WHEEL_UP" default="~+(WHEEL_UP~)"/>
+		<signal key="WHEEL_DOWN" default="~+(WHEEL_DOWN~)"/>
+		<signal key="BTN_EXTRA" default="~D(BTN_EXTRA~)" />
+		<signal key="BTN_SIDE"/>
+	</device>
+	-->
+
+	</handlers>
+
+	<windowConf><!-- All window elements belong in here -->
 	
 	<!-- In KDevelop: Always use the extra buttons to switch tabs. -->
 	<!-- <window class="kdevelop" M="WHEEL_UP,WHEEL_DOWN,LEFT+A,RIGHT+A"/> -->
@@ -66,7 +83,9 @@
 	</window>
 	-->
 
-	<!-- An excerpt from my config to improve controls in Dragonflight with macros -->
+	<!-- An excerpt from my config to improve controls in Dragonflight with macros 
+		 Read the README, section #OUT# part 3 
+	-->
 	<!--
 	<window class="dosbox">
 		<long id="K">
@@ -75,4 +94,12 @@
 		</long>
 	</window>
 	-->
+	</windowConf>
+	<!-- 
+		 Not in this example (see README):
+		 * Autofire 
+		 * Window grouping and output inheritance
+		 * Extra parameters for acceleration and debouncing
+		 * 
+    -->
 </inputmanglerConf>

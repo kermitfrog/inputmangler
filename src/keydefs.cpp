@@ -24,7 +24,7 @@ QHash<QString, InputEvent> keymap;
 QHash<char, OutEvent> charmap;
 QHash<QString, OutEvent> specialmap;
 QMap<int, QString> keymap_reverse;
-unsigned int max_sequence_length;
+int max_sequence_length;
 QList<QChar> sequence_starting_chars;
 
 /*!
@@ -142,7 +142,8 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 		tmp = (*li).split(QRegExp("\\s"), QString::SkipEmptyParts);
 		if (tmp.size() >= 3)
 		{
-			int code, type;
+			int type;
+			__u16 code;
 			ValueType vtype;
 			if (QRegExp("\\D").exactMatch(tmp[0].left(1)) )
 				code = inputMap[tmp[0]];
@@ -175,6 +176,8 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 				case 'J':
 					vtype = JoystickAxis;
 					break;
+				default:
+					vtype = All;
 			}
 			
 			keymap[tmp[2]] = InputEvent(code, type, vtype);

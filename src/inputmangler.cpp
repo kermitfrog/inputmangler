@@ -18,13 +18,8 @@
 */
 
 #include "imdbusinterface.h"
-#include "inputmangler.h"
 #include "handlers/handlers.h"
 #include "ConfParser.h"
-#include "keydefs.h"
-#include <unistd.h>
-#include <QXmlStreamReader>
-#include <signal.h>
 
 /*!
  * @brief Constructor. Calls registerHandlers and readConf.
@@ -75,13 +70,14 @@ bool InputMangler::readConf()
 			sane = true;
 		else if(!h->hasWindowSpecificSettings() )
 			sane = true;
-		else 
+		else
             sane = wsets[h->id()].sanityCheck(h->getNumInputs(), h->id());
 		
 		if (sane)
 			h->start();
 	}
-	
+
+	return true;
 }
 
 

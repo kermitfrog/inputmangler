@@ -24,14 +24,13 @@ ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, T
     handlers = _handlers;
     wsets = _wsets;
     readConf();
-    _handlers = handlers;
-    _wsets = wsets;
+//    _handlers = handlers;
+//    _wsets = wsets;
 }
 
 bool ConfParser::readConf() {
     //parse config
     QString confPath;
-    xml_attribute attr;
     if (QCoreApplication::arguments().count() < 2)
         confPath = QDir::homePath() + "/.config/inputMangler/config.xml";
     else
@@ -97,7 +96,7 @@ bool ConfParser::readConf() {
         }
 
     parseWindowSettings(conf.child("windowConf"), defOutputs, usedIds);
-
+    return true;
 }
 
 void ConfParser::parseWindowSettings(xml_node group, QMap<QString,QVector<OutEvent>> defaultOutputs, QMap<QString, bool> used) {

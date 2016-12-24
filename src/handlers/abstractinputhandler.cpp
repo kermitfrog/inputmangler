@@ -18,9 +18,6 @@
 */
 
 #include "abstractinputhandler.h"
-#include "inputmangler.h"
-#include "definitions.h"
-#include <QDebug>
 #include <QTest>
 
 shared_data AbstractInputHandler::sd; // TODO: protect?

@@ -19,13 +19,8 @@
 
 
 #include "devhandler.h"
-#include "inputmangler.h"
-#include <QDebug>
 #include <poll.h>
-#include <linux/input.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <sys/ioctl.h>
 
 using namespace pugi;
 const int buffer_size = 4;
@@ -148,7 +143,6 @@ void DevHandler::run()
 void DevHandler::sendAbsoluteValue(__u16 code, __s32 value)
 {
 // 	qDebug() << "sendAbsoluteValue: orig = "  << value;
-	int orig = value;
 	value -= absmap[code]->minimum;
 	value *= absfac[code];
 	value += minVal;
@@ -190,7 +184,7 @@ QList< AbstractInputHandler* > DevHandler::parseXml(pugi::xml_node &xml)
 	}
 	else
 		inputsForIds = static_cast<QMap<QString, QMap<QString, unsigned int>>*>(sd.infoCache["inputsForIds"]);
-	int counter = 0;
+	unsigned int counter = 0;
 	
 	QList<AbstractInputHandler*> handlers;
 	// get a list of available devices from /proc/bus/input/devices

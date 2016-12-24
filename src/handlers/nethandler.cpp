@@ -19,10 +19,7 @@
 
 
 #include "nethandler.h"
-#include <QDebug>
 #include <QTcpSocket>
-#include <QString>
-#include "keydefs.h"
 #include <QTest>
 
 /*!

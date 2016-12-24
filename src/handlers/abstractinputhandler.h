@@ -68,13 +68,10 @@ protected:
     };
 
 public:
-	virtual ~AbstractInputHandler() {};
-	virtual void setId(QString i) {_id = i;};
+	virtual ~AbstractInputHandler() {};;
 	virtual QString id() const {return _id;};
 	virtual void setOutputs(QVector<OutEvent> o);
-	virtual QVector<OutEvent> getOutputs() const {return outputs;};
-// 	static QList<AbstractInputHandler*> parseXml(QDomNode nodes) {};
-	int inputIndex(QString s) const {return inputs.indexOf(InputEvent(keymap[s]));};
+	virtual QVector<OutEvent> getOutputs() const {return outputs;};;
 	int getNumInputs() const {return inputs.size();};
 	virtual QMap<__u16,int> getInputMap();
 	int getNumOutputs() const {return outputs.size();};

@@ -37,8 +37,7 @@ class imDbusInterface : public QObject
 public:
     explicit imDbusInterface(InputMangler *im);
     virtual ~imDbusInterface();
-	QDBusInterface *db;
-	
+
 public slots:
 	Q_NOREPLY void activeWindowChanged(QByteArray wclass, QString title) {
 		emit windowChanged(QString(wclass), title);

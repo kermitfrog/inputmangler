@@ -23,10 +23,7 @@
 #include <linux/input.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/ioctl.h>
-#include <cerrno>
 #include "debughandler.h"
-#include "inputmangler.h"
 
 /*!
  * @brief Constructs a DebugHandler.
@@ -134,7 +131,6 @@ QList< AbstractInputHandler* > DebugHandler::parseXml(pugi::xml_node &xml)
 	QList<AbstractInputHandler*> handlers;
 	QList<idevs> availableDevices = parseInputDevices();
 	/// debug dump, aka keylogger
-	DebugHandler *dh;
 	idevs d;
 	d.readAttributes(xml);
 	
@@ -147,7 +143,7 @@ QList< AbstractInputHandler* > DebugHandler::parseXml(pugi::xml_node &xml)
 		d.type = availableDevices.at(idx).type;
 		handlers.append(new DebugHandler ( d,
 						xml.attribute("log").value(),
-					    xml.attribute("grab").as_int()
+					    xml.attribute("grab").as_bool()
 											));
 		availableDevices.removeAt(idx);
 	}

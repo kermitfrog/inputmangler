@@ -19,8 +19,6 @@
 
 
 #include "imdbusinterface.h"
-#include <QDBusConnection>
-#include <QDebug>
 
 /*!
  * @brief Register on d-bus.

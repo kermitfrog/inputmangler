@@ -118,7 +118,7 @@ protected:
 	void sendSimple(int value);
 	void sendCombo(int value);
 	void fromInputEvent(InputEvent& e);
-	static void openVDevice(char * path, int num);
+	static void openVDevice(const char * path, int num);
 	CustomVar next;  //!< Next event in macro sequence or pointer to custom event or additional variable
 	void proceed();
 	void parseCombo(QStringList l);

@@ -3,7 +3,6 @@
 
 
 find_package(Qt5Core)
-find_package(Qt5Xml)
 find_package(Qt5DBus)
 find_package(Qt5Network)
 find_package(Qt5Test)
@@ -12,9 +11,7 @@ find_package(Qt5Test)
 #SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-lX11")
 #SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-lX11")
 
-ADD_DEFINITIONS(
-    -std=c++11
-    )
+
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -47,6 +44,6 @@ INSTALL(FILES ${doc} DESTINATION share/doc/inputmangler/)
 FILE(GLOB scripts "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/*")
 INSTALL(PROGRAMS ${scripts} DESTINATION share/inputmangler/)
 
-qt5_use_modules(inputmangler Core Xml DBus Network Test)
+qt5_use_modules(inputmangler Core DBus Network Test)
 
 #add_definitions( -DDEBUGME )
