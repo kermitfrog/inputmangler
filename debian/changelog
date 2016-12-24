@@ -1,3 +1,11 @@
+inputmangler (1.3-1) unstable; urgency=medium
+
+  * config format slightly changed (see end of README)
+  * now depends on pugixml
+  * new features: reapeat, accelerate, debounce
+
+ -- arek <kermit@ag.de1.cc>  Sat, 24 Dec 2016 10:59:13 +0100
+
 inputmangler (1.2.2-1) unstable; urgency=low
 
   * fixed incompatibility with newer linux-libc-dev
