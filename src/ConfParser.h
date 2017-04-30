@@ -21,11 +21,14 @@
 
 #include <handlers/abstractinputhandler.h>
 #include <pugixml.hpp>
+#include <linux/input-event-codes.h>
+#include "definitions.h"
 
 class ConfParser
 {
 public:
     ConfParser(QList<AbstractInputHandler*> *_handlers, QMap<QString, TransformationStructure> *_wsets);
+    QBitArray evbits, keybits, ledbits, relbits, absbitsT, absbitsJ, mscbits;
 
 private:
     QList<AbstractInputHandler*> *handlers; //!< List of all handlers.
@@ -41,6 +44,10 @@ protected:
     void parseWindowSettings(pugi::xml_node group, QMap<QString, QVector<OutEvent>> defaultOutputs, QMap<QString, bool> usedIds);
 
     QVector<OutEvent> parseOutputsLong(pugi::xml_node node, const AbstractInputHandler * handler, QVector<OutEvent> def);
+    
+    // Bits for uinput device setup
+    QBitArray* inputBits[NUM_INPUTBITS];
+
 };
 
 

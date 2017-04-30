@@ -25,6 +25,7 @@
 #include <QString>
 #include <QVector>
 #include <QHash>
+#include "ConfParser.h"
 
 
 /*!
@@ -32,6 +33,7 @@
  * "S" for press shift
  * "g" for press g
  * "d+C" for press Ctrl-D
+ * "~Seq(BTN_LEFT 1, ~s50, MOUSE_X 150, ~s50, BTN_LEFT 0 ~)" for Drag&Drop 150 pixels to the right
  * more Complex Types will be supported in the future (maybe via plugins)
  */
 class OutEvent 
@@ -42,7 +44,7 @@ class OutEvent
 	enum OutType {
 		Simple,	    //!< A single event. e.g. "key a" - the value is determined by source
 		Combo,	    //!< Combo event. e.g. "ctrl+c"
-		Macro,	    //!< Complex event sequence. Not yet implemented.vv
+		Macro,	    //!< Complex event sequence. 
 		Wait,	    //!< Wait a while
 		Repeat,	    //!< Autofire / Repeat
 		Accelerate, //!< For mouse wheel acceleration (additional presses, if triggered fast)
@@ -114,6 +116,8 @@ public:
 #endif
 	//OutEvent& operator=(OutEvent &other);
 	OutEvent& operator=(const OutEvent &other);
+    OutEvent* setInputBits(QBitArray* inputBits[]);
+    
 protected:
 	void sendMacro();
 	void sendSimple(int value);

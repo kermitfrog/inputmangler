@@ -26,11 +26,17 @@ FirstRunWizard::FirstRunWizard() {
     ui = new Ui_Wizard();
     ui->setupUi(this);
 
+    user = QString(qgetenv("USER"));
     step1();
     step2();
+    step3();
+    step4();
+    step5();
+    step6();
+
 }
 
-void FirstRunWizard::step1() {
+void FirstRunWizard::step1() { // small things
     QTreeWidgetItem *group;
     QTreeWidgetItem *it;
     QString tmp;
@@ -64,7 +70,7 @@ void FirstRunWizard::step1() {
                            && runCommandSimple("ls -l /dev/virtual_kbd").contains(groupName) );
 }
 
-void FirstRunWizard::step2() {
+void FirstRunWizard::step2() { // device selection
     udevRules = new UdevRules();
     for (int i = 0; i < udevRules->rules.size(); ++i) {
         UdevRules::Rule rule = udevRules->rules[i];
@@ -72,6 +78,72 @@ void FirstRunWizard::step2() {
         it->setCheckState(boolToCheck(rule.active));
     }
 
+}
+
+void FirstRunWizard::step3() { // users
+    foreach(QString line, contentsOf("/etc/group")) {
+        QStringList attr = line.split(':');
+        if (attr[0] == groupName) {
+            groupExists = true;
+            usersInGroup = attr[3].split(',');
+            break;
+        }
+    }
+
+
+    foreach(QString line, contentsOf("/etc/passwd")) {
+            QStringList attr = line.split(':');
+            if (attr.size() < 3)
+                continue;
+            QListWidgetItem *li = new QListWidgetItem(attr[0]);
+            li->setData(Qt::UserRole, attr[2].toInt());
+            ui->userListView->addItem(li);
+            if ( (groupExists && usersInGroup.contains(attr[0]) )
+                    || (!groupExists && attr[0] == user ) )
+                    li->setSelected(true);
+
+        }
+    connect(ui->showSystemUsersCheckBox, SIGNAL(stateChanged(int)), SLOT(setShowSystemUsers(int)));
+    setShowSystemUsers(0);
+}
+
+void FirstRunWizard::step4() { // autostart
+    ui->startIMCheckBox->setChecked(true);
+    QStringList l = runCommandSimple("ps -u " + user + " ocomm").split('\n');
+    if (l.contains("kwin_x11") || l.contains("kwin_wayland"))
+        ui->kwinscriptCheckBox->setChecked(true);
+    else
+        ui->trackScriptCheckBox->setChecked(true);
+}
+
+void FirstRunWizard::step5() { // keymap
+    QString myKeymap, tmp;
+    int pos, pos2;
+    tmp = runCommandSimple("setxkbmap -query");
+    pos = tmp.indexOf("layout:") + 7;
+    pos = tmp.indexOf(QRegExp("[a-z]"), pos);
+    pos2 = tmp.indexOf(QRegExp("[^a-z]"), pos);
+    myKeymap = tmp.mid(pos, pos2 - pos);
+
+    QDir dir;
+    dir.setPath(mapPath);
+    if (!dir.exists())
+        dir.setPath(dir.currentPath() + "/keymaps/");
+    if (!dir.exists())
+        return;
+
+    foreach (QString file, dir.entryList()) {
+        if (file.startsWith("keymap")) {
+            file = file.mid(7);
+            QListWidgetItem *it = new QListWidgetItem(file);
+            ui->keymapListWidget->addItem(it);
+            if (file == myKeymap)
+                it->setSelected(true);
+        }
+    }
+}
+
+void FirstRunWizard::step6() { // test
 
 }
 
@@ -134,3 +206,20 @@ QString FirstRunWizard::runCommandSudo(QString cmd) {
     return output;
 }
 
+QStringList FirstRunWizard::contentsOf(QString filename) {
+    QStringList list;
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly))
+        return list;
+
+    list = QString(file.readAll()).split('\n');
+    return list;
+}
+
+void FirstRunWizard::setShowSystemUsers(int show) {
+    for (int i = 0; i < ui->userListView->count(); ++i) {
+        QListWidgetItem *it = ui->userListView->item(i);
+        if (it->data(Qt::UserRole) < 1000)
+            it->setHidden(!show);
+    }
+}

@@ -24,6 +24,22 @@ ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, T
     handlers = _handlers;
     wsets = _wsets;
     readConf();
+    
+    evbits.resize(EV_CNT);
+    keybits.resize(KEY_CNT);
+    ledbits.resize(LED_CNT);
+    relbits.resize(REL_CNT);
+    absbitsT.resize(ABS_CNT);
+    absbitsJ.resize(ABS_CNT);
+    mscbits.resize(MSC_CNT);
+
+    inputBits[EV_CNT] = &evbits;
+    inputBits[EV_KEY] = &keybits;
+    inputBits[EV_LED] = &ledbits;
+    inputBits[EV_REL] = &relbits;
+    inputBits[EV_ABS] = &absbitsT;
+    inputBits[EV_ABSJ] = &absbitsJ;
+    inputBits[EV_MSC] = &mscbits;
 //    _handlers = handlers;
 //    _wsets = wsets;
 }
@@ -54,6 +70,11 @@ bool ConfParser::readConf() {
     mapfileA = mapfiles.attribute("axismap").value();
     qDebug() << "using keymap = " << mapfileK << ", charmap = " << mapfileC << ", axismap = " << mapfileA;
     setUpKeymaps(mapfileK, mapfileC, mapfileA);
+
+    foreach(OutEvent o, charmap.values())
+        o.setInputBits(inputBits);
+    foreach(OutEvent o, specialmap.values())
+        o.setInputBits(inputBits);
 
     xml_node handlersConf = conf.child("handlers");
     for (xml_node handler = handlersConf.first_child(); handler; handler = handler.next_sibling()) {
@@ -221,8 +242,10 @@ QVector<OutEvent> ConfParser::parseOutputsShort(const QString str, QVector<OutEv
     foreach(QString s, l) {
         if (s == "~") //inherit
             vec.append(defaults[vec.size() + 1]);
-        else
+        else {
             vec.append(OutEvent(s));
+            vec.last().setInputBits(inputBits);
+        }
     }
     return vec;
 }
@@ -237,6 +260,7 @@ QVector<OutEvent> ConfParser::parseOutputsShort(const QString str, QVector<OutEv
 QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, const AbstractInputHandler * handler,
                                                QVector<OutEvent> def) {
     QString text = node.child_value();
+        qDebug() << "parsing long: " << text;
     text = text.trimmed();
     if (text.isEmpty()) {
         qDebug() << "warning: empty <long> node!";
@@ -261,8 +285,10 @@ QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, const AbstractInpu
                 continue;
             int index = handler->getInputIndex(left);
 
-            if (index != -1)
+            if (index != -1) {
                 def[index] = OutEvent(right);
+                def[index].setInputBits(inputBits);
+            }
         }
 
     return def;

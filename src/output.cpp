@@ -628,3 +628,28 @@ void OutEvent::sendDebounced(int value, timeval &newTime) {
 	time.tv_usec = newTime.tv_usec;
 }
 
+OutEvent* OutEvent::setInputBits(QBitArray* inputBits[]) {
+    switch(outType) {
+		Wait:
+			if (next.ptr != nullptr)
+				((OutEvent*)next.ptr)->setInputBits(inputBits);
+			break;
+		Macro:
+			if (next.ptr != nullptr)
+				((OutEvent*)next.ptr)->setInputBits(inputBits);
+		default:
+			inputBits[EV_CNT]->setBit(eventtype);
+            if (valueType == JoystickAxis && eventtype == EV_ABS)
+				inputBits[EV_ABSJ]->setBit(eventcode);
+			else
+				inputBits[eventtype]->setBit(eventcode);
+	}
+	return this;
+}
+
+
+
+
+
+
+

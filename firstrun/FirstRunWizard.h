@@ -31,21 +31,33 @@ class FirstRunWizard : public QWizard {
 public:
     FirstRunWizard();
     const QString groupName = "inputmangler";
+    const QString mapPath = "/usr/share/inputmangler/keymaps/";
+
+public slots:
+    void setShowSystemUsers(int show);
 
 protected:
     Ui_Wizard *ui;
     UdevRules *udevRules;
     void step1();
     void step2();
+    void step3();
+    void step4();
+    void step5();
+    void step6();
     QTreeWidgetItem* addTreeItem(QString text, QTreeWidgetItem *parent = nullptr, QString description = "");
     QTreeWidgetItem* checkItems[6];
     QString runCommandSimple(QString cmd);
     QString runCommandSudo(QString cmd);
+    QStringList contentsOf(QString filename);
     void setChecked(PreCheckId id, bool value) {
         checkItems[id]->setCheckState(0, value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);};
     Qt::CheckState boolToCheck(bool value) { return value ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;};
+    bool groupExists = false;
+    QStringList usersInGroup;
 
 private:
+    QString user;
     QString password;
 
 };

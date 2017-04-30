@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <linux/input-event-codes.h>
+
 /*!
  * @brief Device Type.
  */
@@ -43,3 +45,6 @@ enum ValueType {
 	TabletAxis, 	//!< axis of a tablet device
 	JoystickAxis	//!< axis of a joystick device
 };
+
+const int NUM_INPUTBITS = EV_CNT + 2; // +2 for EVBITS & ABS_Joystick
+const int EV_ABSJ = EV_CNT + 1;
