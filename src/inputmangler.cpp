@@ -36,10 +36,10 @@ InputMangler::InputMangler()
 bool InputMangler::readConf()
 {
     // open output devices and set up some global variables.
-    OutEvent::generalSetup();
     AbstractInputHandler::generalSetup();
+	ConfParser confParser(&handlers, &wsets);
+	OutEvent::generalSetup(confParser.getInputBits());
 
-    ConfParser confParser(&handlers, &wsets);
     foreach (AbstractInputHandler* handler, handlers)
     {
         if (handler->id() != "")

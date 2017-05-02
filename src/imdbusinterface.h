@@ -47,11 +47,11 @@ public slots:
 	};
 	Q_NOREPLY void sendRaw(int type, int code, int value, int dtype)
 	{
-		OutEvent::sendRaw(type, code, value, static_cast<DType>(dtype));
+		OutEvent::sendRawSafe(type, code, value, static_cast<DType>(dtype));
 	};
 	Q_NOREPLY void sendRawString(QString type, QString code, QString value, QString dtype)
 	{
-		OutEvent::sendRaw(type.toUShort(), code.toUShort(), value.toUInt(), static_cast<DType>(dtype.toInt()));
+		OutEvent::sendRawSafe(type.toUShort(), code.toUShort(), value.toUInt(), static_cast<DType>(dtype.toInt()));
 		// TODO: extend, so that names can be used
 	};
 	QString printWinInfo()

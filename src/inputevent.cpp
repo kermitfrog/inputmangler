@@ -55,6 +55,8 @@ InputEvent& InputEvent::operator=(const InputEvent& other)
 	type = other.type;
 	code = other.code;
 	valueType = other.valueType;
+    absmin = other.absmin;
+	absmax = other.absmax;
 	return *this;
 }
 
@@ -63,7 +65,8 @@ InputEvent& InputEvent::operator=(const InputEvent& other)
  */
 bool InputEvent::operator==(const InputEvent& other)
 {
-    return (type == other.type && code == other.code && valueType == other.valueType);
+    return (type == other.type && code == other.code && valueType == other.valueType
+			&& absmin == other.absmin && absmax == other.absmax);
 }
 
 /*!

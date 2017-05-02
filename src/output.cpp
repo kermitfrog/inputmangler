@@ -29,21 +29,201 @@ int OutEvent::fds[5];
 /*!
  * @brief opens virtual devices for output
  */
-void OutEvent::generalSetup()
+void OutEvent::generalSetup(QBitArray* inputBits[NUM_INPUTBITS])
 {
+    int fd;
+	int err;
+    bool need = false;
+	uinput_user_dev *dev;
+
+	fds[1] = fds[2] = fds[3] = fds[4] = 0;
+    // keyboard
+	// we always set up the keyboard with default modifiers, because checking if a modifier is used
+	// somewhere is costly. also that check would most likely return true anyway
+	inputBits[EV_KEY]->setBit(KEY_LEFTSHIFT);
+	inputBits[EV_KEY]->setBit(KEY_LEFTALT);
+	inputBits[EV_KEY]->setBit(KEY_LEFTCTRL);
+	inputBits[EV_KEY]->setBit(KEY_LEFTMETA);
+	inputBits[EV_KEY]->setBit(KEY_RIGHTALT);
+
+	// do actual keyboard setup
+	fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+	if(fd < 0) {
+		qDebug() << "Unable to open /dev/uinput - Error: " << strerror(errno);
+		exit(EXIT_FAILURE);
+	}
+	// UI_DEV_CREATE() is the new way - unfortunately it's problematic on current (as of 05/2017)
+	// Ubuntu-LTS, as linux-libc-dev only provides headers for linux 4.4
+	// also, the old way's documentation is less bad.
+	err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_SYN);
+	for (int i = 0; i < BTN_MISC; i++)
+		if (inputBits[EV_KEY]->at(i))
+			err |= ioctl(fd, UI_SET_KEYBIT, i);
+	for (int i = KEY_OK; i < BTN_DPAD_UP; i++)
+		if (inputBits[EV_KEY]->at(i))
+			err |= ioctl(fd, UI_SET_KEYBIT, i);
+	dev = makeUinputUserDev("Virtual Keyboard");
+	err |= (write(fd, dev, sizeof(*dev)) < 0);
+	err |= ioctl(fd, UI_DEV_CREATE);
+	if (err) {
+		qDebug() << "Error setting up virtual Keyboard!";
+		exit(EXIT_FAILURE);
+	}
+	fds[1] = fd;
+
+	// mouse
+	need = false;
+	if (inputBits[EV_CNT]->at(EV_KEY) || inputBits[EV_CNT]->at(EV_REL)) {
+		for (int i = BTN_MISC; i < BTN_JOYSTICK; i++)
+			if (inputBits[EV_KEY]->at(i)) {
+				need = true;
+				break;
+			}
+		if (!need)
+			for (int i = REL_X; i < REL_CNT; i++)
+				if (inputBits[EV_REL]->at(i)) {
+					need = true;
+					break;
+				}
+		if (need) { // do actual mouse setup
+			fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+			if(fd < 0) {
+				qDebug() << "Unable to open /dev/uinput - Error: " << fd;
+				exit(EXIT_FAILURE);
+			}
+			err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_REL); // no need for SYN?
+			for (int i = BTN_MISC; i < BTN_JOYSTICK; i++)
+				if (inputBits[EV_KEY]->at(i))
+					err |= ioctl(fd, UI_SET_KEYBIT, i);
+			for (int i = REL_X; i < REL_CNT; i++)
+				if (inputBits[EV_REL]->at(i))
+					err |= ioctl(fd, UI_SET_RELBIT, i);
+			dev = makeUinputUserDev("Virtual Mouse");
+			err |= (write(fd, dev, sizeof(*dev)) < 0);
+			err |= ioctl(fd, UI_DEV_CREATE);
+			if (err) {
+				qDebug() << "Error setting up virtual Mouse!";
+				exit(EXIT_FAILURE);
+			}
+			fds[2] = fd;
+		}
+	}
+
+	// tablet
+	need = false;
+	if (inputBits[EV_CNT]->at(EV_KEY) || inputBits[EV_CNT]->at(EV_ABS) || inputBits[EV_CNT]->at(EV_MSC)) {
+		for (int i = BTN_DIGI; i < KEY_OK; i++)
+			if (inputBits[EV_KEY]->at(i)) {
+				need = true;
+				break;
+			}
+		if (!need)
+			for (int i = ABS_X; i < ABS_CNT; i++)
+				if (inputBits[EV_ABS]->at(i)) {
+					need = true;
+					break;
+				}
+		if (need) { // do actual setup
+			fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+			if(fd < 0) {
+				qDebug() << "Unable to open /dev/uinput - Error: " << fd;
+				exit(EXIT_FAILURE);
+			}
+			dev = makeUinputUserDev("Virtual Tablet");
+			const int absBase = 10000 * EV_ABS + 1000 * ValueType::TabletAxis;
+			err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_ABS)
+                    | ioctl(fd, UI_SET_EVBIT, EV_SYN) | ioctl(fd, UI_SET_EVBIT, EV_MSC);
+			for (int i = BTN_DIGI; i < KEY_OK; i++)
+				if (inputBits[EV_KEY]->at(i))
+					err |= ioctl(fd, UI_SET_KEYBIT, i);
+			for (int i = ABS_X; i < ABS_CNT; i++)
+				if (inputBits[EV_ABS]->at(i)) {
+					err |= ioctl(fd, UI_SET_ABSBIT, i);
+					InputEvent ie = keymap[keymap_reverse[absBase + i]];
+					dev->absmin[i] = ie.absmin;
+					dev->absmax[i] = ie.absmax;
+				}
+			err |= (write(fd, dev, sizeof(*dev)) < 0);
+			err |= ioctl(fd, UI_DEV_CREATE);
+			if (err) {
+				qDebug() << "Error setting up virtual Tablet!";
+				exit(EXIT_FAILURE);
+			}
+			fds[3] = fd;
+		}
+	}
+
+	// joystick / gamepad
+	need = false;
+	if (inputBits[EV_CNT]->at(EV_KEY) || inputBits[EV_CNT]->at(EV_ABS)) {
+		for (int i = BTN_JOYSTICK; i < BTN_DIGI; i++)
+			if (inputBits[EV_KEY]->at(i)) {
+				need = true;
+				break;
+			}
+		if (!need)
+			for (int i = ABS_X; i < ABS_CNT; i++)
+				if (inputBits[EV_ABSJ]->at(i)) {
+					need = true;
+					break;
+				}
+		if (need) { // do actual setup
+			fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+			if(fd < 0) {
+				qDebug() << "Unable to open /dev/uinput - Error: " << fd;
+				exit(EXIT_FAILURE);
+			}
+			dev = makeUinputUserDev("Virtual Joystick/Gamepad");
+			const int absBase = 10000 * EV_ABS + 1000 * ValueType::JoystickAxis;
+			err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_ABS)
+				  | ioctl(fd, UI_SET_EVBIT, EV_SYN);
+			for (int i = BTN_JOYSTICK; i < BTN_DIGI; i++)
+				if (inputBits[EV_KEY]->at(i))
+					err |= ioctl(fd, UI_SET_KEYBIT, i);
+			for (int i = ABS_X; i < ABS_CNT; i++)
+				if (inputBits[EV_ABSJ]->at(i)) {
+					err |= ioctl(fd, UI_SET_ABSBIT, i);
+					InputEvent ie = keymap[keymap_reverse[absBase + i]];
+					dev->absmin[i] = ie.absmin;
+					dev->absmax[i] = ie.absmax;
+				}
+			err |= (write(fd, dev, sizeof(*dev)) < 0);
+			err |= ioctl(fd, UI_DEV_CREATE);
+			if (err) {
+				qDebug() << "Error setting up virtual Joystick!";
+				exit(EXIT_FAILURE);
+			}
+			fds[4] = fd;
+		}
+	}
+
+    /* before uinput
 	openVDevice("/dev/virtual_kbd", 1);
 	openVDevice("/dev/virtual_mouse", 2);
 	openVDevice("/dev/virtual_tablet", 3);
 	openVDevice("/dev/virtual_joystick", 4);
+     */
 #ifdef DEBUGME	
 	qDebug() << "kbd: " << OutEvent::fds[1] << ", mouse: " << OutEvent::fds[2];
 	qDebug() << "tablet: " << OutEvent::fds[4] << ", joystick: " << OutEvent::fds[4];
 #endif
 }
 
+uinput_user_dev* OutEvent::makeUinputUserDev(char *name) {
+    uinput_user_dev * dev;
+	dev = new uinput_user_dev;
+    memset(dev, 0, sizeof(*dev));
+	dev->id.bustype = BUS_USB;
+	dev->id.vendor = dev->id.product = 0;
+	dev->id.version = 1;
+	snprintf(dev->name, UINPUT_MAX_NAME_SIZE, name);
+	return dev;
+}
+
 /*!
  * @brief opens a virtual device for output.
  */
+/*
 void OutEvent::openVDevice(const char* path, int num)
 {
 	int fd = -1, numtries = 100;
@@ -57,14 +237,16 @@ void OutEvent::openVDevice(const char* path, int num)
 	if (fd < 0)
 		QString message = "Could not open device " + QString::fromUtf8(path) + ", Error: " + QString::fromUtf8(strerror(errno));
 }
-
+*/
 /*!
  * @brief closes virtual devices
  */
 void OutEvent::closeVirtualDevices()
 {
-	for (int i = 1; i <= 4; i++)
+	for (int i = 1; i <= 4; i++) {
+		ioctl(fds[i], UI_DEV_DESTROY);
 		close(fds[i]);
+	}
 }
 
 
@@ -317,7 +499,7 @@ void OutEvent::send(int value, timeval &time)
 void OutEvent::sendSimple(int value)
 {
     //qDebug() << "sendSimple: " << eventtype << " " << eventcode << " " << value;
-	VEvent e[NUM_MOD+1];
+	input_event e[NUM_MOD+1];
 	e[0].type = eventtype;
     e[0].code = eventcode;
 	e[0].value = value;
@@ -329,7 +511,7 @@ void OutEvent::sendSimple(int value)
 
 void OutEvent::sendCombo(int value)
 {
-	VEvent e[NUM_MOD+1];
+	input_event e[NUM_MOD+1];
 	int k = 0;
 	if (value != 2)
 		for (; k < modifiers.size(); k++)
@@ -363,7 +545,7 @@ void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
 {
 // 	qDebug() << "sendRaw: type= " << type << ", code= " << code << ", value= " << value 
 // 			 << ", dtype= " << dtype;
-	VEvent e;
+	input_event e;
 	e.type = type;
 	e.code = code;
 	e.value = value;
@@ -382,14 +564,59 @@ void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
 				sendEvent(&e);
 			break;
 		case Tablet:
-			write(fds[3], &e, sizeof(VEvent));
+			write(fds[3], &e, sizeof(input_event));
 			break;
 		case Joystick:
-			write(fds[4], &e, sizeof(VEvent));
+			write(fds[4], &e, sizeof(input_event));
 			break;
 		case TabletOrJoystick:
-			write(fds[3], &e, sizeof(VEvent));
-			write(fds[4], &e, sizeof(VEvent));
+            if (fds[3])
+				write(fds[3], &e, sizeof(input_event));
+            if (fds[4])
+				write(fds[4], &e, sizeof(input_event));
+			break;
+	};
+}
+
+/*
+ * @brief version of sendRaw that can be safely called via dbus
+ */
+void OutEvent::sendRawSafe(__s32 type, __s32 code, __s32 value, DType dtype) {
+	input_event e;
+	e.type = type;
+	e.code = code;
+	e.value = value;
+	switch (dtype)
+	{
+		case Keyboard:
+            if (fds[1])
+				sendKbdEvent(&e);
+			break;
+		case Mouse:
+			if (fds[2])
+				sendMouseEvent(&e);
+			break;
+		case Auto:
+			if (code >= BTN_MOUSE)
+				if (fds[2])
+					sendMouseEvent(&e);
+			else
+				if (fds[e.type])
+					sendEvent(&e);
+			break;
+		case Tablet:
+			if (fds[3])
+				write(fds[3], &e, sizeof(input_event));
+			break;
+		case Joystick:
+			if (fds[4])
+				write(fds[4], &e, sizeof(input_event));
+			break;
+		case TabletOrJoystick:
+			if (fds[3])
+				write(fds[3], &e, sizeof(input_event));
+			if (fds[4])
+				write(fds[4], &e, sizeof(input_event));
 			break;
 	};
 }
@@ -440,45 +667,45 @@ void OutEvent::send()
 }
 
 /*!
- * @brief Sends num VEvents to the virtual output determined by the event type.
+ * @brief Sends num input_events to the virtual output determined by the event type.
  * EV_KEY -> Keyboard
  * EV_REL -> Mouse
  * EV_ABS -> Tablet
- * @param e buffer with VEvents
- * @param num number of VEvents
+ * @param e buffer with input_events
+ * @param num number of input_events
  */
-void OutEvent::sendEvent(OutEvent::VEvent* e, int num)
+void OutEvent::sendEvent(input_event* e, int num)
 {
-	write(fds[e[0].type], e, num*sizeof(VEvent));
+	write(fds[e[0].type], e, num*sizeof(input_event));
 }
 
 /*!
  * @brief sends num raw input events to be generated the virtual mouse device.
- * @param e buffer with VEvents
- * @param num number of VEvents
+ * @param e buffer with input_events
+ * @param num number of input_events
  */
 //FIXME: should be inline, but then code does not link -> WTF???
-void OutEvent::sendMouseEvent(VEvent* e, int num)
+void OutEvent::sendMouseEvent(input_event* e, int num)
 {
 #ifdef DEBUGME
 		qDebug() << "Mouse sending: " 
-		<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
+		<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(input_event)*(num));
 #endif
-	write(fds[2], e, num*sizeof(VEvent));
+	write(fds[2], e, num*sizeof(input_event));
 }
 
 /*!
  * @brief sends num raw input events to be generated the virtual keyboard device.
- * @param e buffer with VEvents
- * @param num number of VEvents
+ * @param e buffer with input_events
+ * @param num number of input_events
  */
-void OutEvent::sendKbdEvent(VEvent* e, int num)
+void OutEvent::sendKbdEvent(input_event* e, int num)
 {
 #ifdef DEBUGME
 	qDebug() << "Kbd sending: " 
-	<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(VEvent)*(num));
+	<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(input_event)*(num));
 #endif
-	write(fds[1], e, num*sizeof(VEvent));
+	write(fds[1], e, num*sizeof(input_event));
 }
 
 /*!

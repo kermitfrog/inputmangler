@@ -137,8 +137,10 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 	QStringList axis_text = axis_stream.readAll().split("\n"); 
 	
 	li = axis_text.begin();
+    int min, max;
 	while (li != axis_text.end())
 	{
+        min = max = 0;
 		tmp = (*li).split(QRegExp("\\s"), QString::SkipEmptyParts);
 		if (tmp.size() >= 3)
 		{
@@ -172,9 +174,22 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 					break;
 				case 'T':
 					vtype = TabletAxis;
+                    if (tmp.length() >= 5) {
+                        min = tmp[3].toInt();
+						max = tmp[4].toInt();
+                    } else {
+						max = 0x7fff;
+					}
 					break;
 				case 'J':
 					vtype = JoystickAxis;
+					if (tmp.length() >= 5) {
+						min = tmp[3].toInt();
+						max = tmp[4].toInt();
+					} else {
+						min = -0x7ffe;
+						max = 0x7fff;
+					}
 					break;
 				default:
 					vtype = All;

@@ -23,7 +23,6 @@ using namespace pugi;
 ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, TransformationStructure> *_wsets) {
     handlers = _handlers;
     wsets = _wsets;
-    readConf();
     
     evbits.resize(EV_CNT);
     keybits.resize(KEY_CNT);
@@ -32,6 +31,7 @@ ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, T
     absbitsT.resize(ABS_CNT);
     absbitsJ.resize(ABS_CNT);
     mscbits.resize(MSC_CNT);
+    synbits.resize(SYN_CNT);
 
     inputBits[EV_CNT] = &evbits;
     inputBits[EV_KEY] = &keybits;
@@ -40,6 +40,9 @@ ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, T
     inputBits[EV_ABS] = &absbitsT;
     inputBits[EV_ABSJ] = &absbitsJ;
     inputBits[EV_MSC] = &mscbits;
+    inputBits[EV_SYN] = &synbits;
+    
+    readConf();
 //    _handlers = handlers;
 //    _wsets = wsets;
 }
@@ -71,11 +74,6 @@ bool ConfParser::readConf() {
     qDebug() << "using keymap = " << mapfileK << ", charmap = " << mapfileC << ", axismap = " << mapfileA;
     setUpKeymaps(mapfileK, mapfileC, mapfileA);
 
-    foreach(OutEvent o, charmap.values())
-        o.setInputBits(inputBits);
-    foreach(OutEvent o, specialmap.values())
-        o.setInputBits(inputBits);
-
     xml_node handlersConf = conf.child("handlers");
     for (xml_node handler = handlersConf.first_child(); handler; handler = handler.next_sibling()) {
         if (AbstractInputHandler::parseMap.contains(handler.name()))
@@ -98,6 +96,7 @@ bool ConfParser::readConf() {
 
     foreach(AbstractInputHandler *a, (*handlers))
     {
+        a->setInputBits(inputBits);
         if (!a->hasWindowSpecificSettings())
             continue;
         // make current outputs the default

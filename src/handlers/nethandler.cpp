@@ -164,10 +164,15 @@ QList< AbstractInputHandler* > NetHandler::parseXml(pugi::xml_node &xml)
 	return handlers;
 }
 
+void NetHandler::setInputBits(QBitArray **inputBits) {
+	if (!instanceCounter++) { // don't parse more than once, unless config is reread
+		foreach(OutEvent o, charmap.values()) o.setInputBits(inputBits);
+		foreach(OutEvent o, specialmap.values()) o.setInputBits(inputBits);
+	}
+}
 
 NetHandler::~NetHandler()
 {
-	
-
+	instanceCounter--;
 }
 

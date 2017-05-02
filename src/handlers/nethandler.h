@@ -36,6 +36,7 @@ public:
     virtual ~NetHandler();
 	virtual void run();
 	virtual int getType() {return 100;};
+	virtual void setInputBits(QBitArray* inputBits[]);
 
 protected:
 	void actOnData(char *b, int n);
@@ -43,5 +44,7 @@ protected:
 	QHostAddress addr;
 	int port;
 	QString buffer; //!< Buffer for unfinished input sequences.
+private:
+	uint16_t instanceCounter = 0;
 };
 

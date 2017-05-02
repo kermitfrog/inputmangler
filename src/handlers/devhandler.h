@@ -23,6 +23,7 @@
 #include "abstractinputhandler.h"
 #include "output.h"
 #include <QFile>
+#include <QDebug>
 
 /*!
  * @brief DevHandler reads input from one input device and transforms it 
@@ -38,16 +39,22 @@ public:
     virtual ~DevHandler();
 	static QList<AbstractInputHandler*> parseXml(pugi::xml_node &xml);
 	virtual int getType() {return 1;};
+	virtual void setInputBits(QBitArray* inputBits[]);
 
 protected:
 	QString filename;
-	int fd;        // file descriptor
-	DType devtype; // keyboard or mouse
+	int fd = -1;        // file descriptor
+	DType devtype; // keyboard, mouse, etc.
 	input_absinfo * absmap[ABS_CNT]; // min/max values, etc. of absolute axes
 	double absfac[ABS_CNT]; //!< multiplicator for absolute values
 	int maxVal, minVal;     //!< min/max values of absolute axes in virtual output device
 	
 	void run();
     void sendAbsoluteValue(__u16 code, __s32 value);
+	bool isBitSet(__u8 *buff, int bit)
+	{
+	    //qDebug() << "isBitSet(" << bit << " buff[i] " << buff[bit/8] << ":" << (1 & (buff[bit/8] >> bit % 8));
+		return (1 & (buff[bit/8] >> bit % 8));
+	}
 };
 

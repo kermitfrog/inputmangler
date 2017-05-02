@@ -32,19 +32,21 @@ class InputEvent
 public:
     InputEvent();
     InputEvent(const InputEvent& other);
-    InputEvent(__u16 code, __u16 type = EV_KEY, ValueType valueType = All)
-				: code(code), type(type), valueType(valueType) {};
+    InputEvent(__u16 code, __u16 type = EV_KEY, ValueType valueType = All, int min = 0, int max = 0)
+				: code(code), type(type), valueType(valueType), absmin(min), absmax(max) {};
     ~InputEvent();
     InputEvent& operator=(const InputEvent& other);
     bool operator==(const InputEvent& other);
     bool operator==(const input_event& other);
     bool operator==(const __u16 other) {return other == code;};
 	QString print();
-	
+
 	__u16 type = EV_KEY;        //!< event type (see linux/input.h)
 	__u16 code = 0;             //!< event code (see linux/input.h) 
 	ValueType valueType = All;  //!< filter for values (see definitions.h)
-	
+	int absmin;
+	int absmax;
+
 	
 };
 

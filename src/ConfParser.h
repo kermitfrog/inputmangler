@@ -23,12 +23,14 @@
 #include <pugixml.hpp>
 #include <linux/input-event-codes.h>
 #include "definitions.h"
+#include <QBitArray>
 
 class ConfParser
 {
 public:
     ConfParser(QList<AbstractInputHandler*> *_handlers, QMap<QString, TransformationStructure> *_wsets);
-    QBitArray evbits, keybits, ledbits, relbits, absbitsT, absbitsJ, mscbits;
+    QBitArray evbits, keybits, ledbits, relbits, absbitsT, absbitsJ, mscbits, synbits;
+    QBitArray** getInputBits() { return inputBits;};
 
 private:
     QList<AbstractInputHandler*> *handlers; //!< List of all handlers.

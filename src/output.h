@@ -26,6 +26,7 @@
 #include <QVector>
 #include <QHash>
 #include "ConfParser.h"
+#include <linux/uinput.h>
 
 
 /*!
@@ -54,13 +55,13 @@ class OutEvent
 	/*!
 	* @brief Data that wil be sent to inputdummy, aka low level input event
 	* See linux/input.h for Details on Variables.
-	*/
+	*
 	struct VEvent
 	{
 		__s32   type; // these two are __s16 in input.h, but input_event(), called in
 		__s32   code; // inputdummy expects int
 		__s32   value;
-	};
+	};*/
     struct AccelSettings
     {
         int minKeyPresses;
@@ -102,13 +103,14 @@ public:
 	void send(int value, timeval &time);
 	void send(int value, __u16 sourceType, timeval &time);
 	// protected?
-	static void sendMouseEvent(VEvent *e, int num = 1);
-	static void sendKbdEvent(VEvent *e, int num = 1);
-	static void sendEvent(VEvent *e, int num = 1);
+	static void sendMouseEvent(input_event *e, int num = 1);
+	static void sendKbdEvent(input_event *e, int num = 1);
+	static void sendEvent(input_event *e, int num = 1);
 	
 	static void sendRaw(__s32 type, __s32 code, __s32 value, DType dtype = Auto);
-	
-	static void generalSetup();
+	static void sendRawSafe(__s32 type, __s32 code, __s32 value, DType dtype = Auto);
+
+	static void generalSetup(QBitArray* inputBits[]);
 	static void closeVirtualDevices();
 	static int fds[5]; //!< file descriptors for /dev/virtual_*: None, Keyboard, Mouse, Tablet, Joystick
 #ifdef DEBUGME
@@ -123,7 +125,7 @@ protected:
 	void sendSimple(int value);
 	void sendCombo(int value);
 	void fromInputEvent(InputEvent& e);
-	static void openVDevice(const char * path, int num);
+	//static void openVDevice(const char * path, int num);
 	CustomVar next;  //!< Next event in macro sequence or pointer to custom event or additional variable
 	void proceed();
 	void parseCombo(QStringList l);
@@ -136,6 +138,7 @@ protected:
     void sendAccelerated(int value, timeval &newTime);
 
     void sendDebounced(int value, timeval &newTime);
+    static uinput_user_dev* makeUinputUserDev(char *name);
 };
 
 

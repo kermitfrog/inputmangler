@@ -48,3 +48,4 @@ enum ValueType {
 
 const int NUM_INPUTBITS = EV_CNT + 2; // +2 for EVBITS & ABS_Joystick
 const int EV_ABSJ = EV_CNT + 1;
+
