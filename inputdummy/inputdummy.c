@@ -22,6 +22,7 @@
 #include <linux/input.h>
 #include <linux/module.h>
 #include <linux/interrupt.h>
+#include <linux/uaccess.h>
 
 #define MODNAME "inputdummy"
 
@@ -54,9 +55,9 @@ static struct input_dev *vjoy_dev;
 
 void setAllBits(unsigned long * bits, unsigned long min, unsigned long max)
 {
+	unsigned long i, b;
 	max--;
 //  	printk ("inputdummy: setAllBits: min=%lu, max=%lu\n", min, max);
-	unsigned long i, j, jmax, b;
 	for (i = MAP_TO_LONG(min); i <= MAP_TO_LONG(max) ; i++)
 	{
 // 		printk ("inputdummy: MIN=%lu, MAX =%lu, i=%lu\n", MAP_TO_LONG(min), MAP_TO_LONG(max), i);
@@ -222,12 +223,25 @@ static ssize_t device_read(struct file *filp, char *buffer, size_t length, loff_
 }
 	
 static ssize_t device_write(struct file *filp, const char *buff, size_t len, loff_t *off) {
+	const int DSIZE = 3*sizeof(int);
+	const int BUFFSIZE = 6*DSIZE;
     unsigned int command;
     unsigned int arg1;
 	int arg2;
-
+	int ibuff[BUFFSIZE];
+	int *myinput;
+    int i;
 	struct input_dev *dev;
 	int minor = (iminor(filp->f_path.dentry->d_inode));
+
+	//printk(KERN_NOTICE "inputdumy: DSIZE = %d, BUFFSIZE = %d, len = %d, loff_t = %d\n", DSIZE, BUFFSIZE, len, *off);
+
+	if (len > BUFFSIZE)
+		len = BUFFSIZE;
+
+	if (copy_from_user(ibuff, buff, len))
+		return -EFAULT;
+        
 	switch (minor)
 	{
 		case 0:
@@ -246,17 +260,15 @@ static ssize_t device_write(struct file *filp, const char *buff, size_t len, lof
 			printk(KERN_NOTICE "inputdumy: minor number of %d requested", minor);
 			return -1;
 	}
-	int *myinput;
-    int i; 
-	for(i=0; i<len; i += ( 3 * sizeof(int) )) {
-			myinput = buff + i;
+	for(i=0; i<len / sizeof(int); i+=3 ) {
+			myinput = ibuff + i;
 			command = myinput[0];
 			arg1 = myinput[1];
 			arg2 = myinput[2];
-            input_event(dev, command, arg1, arg2);
+                        input_event(dev, command, arg1, arg2);
 			if (minor < 2)
 				input_sync(dev);
-//  			printk("vkbd_dev: %d %d %d\n", command, arg1, arg2);
+  			//printk("vkbd_dev: %u %u %d\n", command, arg1, arg2);
     }
 
     return len;

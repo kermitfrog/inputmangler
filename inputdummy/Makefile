@@ -1,8 +1,10 @@
 obj-m += inputdummy.o
 KVERSION := $(shell uname -r)
+export MODCFLAGS="-Wall -DMODULE -D__KERNEL__"
 
 all:
 	make -C /lib/modules/${KVERSION}/build M=$(PWD) modules
+	strip --strip-unneeded *.ko
 
 clean:
 	make -C /lib/modules/${KVERSION}/build M=$(PWD) clean

@@ -1,3 +1,15 @@
+inputdummy (1.2-1) xenial; urgency=medium
+
+  * Fixed bug from last bugfix; Version bump because of good feeling
+
+ -- root <root@nyarly>  Wed, 25 Jan 2017 13:31:31 +0100
+
+inputdummy (1.1.1-1) xenial; urgency=medium
+
+  * Bugfix - i don't understand why it even worked before
+
+ -- Arkadiusz Guzinski <arek@nyarly>  Sun, 22 Jan 2017 13:39:39 +0100
+
 inputdummy (1.1-1) unstable; urgency=low
 
   * Initial release 
