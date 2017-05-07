@@ -96,7 +96,7 @@ bool ConfParser::readConf() {
 
     foreach(AbstractInputHandler *a, (*handlers))
     {
-        a->setInputBits(inputBits);
+        a->setInputCapabilities(inputBits);
         if (!a->hasWindowSpecificSettings())
             continue;
         // make current outputs the default
@@ -143,17 +143,10 @@ void ConfParser::parseWindowSettings(xml_node group, QMap<QString,QVector<OutEve
                     usedIds[id] = true;
                 }
             }
-
-
-
-
-
             parseWindowSettings(entry, outputs, usedIds);
         } else
             qDebug() << entry.name();
     }
-
-
 }
 
 /*!

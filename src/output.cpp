@@ -56,6 +56,7 @@ void OutEvent::generalSetup(QBitArray* inputBits[NUM_INPUTBITS])
 	// Ubuntu-LTS, as linux-libc-dev only provides headers for linux 4.4
 	// also, the old way's documentation is less bad.
 	err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_SYN);
+    err = ioctl(fd, UI_SET_EVBIT, EV_MSC) | ioctl(fd, UI_SET_MSCBIT, MSC_TIMESTAMP);
 	for (int i = 0; i < BTN_MISC; i++)
 		if (inputBits[EV_KEY]->at(i))
 			err |= ioctl(fd, UI_SET_KEYBIT, i);
@@ -92,6 +93,7 @@ void OutEvent::generalSetup(QBitArray* inputBits[NUM_INPUTBITS])
 				exit(EXIT_FAILURE);
 			}
 			err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_REL); // no need for SYN?
+			err = ioctl(fd, UI_SET_EVBIT, EV_MSC) | ioctl(fd, UI_SET_MSCBIT, MSC_TIMESTAMP);
 			for (int i = BTN_MISC; i < BTN_JOYSTICK; i++)
 				if (inputBits[EV_KEY]->at(i))
 					err |= ioctl(fd, UI_SET_KEYBIT, i);
@@ -132,7 +134,8 @@ void OutEvent::generalSetup(QBitArray* inputBits[NUM_INPUTBITS])
 			dev = makeUinputUserDev("Virtual Tablet");
 			const int absBase = 10000 * EV_ABS + 1000 * ValueType::TabletAxis;
 			err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_ABS)
-                    | ioctl(fd, UI_SET_EVBIT, EV_SYN) | ioctl(fd, UI_SET_EVBIT, EV_MSC);
+                    | ioctl(fd, UI_SET_EVBIT, EV_SYN) | ioctl(fd, UI_SET_EVBIT, EV_MSC)
+					| ioctl(fd, UI_SET_MSCBIT, MSC_TIMESTAMP);
 			for (int i = BTN_DIGI; i < KEY_OK; i++)
 				if (inputBits[EV_KEY]->at(i))
 					err |= ioctl(fd, UI_SET_KEYBIT, i);
@@ -220,24 +223,6 @@ uinput_user_dev* OutEvent::makeUinputUserDev(char *name) {
 	return dev;
 }
 
-/*!
- * @brief opens a virtual device for output.
- */
-/*
-void OutEvent::openVDevice(const char* path, int num)
-{
-	int fd = -1, numtries = 100;
-	while (fd < 0 && numtries--)
-	{
-		fd = open(path, O_WRONLY|O_APPEND);
-	}
-	fds[num] = fd;
-	//qDebug() << path << ": errno = " << errno << "  tries left before giving up: " << numtries;
-
-	if (fd < 0)
-		QString message = "Could not open device " + QString::fromUtf8(path) + ", Error: " + QString::fromUtf8(strerror(errno));
-}
-*/
 /*!
  * @brief closes virtual devices
  */
@@ -404,6 +389,7 @@ OutEvent::OutEvent(InputEvent& e)
  */
 void OutEvent::send(int value, __u16 sourceType, timeval &time)
 {
+    qDebug() << "void OutEvent::send(int value, __u16 sourceType, timeval &time)";
 	//qDebug() << "send: (" + QString::number(value) + ", " + QString::number(sourceType) + ", *): " + QString::number(eventtype) + " " + QString::number(valueType);
 	if (eventtype == sourceType)
 	{
@@ -448,6 +434,7 @@ void OutEvent::send(int value, __u16 sourceType, timeval &time)
  */
 void OutEvent::send(int value, timeval &time)
 {
+    qDebug() << "void OutEvent::send(int value, timeval &time)";
 	switch (outType)
 	{
 		case OutEvent::Simple:
@@ -498,19 +485,23 @@ void OutEvent::send(int value, timeval &time)
 
 void OutEvent::sendSimple(int value)
 {
-    //qDebug() << "sendSimple: " << eventtype << " " << eventcode << " " << value;
-	input_event e[NUM_MOD+1];
+    qDebug() << "sendSimple: " << eventtype << " " << eventcode << " " << value;
+	input_event e[2];
 	e[0].type = eventtype;
     e[0].code = eventcode;
 	e[0].value = value;
+	e[1].type = EV_SYN;
+    e[1].code = 0;
+	e[1].value = 0;
 	if (eventcode >= BTN_MISC)
 		sendMouseEvent(e);
 	else
-		sendEvent(e);
+		sendEvent(e, true);
 }
 
 void OutEvent::sendCombo(int value)
 {
+    qDebug() << "void OutEvent::sendCombo(int value)";
 	input_event e[NUM_MOD+1];
 	int k = 0;
 	if (value != 2)
@@ -543,8 +534,8 @@ void OutEvent::sendCombo(int value)
  */
 void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
 {
-// 	qDebug() << "sendRaw: type= " << type << ", code= " << code << ", value= " << value 
-// 			 << ", dtype= " << dtype;
+ 	qDebug() << "sendRaw: type= " << type << ", code= " << code << ", value= " << value 
+ 			 << ", dtype= " << dtype;
 	input_event e;
 	e.type = type;
 	e.code = code;
@@ -582,6 +573,7 @@ void OutEvent::sendRaw(__s32 type, __s32 code, __s32 value, DType dtype)
  * @brief version of sendRaw that can be safely called via dbus
  */
 void OutEvent::sendRawSafe(__s32 type, __s32 code, __s32 value, DType dtype) {
+    qDebug() << "void OutEvent::sendRawSafe(__s32 type, __s32 code, __s32 value, DType dtype)";
 	input_event e;
 	e.type = type;
 	e.code = code;
@@ -626,6 +618,7 @@ void OutEvent::sendRawSafe(__s32 type, __s32 code, __s32 value, DType dtype) {
  */
 void OutEvent::sendMacro()
 {
+    qDebug() << "void OutEvent::sendMacro()";
 	if (!hasCustomValue)
 	{
 		sendCombo(1);
@@ -651,6 +644,7 @@ void OutEvent::proceed()
  */
 void OutEvent::send()
 {
+    qDebug() << "void OutEvent::send()";
     //FIXME: should be obvious...
     timeval ignoreMe;
     /*  
@@ -674,9 +668,12 @@ void OutEvent::send()
  * @param e buffer with input_events
  * @param num number of input_events
  */
-void OutEvent::sendEvent(input_event* e, int num)
+void OutEvent::sendEvent(input_event* e, int num, bool sync)
 {
+    qDebug() << "void OutEvent::sendEvent(input_event* e, int num, bool sync)";
 	write(fds[e[0].type], e, num*sizeof(input_event));
+	if (sync)
+		OutEvent::sync(fds[e[0].type]);
 }
 
 /*!
@@ -687,11 +684,13 @@ void OutEvent::sendEvent(input_event* e, int num)
 //FIXME: should be inline, but then code does not link -> WTF???
 void OutEvent::sendMouseEvent(input_event* e, int num)
 {
+    qDebug() << "void OutEvent::sendMouseEvent(input_event* e, int num)";
 #ifdef DEBUGME
 		qDebug() << "Mouse sending: " 
 		<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(input_event)*(num));
 #endif
 	write(fds[2], e, num*sizeof(input_event));
+	sync(2);
 }
 
 /*!
@@ -701,11 +700,22 @@ void OutEvent::sendMouseEvent(input_event* e, int num)
  */
 void OutEvent::sendKbdEvent(input_event* e, int num)
 {
+    qDebug() << "void OutEvent::sendKbdEvent(input_event* e, int num)";
 #ifdef DEBUGME
 	qDebug() << "Kbd sending: " 
 	<< QTest::toHexRepresentation(reinterpret_cast<char*>(e), sizeof(input_event)*(num));
 #endif
 	write(fds[1], e, num*sizeof(input_event));
+	sync(1);
+}
+
+void OutEvent::sync(int device) {
+    qDebug() << "sync " << device;
+  	input_event e;
+	e.type = EV_SYN;
+	e.code = SYN_REPORT;
+	e.value = 0;
+    write(fds[device], &e, sizeof(input_event));
 }
 
 /*!

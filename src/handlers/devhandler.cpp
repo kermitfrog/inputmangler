@@ -40,28 +40,6 @@ void DevHandler::run() {
     // grab the device, otherwise there will be double events
     ioctl(fd, EVIOCGRAB, 1);
 
-    //get abs information. minVal and maxVal corrospond to what is set in inputdummy
-    if (devtype == Tablet || devtype == Joystick || devtype == TabletOrJoystick) {
-        if (devtype == Tablet) {
-            minVal = 0;
-            maxVal = 32767;
-        } else {
-            minVal = -255;
-            maxVal = 255;
-        }
-
-        for (int i = 0; i < ABS_CNT; i++) {
-            absmap[i] = new input_absinfo;
-            if (ioctl(fd, EVIOCGABS(i), absmap[i]) == -1)
-                qDebug() << "Unable to get absinfo for axis " << i;
-
-            if (absmap[i]->maximum == absmap[i]->minimum)
-                absfac[i] = 0.0;
-            else
-                absfac[i] = ((double) maxVal - (double) minVal) /
-                            ((double) absmap[i]->maximum - (double) absmap[i]->minimum);
-        }
-    }
     struct pollfd p;
     p.fd = fd;
     p.events = POLLIN;
@@ -221,13 +199,14 @@ QList<AbstractInputHandler *> DevHandler::parseXml(pugi::xml_node &xml) {
     return handlers;
 }
 
-void DevHandler::setInputBits(QBitArray **inputBits) {
-    qDebug() << "DevHandler::setInputBits() called for " << filename;
+input_absinfo**  DevHandler::setInputCapabilities(QBitArray **inputBits) {
+    qDebug() << "DevHandler::setInputCapabilities() called for " << filename;
     fd = open(filename.toLatin1(), O_NONBLOCK);
     if (fd == -1) {
         qDebug() << "?could (not?) open " << filename;
-        return;
+        return nullptr;
     }
+    input_absinfo ** absinfo;
     __u8 types[(EV_CNT+7)/8]; // round up...
     __u8 buff[(KEY_CNT+7)/8]; // round up...
     ioctl(fd, EVIOCGBIT(0, (EV_CNT+7)/8), types);
@@ -256,12 +235,37 @@ void DevHandler::setInputBits(QBitArray **inputBits) {
                 inputBits[EV_REL]->setBit(i);
     }
 
+    //get abs information. minVal and maxVal corrospond to what is set in inputdummy
+/*    if (devtype == Tablet || devtype == Joystick || devtype == TabletOrJoystick) {
+        if (devtype == Tablet) {
+            minVal = 0;
+            maxVal = 32767;
+        } else {
+            minVal = -255;
+            maxVal = 255;
+        }
+
+        for (int i = 0; i < ABS_CNT; i++) {
+            absmap[i] = new input_absinfo;
+
+            if (absmap[i]->maximum == absmap[i]->minimum)
+                absfac[i] = 0.0;
+            else
+                absfac[i] = ((double) maxVal - (double) minVal) /
+                            ((double) absmap[i]->maximum - (double) absmap[i]->minimum);
+        }
+    }*/
     if (isBitSet(types, EV_ABS)) {
         inputBits[EV_CNT]->setBit(EV_ABS);
+        //absinfo = new input_absinfo[ABS_CNT];
         ioctl(fd, EVIOCGBIT(EV_ABS, (ABS_CNT + 7) / 8), buff);
         for (int i = 0; i < ABS_CNT; i++)
-            if (isBitSet(buff, i))
+            if (isBitSet(buff, i)) {
                 inputBits[EV_ABS]->setBit(i);
+                if (ioctl(fd, EVIOCGABS(i), absmap[i]) == -1)
+                    qDebug() << "Unable to get absinfo for axis " << i;
+
+            }
     }
 
     if (isBitSet(types, EV_MSC)) {
@@ -281,6 +285,7 @@ void DevHandler::setInputBits(QBitArray **inputBits) {
     }
 
     close(fd);
+    return absinfo;
 }
 
 DevHandler::~DevHandler() {

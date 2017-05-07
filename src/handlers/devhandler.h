@@ -39,7 +39,7 @@ public:
     virtual ~DevHandler();
 	static QList<AbstractInputHandler*> parseXml(pugi::xml_node &xml);
 	virtual int getType() {return 1;};
-	virtual void setInputBits(QBitArray* inputBits[]);
+	virtual input_absinfo ** setInputCapabilities(QBitArray *inputBits[]);
 
 protected:
 	QString filename;

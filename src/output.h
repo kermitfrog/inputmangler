@@ -105,10 +105,11 @@ public:
 	// protected?
 	static void sendMouseEvent(input_event *e, int num = 1);
 	static void sendKbdEvent(input_event *e, int num = 1);
-	static void sendEvent(input_event *e, int num = 1);
+	static void sendEvent(input_event *e, int num = 1, bool sync = false);
 	
 	static void sendRaw(__s32 type, __s32 code, __s32 value, DType dtype = Auto);
 	static void sendRawSafe(__s32 type, __s32 code, __s32 value, DType dtype = Auto);
+    static void sync(int device);
 
 	static void generalSetup(QBitArray* inputBits[]);
 	static void closeVirtualDevices();

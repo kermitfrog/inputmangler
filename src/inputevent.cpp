@@ -66,7 +66,7 @@ InputEvent& InputEvent::operator=(const InputEvent& other)
 bool InputEvent::operator==(const InputEvent& other)
 {
     return (type == other.type && code == other.code && valueType == other.valueType
-			&& absmin == other.absmin && absmax == other.absmax);
+			&& ( type != EV_ABS || ( absmin == other.absmin && absmax == other.absmax)));
 }
 
 /*!
