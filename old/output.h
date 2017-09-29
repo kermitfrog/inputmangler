@@ -24,6 +24,7 @@
 #include <linux/input.h> //__u16...
 #include <QString>
 #include <QVector>
+#include "ConfParser.h"
 #include <linux/uinput.h>
 
 
@@ -49,20 +50,6 @@ class OutEvent
         Debounce,   //!< Hack for broken buttons
 		Custom	    //!< Handle via plugin. Not yet implemented.
 	};
-	/*!
-	 * @brief Type of Src and Destination device
-	 */
-	enum SrcDst {
-		KEY_ABS = 0,
-		REL_ABS = 0,
-		ABS_KEY = 0,
-		ABS_REL = 0,
-		KEY_KEY,
-		KEY_REL,
-		REL_KEY,
-		REL_REL,
-		ABS_ABS
-	};
     struct AccelSettings
     {
         int minKeyPresses;
@@ -83,8 +70,8 @@ class OutEvent
 public:
 	OutEvent() {};
 	OutEvent(int c) {eventcode = c;};
-	OutEvent(InputEvent& e, __u16 sourceType);
-	OutEvent(QString s, __u16 sourceType);
+	OutEvent(InputEvent& e);
+	OutEvent(QString s);
 	OutEvent(const OutEvent &other);
 	OutEvent(OutEvent &other);
 	~OutEvent();
@@ -92,16 +79,11 @@ public:
 	QString toString() const;
 	QString print() const{return toString();};
 	QVector<__u16> modifiers;
-    input_event * event[];
-	size_t eventsSize;
-
-
 	__u16 eventtype;
 	__u16 eventcode;
 	__u16 code() const {return eventcode;};
     timeval time; // last triggered at that time
 	OutType outType;
-	SrcDst srcdst;
 	ValueType valueType;
 	bool hasCustomValue = false; //!<used only for Macros
 	int customValue = 0;  		//!< on Macro: custom value, on Wait: time in microseconds
@@ -116,7 +98,6 @@ public:
 	static void sendRaw(__u16 type, __u16 code, __s32 value, DType dtype = Auto);
 	static void sendRawSafe(__u16 type, __u16 code, __s32 value, DType dtype = Auto);
     static void sync(int device);
-
 
 	static void generalSetup(QBitArray* inputBits[]);
 	static void closeVirtualDevices();
@@ -146,9 +127,6 @@ protected:
     void sendAccelerated(int value, timeval &newTime);
 
     void sendDebounced(int value, timeval &newTime);
-
-	static void setSync(input_event &e) {e.type = EV_SYN; e.code = SYN_REPORT; e.value = 0;};
-
     static uinput_user_dev* makeUinputUserDev(char *name);
 
     QVector<input_event> event; //stores the event to be sent.

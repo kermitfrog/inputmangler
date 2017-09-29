@@ -47,6 +47,6 @@ public:
 	int absmin;
 	int absmax;
 
-	
+	void setInputEvent(input_event * ev, __s32 value);
 };
 

@@ -103,3 +103,11 @@ QString InputEvent::print()
 				+ ", valueType = " + QString::number(valueType);
 }
 
+void InputEvent::setInputEvent(input_event * ev, __s32 value) {
+	ev->type = type;
+	ev->code = code;
+	ev->value = value;
+}
+
+
+
