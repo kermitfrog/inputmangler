@@ -40,6 +40,7 @@ public:
 	static QList<AbstractInputHandler*> parseXml(pugi::xml_node &xml);
 	virtual int getType() {return 1;};
 	virtual input_absinfo ** setInputCapabilities(QBitArray *inputBits[]);
+	virtual __u16 getInputType() const { return devtype;}; //!< returns type of input; implement for window specific configuration
 
 protected:
 	QString filename;

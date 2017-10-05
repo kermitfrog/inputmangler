@@ -231,11 +231,13 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
 QVector<OutEvent> ConfParser::parseOutputsShort(const QString str, QVector<OutEvent> &defaults) {
     QVector<OutEvent> vec;
     QStringList l = str.split(",");
-    foreach(QString s, l) {
+    QString s;
+    for(int i = 0; i < l.count(); ++i) {
+        s = l.at(i);
         if (s == "~") //inherit
-            vec.append(defaults[vec.size() + 1]);
+            vec.append(defaults[i]);
         else {
-            vec.append(OutEvent(s));
+            vec.append(OutEvent(s, defaults[i].getSourceType()));
             vec.last().setInputBits(inputBits);
         }
     }
@@ -278,7 +280,7 @@ QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, const AbstractInpu
             int index = handler->getInputIndex(left);
 
             if (index != -1) {
-                def[index] = OutEvent(right);
+                def[index] = OutEvent(right, handler->getInputType());
                 def[index].setInputBits(inputBits);
             }
         }

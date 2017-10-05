@@ -82,6 +82,7 @@ public:
 	static QMap<QString,QList<AbstractInputHandler*>(*)(pugi::xml_node&)> parseMap;
     virtual int getType() = 0;
 	int getInputIndex(QString key) const ;
+	virtual __u16 getInputType() const { return 1;}; //!< returns type of input; implement for window specific configuration
 	virtual input_absinfo ** setInputCapabilities(QBitArray *inputBits[]) {};
 
 signals:

@@ -25,7 +25,10 @@
 #include <QString>
 #include <QVector>
 #include <linux/uinput.h>
+#include <QBitArray>
+#include <QDebug>
 
+#define MacroValDevider "~|"
 
 /*!
  * @brief An output event, e.g: 
@@ -42,7 +45,8 @@ class OutEvent
 	 */
 	enum OutType {
 		Simple,	    //!< A single event. e.g. "key a" - the value is determined by source
-		Macro,	    //!< Complex event sequence.
+		MacroStart,	//!< Complex event sequence.
+		MacroPart,  //!< Part of Complex event sequence.
 		Wait,	    //!< Wait a while
 		Repeat,	    //!< Autofire / Repeat
 		Accelerate, //!< For mouse wheel acceleration (additional presses, if triggered fast)
@@ -52,16 +56,21 @@ class OutEvent
 	/*!
 	 * @brief Type of Src and Destination device
 	 */
-	enum SrcDst {
-		KEY_ABS = 0,
-		REL_ABS = 0,
-		ABS_KEY = 0,
-		ABS_REL = 0,
-		KEY_KEY,
-		KEY_REL,
-		REL_KEY,
-		REL_REL,
-		ABS_ABS
+	enum SrcDst { // TODO values should depend on definitions in linux_input.h
+		KEY__ABS = 0,
+		REL__ABS = 0,
+		ABS__KEY = 0,
+		ABS__REL = 0,
+		KEY__KEY = 0x0100,
+		KEY__REL = 0x0101,
+		REL__KEY = 0x1000,
+		REL__REL = 0x1001,
+		ABS__ABS = 0x1110,
+		KEY__    = 0x0100,
+		REL__    = 0x1000,
+		ABS__    = 0x1100,
+		OTHER    = 0x1000,
+		INMASK   = 0x1100
 	};
     struct AccelSettings
     {
@@ -72,17 +81,29 @@ class OutEvent
         float currentRate;
 		float overhead = 0.0;
     };
+	struct MacroParts
+	{
+		OutEvent *parts[3];
+	};
     union CustomVar
     {
         void * ptr = nullptr;
+		OutEvent * next;
         int integer;
+		MacroParts * macroParts;
     };
+	union Events
+	{
+		input_event ** eventChains; //!< KEY__KEY only
+		input_event * eventChain;
+        int value;
+	};
 
 	friend class WindowSettings;
 	friend class TransformationStructure;
+
 public:
 	OutEvent() {};
-	OutEvent(int c) {eventcode = c;};
 	OutEvent(InputEvent& e, __u16 sourceType);
 	OutEvent(QString s, __u16 sourceType);
 	OutEvent(const OutEvent &other);
@@ -92,7 +113,9 @@ public:
 	QString toString() const;
 	QString print() const{return toString();};
 	QVector<__u16> modifiers;
-    input_event * event[];
+    // input_event * event[];
+	Events event;
+
 	size_t eventsSize;
 
 
@@ -103,20 +126,17 @@ public:
 	OutType outType;
 	SrcDst srcdst;
 	ValueType valueType;
-	bool hasCustomValue = false; //!<used only for Macros
 	int customValue = 0;  		//!< on Macro: custom value, on Wait: time in microseconds
-	void send();
-	void send(int value, timeval &time);
-	void send(int value, __u16 sourceType, timeval &time);
+	void send(const __s32 &value, const timeval &time);
+	void send() {timeval t; __s32 v = 1; send(v, t);}; //!< only used by nethandler // TODO t = now? ; is this alright?
+
 	// protected?
-	static void sendMouseEvent(input_event *e, int num = 1);
-	static void sendKbdEvent(input_event *e, int num = 1);
-	static void sendEvent(input_event *e, int num = 1, bool sync = false);
-	
+
 	static void sendRaw(__u16 type, __u16 code, __s32 value, DType dtype = Auto);
 	static void sendRawSafe(__u16 type, __u16 code, __s32 value, DType dtype = Auto);
     static void sync(int device);
 
+	bool isValid() { return true;}; // TODO actually implement
 
 	static void generalSetup(QBitArray* inputBits[]);
 	static void closeVirtualDevices();
@@ -127,18 +147,21 @@ public:
 	//OutEvent& operator=(OutEvent &other);
 	OutEvent& operator=(const OutEvent &other);
     OutEvent* setInputBits(QBitArray* inputBits[]);
+
+	__u16 getSourceType() const;
     
 protected:
+	OutEvent(QStringList list, __u16 sourceType); //!< for Macroparts
 	void sendMacro();
 	void sendSimple(int value);
 	void sendCombo(int value);
 	void fromInputEvent(InputEvent& e);
 	//static void openVDevice(const char * path, int num);
-	CustomVar next;  //!< Next event in macro sequence or pointer to custom event or additional variable
+	CustomVar extra;  //!< Next event in macro sequence or pointer to custom event or additional variable
 	void proceed();
 	void parseCombo(QStringList l);
-	void parseMacro(QStringList l);
-	OutEvent(QStringList macroParts);
+	void parseMacro(QStringList l, __u16 sourceType);
+	OutEvent(QStringList &macroParts, __u16 sourceType);
     int timeDiff(timeval &newTime);
 
     void parseAcceleration(QStringList params);
@@ -147,11 +170,13 @@ protected:
 
     void sendDebounced(int value, timeval &newTime);
 
+    void invalidate(QString message = "") {qDebug() << message; };
+
 	static void setSync(input_event &e) {e.type = EV_SYN; e.code = SYN_REPORT; e.value = 0;};
+	static QStringList comboToMacro(QStringList list);
 
     static uinput_user_dev* makeUinputUserDev(char *name);
 
-    QVector<input_event> event; //stores the event to be sent.
 	__u8 fdnum;
 };
 

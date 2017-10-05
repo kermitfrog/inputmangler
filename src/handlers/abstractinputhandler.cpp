@@ -40,7 +40,7 @@ void AbstractInputHandler::generalSetup()
 int AbstractInputHandler::addInput(InputEvent in)
 {
 	inputs.append(in);
-	outputs.append(OutEvent(in));
+	outputs.append(OutEvent(in, in.type)); // TODO is there any case where 2nd parameter is nat 1st par.type?
 	return inputs.size();
 }
 

@@ -253,17 +253,230 @@ OutEvent::OutEvent(QString s, __u16 sourceType) {
             OutEvent(keymap[parts[0]], sourceType);
         else {
             QList<InputEvent> ies;
-            for(int i = 0; i < parts[1].count(); ++i)
-                ies.append(keymap[parts[1][i]]);
-            ies.append(keymap[parts[0]]);
-
+            parseMacro(comboToMacro(parts), sourceType);
         }
 
 
     }
 
 
+}
 
+OutEvent::~OutEvent() {
+    switch (outType) {
+        case Simple:
+            switch (srcdst) {
+                case KEY__KEY:
+                    delete[] event.eventChains[2];
+                    delete[] event.eventChains[1];
+                case ABS__ABS:
+                case KEY__REL:
+                case REL__KEY:
+                case REL__REL:
+                    delete[] event.eventChains[0];
+                    delete[] event.eventChains;
+                    break;
+            }
+            break;
+        case MacroPart:
+            delete[] event.eventChain;
+            delete extra.next;
+        case Wait:
+            delete extra.next;
+            break;
+        case MacroStart:
+            delete[] extra.macroParts;
+            //delete extra.macroParts[1];
+            //delete extra.macroParts[2];
+            break;
+            // TODO: other types
+    }
+}
+
+QStringList OutEvent::comboToMacro(QStringList list) {
+    QStringList macro;
+    QString s;
+    int i;
+
+    s = list.at(1);
+    for (i = 0; i < s.length(); ++i) {
+        macro.append(QString(s.at(i)) + " 1");
+    }
+    macro.append(list.at(0) + " 1");
+    macro.append(MacroValDevider);
+    macro.append(list.at(0) + " 2");
+    macro.append(MacroValDevider);
+    macro.append(list.at(0) + " 0");
+
+
+    for (i = s.length(); i >= 0; --i) {
+        macro.append(QString(s.at(i)) + " 0");
+    }
+
+    return macro;
+}
+
+void OutEvent::parseMacro(QStringList l, __u16 sourceType) {
+    QStringList press, repeat, release;
+    for (int i = 0; i < l.count(); ++i)
+        l[i] = l[i].trimmed();
+
+    if (sourceType == EV_KEY)
+        srcdst = KEY__;
+    else
+        srcdst = OTHER;
+
+    switch (l.count(MacroValDevider)) {
+        case 0:
+            press = l;
+            break;
+        case 1:
+            while (l.at(0) != MacroValDevider)
+                press.append(l.takeFirst());
+            l.removeFirst();
+            release = l;
+        case 2:
+            while (l.at(0) != MacroValDevider)
+                press.append(l.takeFirst());
+            l.removeFirst();
+            while (l.at(0) != MacroValDevider)
+                repeat.append(l.takeFirst());
+            l.removeFirst();
+            release = l;
+        default:
+            // TODO set as invalid
+            eventsSize = 0;
+    }
+
+    if (release.count() == repeat.count() == 0) {
+        if (press.count() > 0)
+            extra.next = new OutEvent((QStringList) press, sourceType);
+    } else {
+        MacroParts *mp = new MacroParts();
+        if (press.count() > 0)
+            mp->parts[1] = new OutEvent((QStringList) press, sourceType);
+        else
+            mp->parts[1] = nullptr;
+
+        if (release.count() > 0)
+            mp->parts[0] = new OutEvent((QStringList) release, sourceType);
+        else
+            mp->parts[0] = nullptr;
+
+        if (repeat.count() > 0)
+            mp->parts[2] = new OutEvent((QStringList) repeat, sourceType);
+        else
+            mp->parts[2] = nullptr;
+    }
+
+    outType = MacroStart;
+}
+
+OutEvent::OutEvent(QStringList &macroParts, __u16 sourceType) {
+    if (macroParts.first().startsWith('~')) {
+        QString s = macroParts.takeFirst();
+        if (s.length() < 2) {
+            invalidate("'~' without followup in Macro configuration " + macroParts.join(", "));
+        } else if (s.at(1) == 's') {
+            outType = Wait;
+            customValue = s.midRef(2).toInt();
+            if (!macroParts.isEmpty())
+                extra.next = new OutEvent((QStringList) macroParts, sourceType);
+        } else {
+            invalidate("unknown directive \"" + s + "\" in Macro configuration " + macroParts.join(", "));
+        }
+        return;
+    }
+
+    InputEvent ie;
+    QList<InputEvent> ies;
+    QList<__s32> values;
+    QStringList mPart = macroParts.takeFirst().split(' ', QString::SkipEmptyParts);
+    if (mPart.count() != 2) {
+        invalidate("Something is wrong at start of \"" + macroParts.join(", ") + "\"");
+        return;
+    }
+
+    ies.append(keymap[mPart.at(0)]);
+    values.append(
+            (__s32) mPart.last().toLong()); // TODO is there some preproccessor directive to make sure this converts to __s32?
+
+    __u16 dtype = ies.at(0).type; // TODO what about Joysticks? make sure this works!
+    fdnum = (__u8) dtype; // TODO ABSJ ?
+
+    while (!macroParts.isEmpty()) {
+        QStringList mPart = macroParts.first().split(' ', QString::SkipEmptyParts);
+        if (mPart.count() != 2) {
+            invalidate("Something is wrong at start of \"" + macroParts.join(", ") + "\"");
+            return;
+        }
+        ie = keymap[mPart.first()];
+        if (ie.type == dtype) {
+            ies.append(ie);
+            values.append((__s32) mPart.last().toLong());
+            macroParts.removeFirst();
+        } else
+            break;
+    }
+
+    outType = MacroPart;
+    event.eventChain = new input_event[ies.count() + 1];
+    eventsSize = (ies.count() + 1) * sizeof(input_event);
+
+    int i = 0;
+    while (!ies.isEmpty()) {
+        ie = ies.takeFirst();
+        ie.setInputEvent(&event.eventChain[i], values.takeFirst());
+        ++i;
+    }
+    setSync(event.eventChain[i]);
+
+    // TODO do we need this?
+    switch (sourceType) {
+        case EV_KEY:
+            switch (dtype) {
+                case EV_KEY:
+                    srcdst = KEY__KEY;
+                    break;
+                case EV_REL:
+                    srcdst = KEY__REL;
+                    break;
+                case EV_ABS:
+                    srcdst = KEY__ABS;
+                    break;
+            };
+        case EV_REL:
+            switch (dtype) {
+                case EV_KEY:
+                    srcdst = REL__KEY;
+                    break;
+                case EV_REL:
+                    srcdst = REL__REL;
+                    break;
+                case EV_ABS:
+                    srcdst = REL__ABS;
+                    break;
+            };
+        case EV_ABS:
+            switch (dtype) {
+                case EV_KEY:
+                    srcdst = ABS__KEY;
+                    break;
+                case EV_REL:
+                    srcdst = ABS__REL;
+                    break;
+                case EV_ABS:
+                    srcdst = ABS__ABS;
+                    break;
+            };
+    };
+    if (srcdst == 0)
+        invalidate("Invalid input/output type combination");
+    else if (!macroParts.isEmpty()) {
+        extra.next = new OutEvent((QStringList) macroParts, sourceType);
+        if (!extra.next->isValid())
+            invalidate();
+    }
 }
 
 OutEvent::OutEvent(InputEvent &e, __u16 sourceType) {
@@ -271,87 +484,139 @@ OutEvent::OutEvent(InputEvent &e, __u16 sourceType) {
         case EV_KEY:
             switch (e.type) {
                 case EV_KEY:
-                    event = new input_event *[3];
-                    srcdst = KEY_KEY;
+                    event.eventChains = new input_event *[3];
+                    srcdst = KEY__KEY;
                     eventsSize = 2 * sizeof(input_event);
                     for (int i = 0; i < 3; ++i) {
-                        event[i] = new input_event[2];
-                        e.setInputEvent(event[i], i);
-                        setSync(event[i][1]);
+                        event.eventChains[i] = new input_event[2];
+                        e.setInputEvent(event.eventChains[i], i);
+                        setSync(event.eventChains[i][1]);
                     }
                     break;
                 case EV_REL:
-                    event = new input_event *[1];
-                    srcdst = KEY_REL;
+                    srcdst = KEY__REL;
                     eventsSize = 2 * sizeof(input_event);
-                    event[0] = new input_event[2];
-                    e.setInputEvent(event[0], e.valueType == Negative ? -1 : 1);
-                    setSync(event[0][1]);
+                    event.eventChains[0] = new input_event[2];
+                    e.setInputEvent(event.eventChain, e.valueType == Negative ? -1 : 1);
+                    setSync(event.eventChain[1]);
                     break;
                 case EV_ABS:
                     eventsSize = 0;
-                    srcdst = KEY_ABS;
+                    srcdst = KEY__ABS;
                     break;
             };
         case EV_REL:
             switch (e.type) {
                 case EV_KEY:
-                    event = new input_event *[1];
-                    srcdst = REL_KEY;
+                    srcdst = REL__KEY;
                     eventsSize = 3 * sizeof(input_event);
-                    event[0] = new input_event[3];
-                    e.setInputEvent(event[0], 1);
-                    e.setInputEvent(event[1], 2);
-                    setSync(event[0][2]);
+                    event.eventChain = new input_event[3];
+                    e.setInputEvent(&event.eventChain[0], 1);
+                    e.setInputEvent(&event.eventChain[1], 2);
+                    setSync(event.eventChain[2]);
                     break;
                 case EV_REL:
-                    event = new input_event *[1];
-                    srcdst = REL_REL;
+                    srcdst = REL__REL;
                     eventsSize = 2 * sizeof(input_event);
-                    event[0] = new input_event[2];
-                    e.setInputEvent(event[0], e.valueType == Negative ? -1 : 1);
-                    setSync(event[0][1]);
+                    event.eventChain = new input_event[2];
+                    e.setInputEvent(event.eventChain, e.valueType == Negative ? -1 : 1);
+                    setSync(event.eventChain[1]);
                     break;
                 case EV_ABS:
                     eventsSize = 0;
-                    srcdst = REL_ABS;
+                    srcdst = REL__ABS;
                     break;
             };
         case EV_ABS:
             switch (e.type) {
                 case EV_KEY:
                     eventsSize = 0;
-                    srcdst = ABS_KEY;
+                    srcdst = ABS__KEY;
                     break;
                 case EV_REL:
-                    srcdst = ABS_REL;
+                    srcdst = ABS__REL;
                     eventsSize = 0;
                     break;
                 case EV_ABS:
-                    event = new input_event *[2];
-                    srcdst = ABS_ABS;
+                    srcdst = ABS__ABS;
                     eventsSize = 2 * sizeof(input_event);
-                    event[0] = new input_event[2];
-                    e.setInputEvent(event[0], 0);
-                    setSync(event[0][1]);
+                    event.eventChain = new input_event[2];
+                    e.setInputEvent(event.eventChain, 0);
+                    setSync(event.eventChain[1]);
                     valueType = e.valueType;
                     break;
             };
 
 
     };
+    fdnum = (__u8) e.type; // TODO ABSJ ?
 }
 
+
+void OutEvent::send(const __s32 &value, const timeval &time) {
+    switch (outType) {
+        case Simple:
+            switch (srcdst) {
+                case KEY__KEY:
+                    write(fds[EV_KEY], event.eventChains[value], eventsSize);
+                    break;
+                case KEY__REL:
+                    if (value != 0)
+                        write(fds[EV_REL], event.eventChain, eventsSize);
+                    break;
+                case REL__KEY: // TODO do we have to take care of +- here?
+                    write(fds[EV_KEY], event.eventChain, eventsSize);
+                    break;
+                case REL__REL:
+                    event.eventChain[0].value = value;
+                    write(fds[EV_REL], event.eventChain, eventsSize);
+                    break;
+                case ABS__ABS:
+                    event.eventChain[0].value = value;
+                    write(fds[fdnum], event.eventChain, eventsSize);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case MacroStart:
+            switch (srcdst) {
+                case KEY__:
+                    if (extra.macroParts->parts[value] != nullptr)
+                        extra.macroParts->parts[value]->proceed();
+                    break;
+                case OTHER:
+                    extra.next->proceed();
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+
+    }
+
+}
+
+void OutEvent::proceed() {
+    if (outType == MacroPart)
+        write(fds[fdnum], event.eventChain, eventsSize);
+    else if (outType == Wait)
+        usleep((__useconds_t) customValue); //TODO: make it non-blocking!
+
+    if (extra.next != nullptr)
+        extra.next->proceed();
+}
 
 OutEvent *OutEvent::setInputBits(QBitArray *inputBits[]) {
     switch (outType) {
         Wait:
-            if (next.ptr != nullptr)
-                ((OutEvent *) next.ptr)->setInputBits(inputBits);
+            if (extra.ptr != nullptr)
+                ((OutEvent *) extra.ptr)->setInputBits(inputBits);
             break;
         Macro:
-            if (next.ptr != nullptr)
-                ((OutEvent *) next.ptr)->setInputBits(inputBits);
+            if (extra.ptr != nullptr)
+                ((OutEvent *) extra.ptr)->setInputBits(inputBits);
         default:
             inputBits[EV_CNT]->setBit(eventtype);
             if (valueType == JoystickAxis && eventtype == EV_ABS)
@@ -363,7 +628,24 @@ OutEvent *OutEvent::setInputBits(QBitArray *inputBits[]) {
 }
 
 
+__u16 OutEvent::getSourceType() const {
+    switch (outType) {
+        case OutType::MacroStart:
+            return extra.macroParts->parts[1]->getSourceType();
+        case OutType::Wait:
+            if (extra.next != nullptr)
+                return extra.next->getSourceType();
+        case OutType::Simple:
+        case OutType::MacroPart:
+            return (srcdst & SrcDst::INMASK) / 0x100;
+        default:
+            return EV_KEY; // TODO good idea?
+    }
+}
 
+OutEvent::OutEvent(const OutEvent &other) {
+
+}
 
 
 

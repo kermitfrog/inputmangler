@@ -25,11 +25,11 @@
  * @brief Device Type.
  */
 enum DType{
-	Auto, 			//!< Auto Detect - currently not used
-	Keyboard, 		//!< Keyboard - a device that sends only keys and may have LEDs
-	Mouse, 			//!< Mouse - a device that sends keys and relative movements
-	Tablet, 		//!< Tablet or Touchscreen - a device that sends special keys and absolute movements.
-	Joystick, 		//!< Joystick - a device that sends keys and absolute movements.
+	Auto, 			 //!< Auto Detect - currently not used
+	Keyboard = 1, 	 //!< Keyboard - a device that sends only keys and may have LEDs
+	Mouse = 2,		 //!< Mouse - a device that sends keys and relative movements
+	Tablet = 3, 	 //!< Tablet or Touchscreen - a device that sends special keys and absolute movements.
+	Joystick = 4, 	 //!< Joystick - a device that sends keys and absolute movements.
 	TabletOrJoystick //!< A device that can't be clearly distinguished between tablet or joystick (eg VirtualBox Tablet)
 };
 

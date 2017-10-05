@@ -264,7 +264,7 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 		// case 1. "$"
 		if (tmp.size() == 1)
 		{
-			charmap[tmp[0][0].toLatin1()] = OutEvent(keymap[tmp[0]]);
+			charmap[tmp[0][0].toLatin1()] = OutEvent(keymap[tmp[0]], EV_REL); // TODO is EV_REL a good choice?
 #ifdef DEBUGME
 			qDebug() << tmp[0] << "=" << tmp[0] << " --> " << charmap[tmp[0][0].toLatin1()].print();
 #endif
@@ -275,14 +275,14 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 			// case 2. "^ @+S"
 			if(left.size() == 1)
 			{
-				charmap[left[0].toLatin1()] = OutEvent(right);
+				charmap[left[0].toLatin1()] = OutEvent(right, EV_REL); // TODO is EV_REL a good choice?
 	#ifdef DEBUGME
 				qDebug() << tmp[0] << "=" << "s" << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
 	#endif
 			}
 			else // case 3. "^D PAGEDOWN"
 			{
-				specialmap[left] = OutEvent(right);
+				specialmap[left] = OutEvent(right, EV_REL); // TODO is EV_REL a good choice?
 				if (right.length() > max_sequence_length)
 					max_sequence_length = left.length();
 				if (!sequence_starting_chars.contains(left.at(0)))

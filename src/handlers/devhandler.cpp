@@ -79,7 +79,7 @@ void DevHandler::run() {
 #ifdef DEBUGME
                             qDebug() << "Output : " << outputs.at(j).initString;
 #endif
-                            outputs[j].send(buf[i].value, buf[i].type, buf[i].time);
+                            outputs[j].send(buf[i].value, buf[i].time);
                             break;
                         }
                     }
@@ -191,7 +191,7 @@ QList<AbstractInputHandler *> DevHandler::parseXml(pugi::xml_node &xml) {
                 if (def == "")
                     devhandler->addInput(keymap[key]);
                 else
-                    devhandler->addInput(keymap[key], OutEvent(def));
+                    devhandler->addInput(keymap[key], OutEvent(def, devhandler->devtype)); // TODO devtype *should* always be correct - check!
             }
         inputsForIds->operator[](d.id)[key] = counter++;
     }
