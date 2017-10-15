@@ -21,6 +21,7 @@
 #include "devhandler.h"
 #include <poll.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 using namespace pugi;
 const int buffer_size = 4;
@@ -46,11 +47,11 @@ void DevHandler::run() {
     p.revents = POLLIN;
 
     int ret; // return value of poll
-    int n;   // number of events to read / act upon
+    ssize_t n;   // number of events to read / act upon
     bool matches; // does it match an input code that we want to act upon?
 
     input_event buf[buffer_size];
-    while (1) {
+    while (true) {
         //wait until there is data or 1.5 seconds have passed to look at sd.terminating
         ret = poll(&p, 1, 1500);
         if (p.revents & (POLLERR | POLLHUP | POLLNVAL)) {
@@ -79,15 +80,15 @@ void DevHandler::run() {
 #ifdef DEBUGME
                             qDebug() << "Output : " << outputs.at(j).initString;
 #endif
-                            outputs[j].send(buf[i].value, buf[i].time);
+                            outputs[j]->send(buf[i].value, buf[i].time);
                             break;
                         }
                     }
                 // Pass through - absolute movements need translation
                 if (buf[i].type == EV_ABS)
-                    sendAbsoluteValue(buf[i].code, buf[i].value);
+                    sendAbsoluteValue(buf[i]);
                 else if (!matches)
-                    OutEvent::sendRaw(buf[i].type, buf[i].code, buf[i].value, devtype);
+                    OutEvent::sendRaw(buf[i], devtype);
 // 				qDebug("type: %d, code: %d, value: %d", buf[i].type, buf[i].code, buf[i].value );
             }
             //qDebug() << id << ":" << n;
@@ -105,16 +106,16 @@ void DevHandler::run() {
  * @param code Axis
  * @param value Value
  */
-void DevHandler::sendAbsoluteValue(__u16 code, __s32 value) {
+void DevHandler::sendAbsoluteValue(input_event &ev) {
 // 	qDebug() << "sendAbsoluteValue: orig = "  << value;
-    value -= absmap[code]->minimum;
-    value *= absfac[code];
-    value += minVal;
+    ev.value -= absmap[ev.code]->minimum;
+    ev.value *= absfac[ev.code];
+    ev.value += minVal;
 // 	if (devtype == Tablet)
-// 		qDebug() << "sendAbsoluteValue(" << type << code << orig 
+// 		qDebug() << "sendAbsoluteValue(" << type << code << orig
 // 		  << ") min1: " << absmap[code]->minimum << "fac: " << absfac[code] 
 // 		  << "minVal: " << minVal << "==> " << value;
-    OutEvent::sendRaw(EV_ABS, code, value, devtype);
+    OutEvent::sendRaw(ev, devtype);
 }
 
 /*!
@@ -188,10 +189,18 @@ QList<AbstractInputHandler *> DevHandler::parseXml(pugi::xml_node &xml) {
         QString def = signal.attribute("default").value();
                 foreach(AbstractInputHandler *a, handlers) {
                 DevHandler *devhandler = static_cast<DevHandler *>(a);
+                InputEvent ie = keymap[key];
                 if (def == "")
-                    devhandler->addInput(keymap[key]);
-                else
-                    devhandler->addInput(keymap[key], OutEvent(def, devhandler->devtype)); // TODO devtype *should* always be correct - check!
+                    devhandler->addInput(ie);
+                else {
+                    OutEvent *outEvent = OutEvent::createOutEvent(def, ie.type); // TODO is there something to do for Joystick support?
+                    if (outEvent != nullptr)
+                        devhandler->addInput(ie, outEvent);
+                    else {
+                        qDebug() << "Error in configuration File: can't create OutEvent for Input default \"" << def << "\"";
+                        std::exit(EXIT_FAILURE);
+                    }
+                }
             }
         inputsForIds->operator[](d.id)[key] = counter++;
     }

@@ -52,7 +52,7 @@ void TransformationStructure::addWindowSettings(QString s, WindowSettings* w)
 /*!
  * @brief get output events for a given window and window title
  */
-QVector< OutEvent > TransformationStructure::getOutputs(QString window_class, QString window_name)
+QVector< OutEvent* > TransformationStructure::getOutputs(QString window_class, QString window_name)
 {
 	//qDebug() << "getOutputs(" << c << ", " << n << ")";
 	WindowSettings *w = window(window_class);
@@ -102,7 +102,7 @@ bool TransformationStructure::sanityCheck(int numInputs, QString id, bool verbos
 	if (verbose) {
 		QString tmp = "Defaults: ";
 		for (int j = 0; j < def.size(); j++) {
-			tmp += def.at(j).toString();
+			tmp += def.at(j)->toString();
 			if (j < def.size() - 1)
 				tmp + ", ";
 		}
@@ -123,7 +123,7 @@ bool TransformationStructure::sanityCheck(int numInputs, QString id, bool verbos
 			QString s = "  ";
 			for (int j = 0; j < w->def.size(); j++)
 			{
-				s += w->def.at(j).toString();
+				s += w->def.at(j)->toString();
 				if (j < w->def.size() - 1)
 					s += ", ";
 			}
@@ -147,7 +147,7 @@ bool TransformationStructure::sanityCheck(int numInputs, QString id, bool verbos
 					qDebug() << "  with Pattern: \"" << w->titles[i]->pattern() << "\"";
 					QString s = "    ";
 					for (int j = 0; j < w->events.at(i).size(); j++) {
-						s += w->events.at(i).at(j).toString();
+						s += w->events.at(i).at(j)->toString();
 						if (j < w->events.at(i).size() - 1)
 							s += ", ";
 					}

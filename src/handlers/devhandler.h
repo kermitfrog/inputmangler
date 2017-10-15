@@ -21,7 +21,7 @@
 #pragma once
 
 #include "abstractinputhandler.h"
-#include "output.h"
+#include "output/outevent.h"
 #include <QFile>
 #include <QDebug>
 
@@ -40,7 +40,7 @@ public:
 	static QList<AbstractInputHandler*> parseXml(pugi::xml_node &xml);
 	virtual int getType() {return 1;};
 	virtual input_absinfo ** setInputCapabilities(QBitArray *inputBits[]);
-	virtual __u16 getInputType() const { return devtype;}; //!< returns type of input; implement for window specific configuration
+	virtual __u16 getInputType(int index) const { if (index == -1) return devtype; else return inputs[index].type;}; //!< returns type of input; implement for window specific configuration
 
 protected:
 	QString filename;
@@ -51,7 +51,7 @@ protected:
 	int maxVal, minVal;     //!< min/max values of absolute axes in virtual output device
 	
 	void run();
-    void sendAbsoluteValue(__u16 code, __s32 value);
+    void sendAbsoluteValue(input_event &ev);
 	bool isBitSet(__u8 *buff, int bit)
 	{
 	    //qDebug() << "isBitSet(" << bit << " buff[i] " << buff[bit/8] << ":" << (1 & (buff[bit/8] >> bit % 8));

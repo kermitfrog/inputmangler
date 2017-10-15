@@ -1,0 +1,133 @@
+/*
+* Created by arek on 06.10.17.
+*/
+
+#include "outsimple.h"
+
+OutSimple::OutSimple(InputEvent &e, __u16 sourceType) {
+    switch (sourceType) {
+        case EV_KEY:
+            switch (e.type) {
+                case EV_KEY:
+                    event.eventChains = new input_event *[3];
+                    srcdst = KEY__KEY;
+                    eventsSize = 2 * sizeof(input_event);
+                    for (int i = 0; i < 3; ++i) {
+                        event.eventChains[i] = new input_event[2];
+                        e.setInputEvent(event.eventChains[i], i);
+                        setSync(event.eventChains[i][1]);
+                    }
+                    break;
+                case EV_REL:
+                    srcdst = KEY__REL;
+                    eventsSize = 2 * sizeof(input_event);
+                    event.eventChain = new input_event[2];
+                    e.setInputEvent(event.eventChain, e.valueType == Negative ? -1 : 1);
+                    setSync(event.eventChain[1]);
+                    break;
+                case EV_ABS:
+                    eventsSize = 0;
+                    srcdst = KEY__ABS;
+                    break;
+            };
+            break;
+        case EV_REL:
+            switch (e.type) {
+                case EV_KEY: 
+                    srcdst = REL__KEY;
+                    eventsSize = 3 * sizeof(input_event);
+                    event.eventChain = new input_event[3];
+                    e.setInputEvent(&event.eventChain[0], 1);
+                    e.setInputEvent(&event.eventChain[1], 2);
+                    setSync(event.eventChain[2]);
+                    break;
+                case EV_REL:
+                    srcdst = REL__REL;
+                    eventsSize = 2 * sizeof(input_event);
+                    event.eventChain = new input_event[2];
+                    e.setInputEvent(event.eventChain, e.valueType == Negative ? -1 : 1);
+                    setSync(event.eventChain[1]);
+                    break;
+                case EV_ABS:
+                    eventsSize = 0;
+                    srcdst = REL__ABS;
+                    break;
+            };
+            break;
+        case EV_ABS:
+            switch (e.type) {
+                case EV_KEY:
+                    eventsSize = 0;
+                    srcdst = ABS__KEY;
+                    break;
+                case EV_REL:
+                    srcdst = ABS__REL;
+                    eventsSize = 0;
+                    break;
+                case EV_ABS:
+                    srcdst = ABS__ABS;
+                    eventsSize = 2 * sizeof(input_event);
+                    event.eventChain = new input_event[2];
+                    e.setInputEvent(event.eventChain, 0);
+                    setSync(event.eventChain[1]);
+                    valueType = e.valueType;
+                    break;
+            };
+            break;
+    };
+    fdnum = (__u8) e.type; // TODO ABSJ ?
+}
+
+void OutSimple::send(const __s32 &value, const timeval &time) {
+    switch (srcdst) {
+        case KEY__KEY:
+            write(fds[EV_KEY], event.eventChains[value], eventsSize);
+            break;
+        case KEY__REL:
+            if (value != 0)
+                write(fds[EV_REL], event.eventChain, eventsSize);
+            break;
+        case REL__KEY: // TODO do we have to take care of +- here?
+            write(fds[EV_KEY], event.eventChain, eventsSize);
+            break;
+        case REL__REL:
+            event.eventChain[0].value = value;
+            write(fds[EV_REL], event.eventChain, eventsSize);
+            break;
+        case ABS__ABS:
+            event.eventChain[0].value = value;
+            write(fds[fdnum], event.eventChain, eventsSize);
+            break;
+        default:
+            break;
+    }
+
+}
+
+OutSimple::~OutSimple() {
+    switch (srcdst) {
+        case KEY__KEY:
+            delete[] event.eventChains[2];
+            delete[] event.eventChains[1];
+        case ABS__ABS:
+        case KEY__REL:
+        case REL__KEY:
+        case REL__REL:
+            delete[] event.eventChains[0];
+            delete[] event.eventChains;
+            break;
+        default:
+            break;
+    }
+
+}
+
+void OutSimple::setInputBits(QBitArray **inputBits) {
+
+}
+
+__u16 OutSimple::getSourceType() const {
+    return (srcdst & SrcDst::INMASK) / 0b100;
+}
+
+

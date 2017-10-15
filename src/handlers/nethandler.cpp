@@ -117,7 +117,7 @@ void NetHandler::actOnData(char* b, int n)
 		// clearly not a multi-char-sequence
 		if (!sequence_starting_chars.contains(s[i]))
 		{
-			charmap[s[i].toLatin1()].send();
+			charmap[s[i].toLatin1()]->send();
 			continue;
 		}
 		// may be a multi-char-sequence, but possibly not complete -> put it into the buffer and end function
@@ -132,7 +132,7 @@ void NetHandler::actOnData(char* b, int n)
 		{
 			if (specialmap.contains(s.mid(i, j)))
 			{
-				specialmap[s.mid(i,j)].send();
+				specialmap[s.mid(i,j)]->send();
 				iMod = j - 1;
 				break;
 			}
@@ -144,7 +144,7 @@ void NetHandler::actOnData(char* b, int n)
 			continue;
 		}
 		// nope, it's not a multi-char-sequence after all
-		charmap[s[i].toLatin1()].send();
+		charmap[s[i].toLatin1()]->send();
 		//qDebug() << "Data: " << s[i];
 	}
 }
@@ -166,8 +166,8 @@ QList< AbstractInputHandler* > NetHandler::parseXml(pugi::xml_node &xml)
 
 void NetHandler::setInputBits(QBitArray **inputBits) {
 	if (!instanceCounter++) { // don't parse more than once, unless config is reread
-		foreach(OutEvent o, charmap.values()) o.setInputBits(inputBits);
-		foreach(OutEvent o, specialmap.values()) o.setInputBits(inputBits);
+		foreach(OutEvent *o, charmap.values()) o->setInputBits(inputBits);
+		foreach(OutEvent *o, specialmap.values()) o->setInputBits(inputBits);
 	}
 }
 

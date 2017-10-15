@@ -70,8 +70,8 @@ protected:
 public:
 	virtual ~AbstractInputHandler() {};;
 	virtual QString id() const {return _id;};
-	virtual void setOutputs(QVector<OutEvent> o);
-	virtual QVector<OutEvent> getOutputs() const {return outputs;};;
+	virtual void setOutputs(QVector<OutEvent*> o);
+	virtual QVector<OutEvent*> getOutputs() const {return outputs;};;
 	int getNumInputs() const {return inputs.size();};
 	virtual QMap<__u16,int> getInputMap();
 	int getNumOutputs() const {return outputs.size();};
@@ -82,7 +82,7 @@ public:
 	static QMap<QString,QList<AbstractInputHandler*>(*)(pugi::xml_node&)> parseMap;
     virtual int getType() = 0;
 	int getInputIndex(QString key) const ;
-	virtual __u16 getInputType() const { return 1;}; //!< returns type of input; implement for window specific configuration
+	virtual __u16 getInputType(int index = -1) const { return 1;}; //!< returns type of input; implement for window specific configuration
 	virtual input_absinfo ** setInputCapabilities(QBitArray *inputBits[]) {};
 
 signals:
@@ -91,10 +91,10 @@ signals:
 	
 protected:
 	QString _id; // id set in config.xml
-	QVector<OutEvent> outputs;	// current target events
+	QVector<OutEvent*> outputs;	// current target events
 	QVector<InputEvent> inputs;	// input events to be transformed
 	virtual int addInput(InputEvent in);
-	virtual int addInput(InputEvent in, OutEvent def);
+	virtual int addInput(InputEvent in, OutEvent *def);
 	bool _hasWindowSpecificSettings;
 	static QList<idevs> parseInputDevices();
 

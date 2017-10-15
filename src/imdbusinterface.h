@@ -23,7 +23,7 @@
 #include <QtDBus>
 #include <QCoreApplication>
 #include "inputmangler.h"
-#include "output.h"
+#include "output/outevent.h"
 
 /*!
  * @brief Inputmanglers d-bus interface.

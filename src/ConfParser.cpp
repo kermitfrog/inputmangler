@@ -23,7 +23,7 @@ using namespace pugi;
 ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, TransformationStructure> *_wsets) {
     handlers = _handlers;
     wsets = _wsets;
-    
+
     evbits.resize(EV_CNT);
     keybits.resize(KEY_CNT);
     ledbits.resize(LED_CNT);
@@ -41,7 +41,7 @@ ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, T
     inputBits[EV_ABSJ] = &absbitsJ;
     inputBits[EV_MSC] = &mscbits;
     inputBits[EV_SYN] = &synbits;
-    
+
     readConf();
 //    _handlers = handlers;
 //    _wsets = wsets;
@@ -56,8 +56,7 @@ bool ConfParser::readConf() {
         confPath = QCoreApplication::arguments().at(1);
     xml_document confFile;
     xml_parse_result result = confFile.load_file(confPath.toUtf8().constData());
-    if (result.status != status_ok)
-    {
+    if (result.status != status_ok) {
         qDebug() << result.description();
         return false;
     }
@@ -76,11 +75,10 @@ bool ConfParser::readConf() {
 
     xml_node handlersConf = conf.child("handlers");
     for (xml_node handler = handlersConf.first_child(); handler; handler = handler.next_sibling()) {
-        if (AbstractInputHandler::parseMap.contains(handler.name()))
-        {
+        if (AbstractInputHandler::parseMap.contains(handler.name())) {
             qDebug() << "found <" << QString(handler.name());
             // all handler-specific configuration is read by the registered parsing functions
-            QList<AbstractInputHandler*> inputHandler = AbstractInputHandler::parseMap[handler.name()](handler);
+            QList<AbstractInputHandler *> inputHandler = AbstractInputHandler::parseMap[handler.name()](handler);
             handlers->append(inputHandler);
             if (inputHandler.size() > 0 && inputHandler.at(0)->id() != "")
                 handlersById.insert(inputHandler.at(0)->id(), inputHandler.at(0));
@@ -88,29 +86,27 @@ bool ConfParser::readConf() {
     }
 
     /// check if there is a reason to continue at all...
-    if (handlers->count() == 0)
-    {
+    if (handlers->count() == 0) {
         qDebug() << "no input Handlers loaded!";
-        exit(1);
+        std::exit(EXIT_FAILURE);
     }
 
-    foreach(AbstractInputHandler *a, (*handlers))
-    {
-        a->setInputCapabilities(inputBits);
-        if (!a->hasWindowSpecificSettings())
-            continue;
-        // make current outputs the default
-        // if nessecary, a new TransformationStructure is created on demand by QMap,
-        QVector<OutEvent> o = a->getOutputs();
-        wsets->operator[](a->id()).def = o;
-        ids.append(a->id());
-    }
+            foreach(AbstractInputHandler *a, (*handlers)) {
+            a->setInputCapabilities(inputBits);
+            if (!a->hasWindowSpecificSettings())
+                continue;
+            // make current outputs the default
+            // if nessecary, a new TransformationStructure is created on demand by QMap,
+            QVector<OutEvent *> o = a->getOutputs();
+            wsets->operator[](a->id()).def = o;
+            ids.append(a->id());
+        }
     ids.removeDuplicates();
 
     /// Now everything is prepared to read the Window-specific settings
-    QMap<QString,QVector<OutEvent>> defOutputs;
+    QMap<QString, QVector<OutEvent *>> defOutputs;
     QMap<QString, bool> usedIds;
-    foreach(QString id, ids) {
+            foreach(QString id, ids) {
             defOutputs[id] = wsets->operator[](id).def;
             usedIds[id] = false;
         }
@@ -119,26 +115,27 @@ bool ConfParser::readConf() {
     return true;
 }
 
-void ConfParser::parseWindowSettings(xml_node group, QMap<QString,QVector<OutEvent>> defaultOutputs, QMap<QString, bool> used) {
+void ConfParser::parseWindowSettings(xml_node group, QMap<QString, QVector<OutEvent *>> defaultOutputs,
+                                     QMap<QString, bool> used) {
 
-    for (xml_node entry = group.first_child(); entry; entry= entry.next_sibling()) {
+    for (xml_node entry = group.first_child(); entry; entry = entry.next_sibling()) {
         if (QString(entry.name()) == "window") {
             readWindowSettings(entry, defaultOutputs, used);
         } else if (QString(entry.name()) == "group") {
             QString s;
             QMap<QString, bool> usedIds = used;
-            QMap<QString,QVector<OutEvent>> outputs = defaultOutputs;
-            foreach (QString id, ids) {
-                s = entry.attribute(id.toUtf8().data()).value();
-                if (!s.isEmpty()) {
-                    outputs[id] = parseOutputsShort(s, defaultOutputs[id]);
-                    usedIds[id] = true;
+            QMap<QString, QVector<OutEvent *>> outputs = defaultOutputs;
+                    foreach (QString id, ids) {
+                    s = entry.attribute(id.toUtf8().data()).value();
+                    if (!s.isEmpty()) {
+                        outputs[id] = parseOutputsShort(s, defaultOutputs[id]);
+                        usedIds[id] = true;
+                    }
                 }
-            }
-            for (xml_node longDescription  = entry.child("long"); longDescription; longDescription = longDescription.next_sibling("long")) {
+            for (xml_node longDescription = entry.child(
+                    "long"); longDescription; longDescription = longDescription.next_sibling("long")) {
                 QString id = longDescription.attribute("id").value();
-                if (!longDescription.empty())
-                {
+                if (!longDescription.empty()) {
                     outputs[id] = parseOutputsLong(longDescription, handlersById[id], defaultOutputs[id]);
                     usedIds[id] = true;
                 }
@@ -154,33 +151,33 @@ void ConfParser::parseWindowSettings(xml_node group, QMap<QString,QVector<OutEve
  * @var window <window> element as xml_node object
  * @var defaultOutputs output configuration of the parent
  */
-void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEvent>> defaultOutputs, QMap<QString,bool> used) {
+void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEvent *>> defaultOutputs,
+                                    QMap<QString, bool> used) {
     QString windowClass = window.attribute("class").value();
     QString s;
-    QMap<QString, WindowSettings*> wsettings; // <id, WindowSettings>
+    QMap<QString, WindowSettings *> wsettings; // <id, WindowSettings>
     QMap<QString, QMap<QString, unsigned int>> *inputsForIds;
-    inputsForIds = static_cast<QMap<QString, QMap<QString, unsigned int>>*>(AbstractInputHandler::sd.infoCache["inputsForIds"]);
+    inputsForIds = static_cast<QMap<QString, QMap<QString, unsigned int>> *>(AbstractInputHandler::sd.infoCache["inputsForIds"]);
 
     if (inputsForIds->count() == 0)
         return;
 
     // create WindowSettings
-    foreach(QString id, ids)
-        wsettings.insert(id, new WindowSettings());
+            foreach(QString id, ids)wsettings.insert(id, new WindowSettings());
 
-    foreach (QString id, ids) {
-        s = window.attribute(id.toUtf8().data()).value();
-        if (!s.isEmpty()) {
-            wsettings[id]->def = parseOutputsShort(s, defaultOutputs[id]);
-            used[id] = true;
+            foreach (QString id, ids) {
+            s = window.attribute(id.toUtf8().data()).value();
+            if (!s.isEmpty()) {
+                wsettings[id]->def = parseOutputsShort(s, defaultOutputs[id]);
+                used[id] = true;
+            }
         }
-    }
 
 
-    for (xml_node longDescription  = window.child("long"); longDescription; longDescription = longDescription.next_sibling("long")) {
+    for (xml_node longDescription = window.child(
+            "long"); longDescription; longDescription = longDescription.next_sibling("long")) {
         QString id = longDescription.attribute("id").value();
-        if (!longDescription.empty())
-        {
+        if (!longDescription.empty()) {
             WindowSettings *w = wsettings[id];
             w->def = parseOutputsLong(longDescription, handlersById[id], defaultOutputs[id]);
             used[id] = true;
@@ -188,57 +185,63 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
     }
 
     /// parse <title> nodes
-    for (xml_node title  = window.child("title"); title; title = title.next_sibling("title")) {
+    for (xml_node title = window.child("title"); title; title = title.next_sibling("title")) {
         QString regex = title.attribute("regex").value();
-        for (xml_attribute_iterator attr = title.attributes().begin(); attr != title.attributes().end(); ++attr ) {
+        for (xml_attribute_iterator attr = title.attributes().begin(); attr != title.attributes().end(); ++attr) {
             QString name = attr->name();
             if (name == "regex")
                 continue;
             else if (ids.contains(name)) {
                 wsettings[name]->titles.append(new QRegularExpression(QString("^") + regex + "$"));
-                wsettings[name]->events.append(parseOutputsShort(attr->value(), defaultOutputs[attr->value()]));
+                wsettings[name]->events.append(parseOutputsShort(attr->value(), defaultOutputs[attr->name()])); // attr->name() was attr->value() before. WTF?? is name wrong?
                 used[name] = true;
             } else
-                qDebug() << "Warning: unexpected attribute " + name + " in element " << windowClass << ", in title " + regex;
+                qDebug() << "Warning: unexpected attribute " + name + " in element " << windowClass
+                         << ", in title " + regex;
         }
-        for (xml_node longDescription  = title.child("long"); longDescription; longDescription = longDescription.next_sibling("long")) {
+        for (xml_node longDescription = title.child(
+                "long"); longDescription; longDescription = longDescription.next_sibling("long")) {
             QString id = longDescription.attribute("id").value();
-            if (!longDescription.empty())
-            {
+            if (!longDescription.empty()) {
                 wsettings[id]->titles.append(new QRegularExpression(QString("^") + regex + "$"));
                 wsettings[id]->events.append(parseOutputsLong(longDescription, handlersById[id], defaultOutputs[id]));
                 used[id] = true;
             }
         }
     }
-    foreach(QString id, ids) {
-        if (used[id] == true) {
-            wsets->operator[](id).addWindowSettings(windowClass, wsettings[id]);
-            if (wsettings[id]->def.size() == 0)
-                wsettings[id]->def = defaultOutputs[id];
+            foreach(QString id, ids) {
+            if (used[id] == true) {
+                wsets->operator[](id).addWindowSettings(windowClass, wsettings[id]);
+                if (wsettings[id]->def.size() == 0)
+                    wsettings[id]->def = defaultOutputs[id];
+            } else
+                delete wsettings.take(id);
         }
-        else
-            delete wsettings.take(id);
-    }
 }
 
 /*!
  * @brief Parse an output definition for window specific settings.
- * @param s string containing the output definitions.
+ * @param str string containing the output definitions.
  * @param defaults the parent's output definitions.
  * @return the parsed vector of OutEvents.
  */
-QVector<OutEvent> ConfParser::parseOutputsShort(const QString str, QVector<OutEvent> &defaults) {
-    QVector<OutEvent> vec;
+QVector<OutEvent *> ConfParser::parseOutputsShort(const QString str, QVector<OutEvent *> &defaults) {
+    QVector<OutEvent *> vec;
     QStringList l = str.split(",");
     QString s;
-    for(int i = 0; i < l.count(); ++i) {
+    for (int i = 0; i < l.count(); ++i) {
         s = l.at(i);
         if (s == "~") //inherit
             vec.append(defaults[i]);
         else {
-            vec.append(OutEvent(s, defaults[i].getSourceType()));
-            vec.last().setInputBits(inputBits);
+            OutEvent *outEvent = OutEvent::createOutEvent(s, defaults[i]->getSourceType());
+            if (outEvent != nullptr) {
+                vec.append(outEvent);
+                outEvent->setInputBits(inputBits);
+            } else {
+                qDebug() << "Error in configuration File: can't create OutEvent for \"" << s << "\" in " << str;
+                std::exit(EXIT_FAILURE);
+            }
         }
     }
     return vec;
@@ -251,10 +254,10 @@ QVector<OutEvent> ConfParser::parseOutputsShort(const QString str, QVector<OutEv
  * @param def Default value. Returned when no output definition is found. Result of
  * <long> description is based on this.
  */
-QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, const AbstractInputHandler * handler,
-                                               QVector<OutEvent> def) {
+QVector<OutEvent *> ConfParser::parseOutputsLong(xml_node node, const AbstractInputHandler *handler,
+                                                 QVector<OutEvent *> def) {
     QString text = node.child_value();
-        qDebug() << "parsing long: " << text;
+    qDebug() << "parsing long: " << text;
     text = text.trimmed();
     if (text.isEmpty()) {
         qDebug() << "warning: empty <long> node!";
@@ -268,8 +271,7 @@ QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, const AbstractInpu
         splitter = QRegExp("(\n|,)");
 
     QStringList lines = text.split(splitter, QString::SkipEmptyParts);
-        foreach (QString s, lines)
-        {
+            foreach (QString s, lines) {
             // we want to allow dual use of '=', e.g. <long> ==c, r== </long>
             s = s.trimmed();
             int pos = s.indexOf('=', 1);
@@ -280,8 +282,11 @@ QVector<OutEvent> ConfParser::parseOutputsLong(xml_node node, const AbstractInpu
             int index = handler->getInputIndex(left);
 
             if (index != -1) {
-                def[index] = OutEvent(right, handler->getInputType());
-                def[index].setInputBits(inputBits);
+                OutEvent *outEvent = OutEvent::createOutEvent(right, handler->getInputType(index));
+                if (outEvent != nullptr) {
+                    def[index] = outEvent;
+                    def[index]->setInputBits(inputBits);
+                }
             }
         }
 

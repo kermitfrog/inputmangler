@@ -25,11 +25,11 @@ set(INPUTMANGLER_SRCS
 						inputmangler.cpp 
 						keydefs.cpp 
 						main.cpp
-						output.cpp
+		output/outevent.cpp
 						qtsignalhandler.cpp 
 						transformationstructure.cpp
 						${handlers_srcs}
-        ConfParser.cpp ConfParser.h)
+        ConfParser.cpp ConfParser.h output/outsimple.cpp output/outsimple.h output/outmacrostart.cpp output/outmacrostart.h output/outmacropart.cpp output/outmacropart.h output/outwait.cpp output/outwait.h output/macropartbase.h output/macropartbase.cpp output/outaccel.cpp output/outaccel.h output/outauto.cpp output/outauto.h output/outdebounce.cpp output/outdebounce.h)
 
 find_library(PUGIXML_LIB pugixml)
 #add_library(pugixml SHARED IMPORTED)

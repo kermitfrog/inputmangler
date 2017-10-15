@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "output.h"
+#include "output/outevent.h"
 #include <QMap>
 
 /*!
@@ -36,9 +36,9 @@ class WindowSettings
 public:
 	WindowSettings(){};
 	~WindowSettings();
-	QVector<OutEvent> def;                //!< value when no title matches
+	QVector<OutEvent*> def;                //!< value when no title matches
 	QVector<QRegularExpression*> titles;  //!< list of title regexes
-	QVector< QVector<OutEvent> > events;  //!< events are matched to titles via index
+	QVector< QVector<OutEvent*> > events;  //!< events are matched to titles via index
 };
 
 /*!
@@ -49,11 +49,11 @@ class TransformationStructure
 public:
 	TransformationStructure(){};
 	~TransformationStructure();
-	QVector<OutEvent> getOutputs(QString window_class, QString window_name);
+	QVector<OutEvent*> getOutputs(QString window_class, QString window_name);
 	WindowSettings *window(QString w, bool create = false);
 	void addWindowSettings(QString s, WindowSettings* w);
 	bool sanityCheck(int numInputs, QString id, bool verbose = false);
-	QVector<OutEvent> def; //!< Default outputs for id.
+	QVector<OutEvent*> def; //!< Default outputs for id.
 protected:
 	QHash<QString, WindowSettings*> classes; //!< HashMap of window classes.
 };

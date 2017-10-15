@@ -33,7 +33,7 @@ void OutEvent::generalSetup(QBitArray* inputBits[NUM_INPUTBITS])
 {
     int fd;
 	int err;
-    bool need = false;
+	bool need = false;
 	uinput_user_dev *dev;
 
 	fds[1] = fds[2] = fds[3] = fds[4] = 0;

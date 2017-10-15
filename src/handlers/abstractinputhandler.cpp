@@ -19,6 +19,7 @@
 
 #include "abstractinputhandler.h"
 #include <QTest>
+#include <output/outsimple.h>
 
 shared_data AbstractInputHandler::sd; // TODO: protect?
 QMap<QString,QList<AbstractInputHandler*>(*)(pugi::xml_node&)> AbstractInputHandler::parseMap;
@@ -40,7 +41,7 @@ void AbstractInputHandler::generalSetup()
 int AbstractInputHandler::addInput(InputEvent in)
 {
 	inputs.append(in);
-	outputs.append(OutEvent(in, in.type)); // TODO is there any case where 2nd parameter is nat 1st par.type?
+	outputs.append(new OutSimple(in, in.type)); // TODO is there any case where 2nd parameter is not 1st par.type?
 	return inputs.size();
 }
 
@@ -50,7 +51,7 @@ int AbstractInputHandler::addInput(InputEvent in)
  * @param def The default output.
  * @return Number of expected inputs after the operation.
  */
-int AbstractInputHandler::addInput(InputEvent in, OutEvent def)
+int AbstractInputHandler::addInput(InputEvent in, OutEvent *def)
 {
 	inputs.append(in);
 	outputs.append(def);
@@ -60,7 +61,7 @@ int AbstractInputHandler::addInput(InputEvent in, OutEvent def)
 /*!
  * @brief set current outputs.
  */
-void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
+void AbstractInputHandler::setOutputs(QVector<OutEvent*> o)
 {
 	if (o.size() != inputs.size())
 	{
@@ -68,8 +69,8 @@ void AbstractInputHandler::setOutputs(QVector< OutEvent > o)
 		for (int i = 0; i < inputs.size(); i++)
 			qDebug() << "inputs[" << i << "].code = " << inputs.at(i).code;
 		for (int i = 0; i < o.size(); i++)
-			qDebug() << "outputs[" << i << "].code = " << o.at(i).code();
-	}	
+			qDebug() << "outputs[" << i << "].code = "; // TODO << o.at(i)->code();
+	}
 	outputs = o;
 }
 
