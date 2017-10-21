@@ -120,7 +120,7 @@ public:
 #ifdef DEBUGME
 	QString initString;
 #endif
-    virtual void setInputBits(QBitArray **inputBits) {};
+    virtual void setInputBits(QBitArray **inputBits);
 
 	virtual __u16 getSourceType() const = 0;
     

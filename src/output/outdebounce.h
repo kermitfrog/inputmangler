@@ -5,16 +5,21 @@
 #pragma once
 
 
-#include "outevent.h"
+#include "outsimple.h"
 
-class OutDebounce : public OutEvent{
+class OutDebounce : public OutSimple{
 public:
     OutDebounce(QStringList l, __u16 sourceType);
-    __u16 getSourceType() const override {
-        return EV_KEY; // TODO
-    }
+
     OutType type() const override { return OutType::Debounce;};
 
+    void send(const __s32 &value, const timeval &time) override;
+
+protected:
+    int delay;
+    int lastValue;
+    timeval lastTime;
+    long timeDiff(const timeval &newTime);
 };
 
 

@@ -48,5 +48,6 @@ public:
 	int absmax;
 
 	void setInputEvent(input_event * ev, __s32 value);
+	__u8 getFd() const;
 };
 

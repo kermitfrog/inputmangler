@@ -24,6 +24,11 @@ MacroPartBase *MacroPartBase::parseMacro(QStringList &macroParts, __u16 sourceTy
     }
 
     return new OutMacroPart(macroParts, sourceType);
+}
+
+void MacroPartBase::setInputBits(QBitArray **inputBits) {
+    if (next != nullptr)
+        next->setInputBits(inputBits);
 };
 
 

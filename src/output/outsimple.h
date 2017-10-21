@@ -12,6 +12,7 @@ class OutSimple : public OutEvent {
 
 public:
     OutSimple(InputEvent& e, __u16 sourceType);
+    OutSimple() {};
     ~OutSimple();
     virtual OutEvent::OutType type() const { return OutType::Simple;};
     virtual void send(const __s32 &value, const timeval &time);
@@ -21,6 +22,7 @@ public:
     __u16 getSourceType() const override;
 
 protected:
+    void init(InputEvent& e, __u16 sourceType);
 
 
 

@@ -10,7 +10,7 @@ OutAccel::OutAccel(QStringList params, __u16 sourceType) {
     InputEvent ie = keymap[params[0].trimmed()];
     setSrcDst(sourceType, ie.type);
 
-    if ( (srcdst & 0b1100) == 0b1100 || (srcdst & 0b0011) == 0b0011) {
+    if ((srcdst & 0b1100) == 0b1100 || (srcdst & 0b0011) == 0b0011) {
         invalidate(
                 "OutAccel: unsupported translation " + QString::number(sourceType) + " => " + QString::number(ie.type)
                 + " in " + params.join(", "));
@@ -46,7 +46,7 @@ OutAccel::OutAccel(QStringList params, __u16 sourceType) {
         minKeyPresses = 2;
 
     triggered = 0;
-    fdnum = (__u8) ie.type;
+    fdnum = ie.getFd();
 }
 
 void OutAccel::send(const __s32 &value, const timeval &time) {
@@ -99,8 +99,17 @@ void OutAccel::send(const __s32 &value, const timeval &time) {
 }
 
 void OutAccel::setInputBits(QBitArray **inputBits) {
-    OutEvent::setInputBits(inputBits);
+    __u16 evType, code;
+    evType = event.eventChain[0].type;
+    code = event.eventChain[0].code;
+
+    inputBits[EV_CNT]->setBit(evType);
+    if (fdnum == EV_ABSJ && evType == EV_ABS)
+        inputBits[EV_ABSJ]->setBit(code);
+    else
+        inputBits[evType]->setBit(code);
 }
+
 
 long int OutAccel::timeDiff(const timeval &newTime) {
     return (newTime.tv_sec - lastTime.tv_sec) * 1000 + (newTime.tv_usec - lastTime.tv_usec) / 1000;

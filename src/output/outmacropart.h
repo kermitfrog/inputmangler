@@ -15,6 +15,8 @@ public:
     virtual const OutType type() { return OutType::MacroPart;}
     __u16 getSourceType() const override;
 
+    void setInputBits(QBitArray **inputBits) override;
+
     void proceed() override;
 };
 

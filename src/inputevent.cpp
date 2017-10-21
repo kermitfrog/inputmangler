@@ -109,5 +109,34 @@ void InputEvent::setInputEvent(input_event * ev, __s32 value) {
 	ev->value = value;
 }
 
+__u8 InputEvent::getFd() const {
+	switch (type) {
+		case EV_KEY:
+			if (code < BTN_MOUSE)
+				return 1;
+			else if (code < BTN_DIGI)
+				return 2;
+			else if (code < KEY_OK)
+				return 3;
+			else if (code < BTN_DPAD_UP)
+				return 1;
+			else if (code < KEY_ALS_TOGGLE)
+				return 4;
+			else if (code < BTN_TRIGGER_HAPPY)
+				return 1;
+			else
+				return 4;
+		case EV_REL:
+			return 2;
+		case EV_ABS:
+			if (valueType == JoystickAxis)
+				return 4;
+			else
+				return 3;
+		default:
+			return 0;
+	}
+}
+
 
 

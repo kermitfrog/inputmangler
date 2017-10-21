@@ -20,6 +20,8 @@ public:
 
     __u16 getSourceType() const override;
 
+    void setInputBits(QBitArray **inputBits) override;
+
 };
 
 

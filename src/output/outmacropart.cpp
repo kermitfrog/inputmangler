@@ -7,7 +7,6 @@
 
 OutMacroPart::OutMacroPart(QStringList &macroParts, __u16 sourceType) {
 
-
     InputEvent ie;
     QList<InputEvent> ies;
     QList<__s32> values;
@@ -21,7 +20,7 @@ OutMacroPart::OutMacroPart(QStringList &macroParts, __u16 sourceType) {
     values.append(
             (__s32) mPart.last().toLong()); // TODO is there some preproccessor directive to make sure this converts to __s32?
 
-    __u16 dtype = ies.at(0).type; // TODO what about Joysticks? make sure this works!
+    __u8 dtype = ies.at(0).getFd(); // TODO what about Joysticks? make sure this works!
     fdnum = (__u8) dtype; // TODO ABSJ ?
 
     while (!macroParts.isEmpty()) {
@@ -33,7 +32,7 @@ OutMacroPart::OutMacroPart(QStringList &macroParts, __u16 sourceType) {
             return;
         }
         ie = keymap[mPart.first()];
-        if (ie.type == dtype) {
+        if (ie.getFd() == dtype) {
             ies.append(ie);
             values.append((__s32) mPart.last().toLong());
             macroParts.removeFirst();
@@ -53,7 +52,7 @@ OutMacroPart::OutMacroPart(QStringList &macroParts, __u16 sourceType) {
     setSync(event.eventChain[i]);
 
     // TODO do we need this?
-    setSrcDst(sourceType, dtype);
+    setSrcDst(sourceType, event.eventChain[0].type);
 
     if (srcdst == 0)
         invalidate("Invalid input/output type combination");
@@ -68,12 +67,33 @@ OutMacroPart::OutMacroPart(QStringList &macroParts, __u16 sourceType) {
 void OutMacroPart::proceed() {
     qDebug() << "Type is " << srcdst;
     write(fds[fdnum], event.eventChain, eventsSize);
-    for (int i = 0; i < eventsSize/ sizeof(input_event); ++i)
-        qDebug() << "In MacroPart, sending event: type=" << event.eventChain[i].type << ", code=" << event.eventChain[i].code << ", value=" << event.eventChain[i].value;
+    for (int i = 0; i < eventsSize / sizeof(input_event); ++i)
+        qDebug() << "In MacroPart, sending event: type=" << event.eventChain[i].type << ", code="
+                 << event.eventChain[i].code << ", value=" << event.eventChain[i].value;
     if (next != nullptr)
         next->proceed();
 }
 
 __u16 OutMacroPart::getSourceType() const {
     return (srcdst & SrcDst::INMASK) / 0b100;
+}
+
+void OutMacroPart::setInputBits(QBitArray **inputBits) {
+    MacroPartBase::setInputBits(inputBits);
+
+    if (eventsSize == 0)
+        return;
+
+    __u16 evType, code;
+    int num = (int) eventsSize / sizeof(input_event) - 1;
+    evType = event.eventChain[0].type;
+    for (int i = 0; i < num; ++i) {
+        code = event.eventChain[i].code;
+        inputBits[EV_CNT]->setBit(evType);
+        if (fdnum == EV_ABSJ && evType == EV_ABS)
+            inputBits[EV_ABSJ]->setBit(code);
+        else
+            inputBits[evType]->setBit(code);
+    }
+
 }

@@ -5,6 +5,62 @@
 #include "outsimple.h"
 
 OutSimple::OutSimple(InputEvent &e, __u16 sourceType) {
+    init(e, sourceType);
+}
+
+void OutSimple::send(const __s32 &value, const timeval &time) {
+    switch (srcdst) {
+        case KEY__KEY:
+            write(fds[fdnum], event.eventChains[value], eventsSize);
+            break;
+        case KEY__REL:
+            if (value != 0)
+                write(fds[fdnum], event.eventChain, eventsSize);
+            break;
+        case REL__KEY: // TODO do we have to take care of +- here?
+            write(fds[fdnum], event.eventChain, eventsSize);
+            break;
+        case REL__REL:
+            event.eventChain[0].value = value;
+            write(fds[fdnum], event.eventChain, eventsSize);
+            break;
+        case ABS__ABS:
+            event.eventChain[0].value = value;
+            write(fds[fdnum], event.eventChain, eventsSize);
+            break;
+        default:
+            break;
+    }
+
+}
+
+OutSimple::~OutSimple() {
+    switch (srcdst) {
+        case KEY__KEY:
+            delete[] event.eventChains[2];
+            delete[] event.eventChains[1];
+        case ABS__ABS:
+        case KEY__REL:
+        case REL__KEY:
+        case REL__REL:
+            delete[] event.eventChains[0];
+            delete[] event.eventChains;
+            break;
+        default:
+            break;
+    }
+
+}
+
+void OutSimple::setInputBits(QBitArray **inputBits) {
+
+}
+
+__u16 OutSimple::getSourceType() const {
+    return (srcdst & SrcDst::INMASK) / 0b100;
+}
+
+void OutSimple::init(InputEvent &e, __u16 sourceType) {
     switch (sourceType) {
         case EV_KEY:
             switch (e.type) {
@@ -33,7 +89,7 @@ OutSimple::OutSimple(InputEvent &e, __u16 sourceType) {
             break;
         case EV_REL:
             switch (e.type) {
-                case EV_KEY: 
+                case EV_KEY:
                     srcdst = REL__KEY;
                     eventsSize = 3 * sizeof(input_event);
                     event.eventChain = new input_event[3];
@@ -75,59 +131,8 @@ OutSimple::OutSimple(InputEvent &e, __u16 sourceType) {
             };
             break;
     };
-    fdnum = (__u8) e.type; // TODO ABSJ ?
-}
 
-void OutSimple::send(const __s32 &value, const timeval &time) {
-    switch (srcdst) {
-        case KEY__KEY:
-            write(fds[EV_KEY], event.eventChains[value], eventsSize);
-            break;
-        case KEY__REL:
-            if (value != 0)
-                write(fds[EV_REL], event.eventChain, eventsSize);
-            break;
-        case REL__KEY: // TODO do we have to take care of +- here?
-            write(fds[EV_KEY], event.eventChain, eventsSize);
-            break;
-        case REL__REL:
-            event.eventChain[0].value = value;
-            write(fds[EV_REL], event.eventChain, eventsSize);
-            break;
-        case ABS__ABS:
-            event.eventChain[0].value = value;
-            write(fds[fdnum], event.eventChain, eventsSize);
-            break;
-        default:
-            break;
-    }
-
-}
-
-OutSimple::~OutSimple() {
-    switch (srcdst) {
-        case KEY__KEY:
-            delete[] event.eventChains[2];
-            delete[] event.eventChains[1];
-        case ABS__ABS:
-        case KEY__REL:
-        case REL__KEY:
-        case REL__REL:
-            delete[] event.eventChains[0];
-            delete[] event.eventChains;
-            break;
-        default:
-            break;
-    }
-
-}
-
-void OutSimple::setInputBits(QBitArray **inputBits) {
-
-}
-
-__u16 OutSimple::getSourceType() const {
-    return (srcdst & SrcDst::INMASK) / 0b100;
+    fdnum = e.getFd();
 }
 
 

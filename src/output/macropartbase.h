@@ -14,6 +14,10 @@ public:
     virtual void proceed() = 0;
     static MacroPartBase* parseMacro(QStringList &macroParts, __u16 sourceType);
 protected:
+public:
+    void setInputBits(QBitArray **inputBits) override;
+
+protected:
     MacroPartBase * next = nullptr;
 };
 

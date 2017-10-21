@@ -3,9 +3,9 @@
 */
 
 #pragma once
-#include "outevent.h"
+#include "outsimple.h"
 
-class OutAuto: public OutEvent {
+class OutAuto: public OutSimple {
 public:
     OutAuto(QStringList l, __u16 sourceType);
     __u16 getSourceType() const override {
@@ -15,7 +15,6 @@ public:
     OutType type() const override { return OutType::Repeat;};
 
     void send(const __s32 &value, const timeval &time) override;
-
 };
 
 

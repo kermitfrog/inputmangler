@@ -62,7 +62,7 @@ void OutEvent::generalSetup(QBitArray *inputBits[NUM_INPUTBITS]) {
     // Ubuntu-LTS, as linux-libc-dev only provides headers for linux 4.4
     // also, the old way's documentation is less bad.
     err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_SYN);
-    err = ioctl(fd, UI_SET_EVBIT, EV_MSC) | ioctl(fd, UI_SET_MSCBIT, MSC_TIMESTAMP);
+    err |= ioctl(fd, UI_SET_EVBIT, EV_MSC) | ioctl(fd, UI_SET_MSCBIT, MSC_TIMESTAMP);
     for (int i = 0; i < BTN_MISC; i++)
         if (inputBits[EV_KEY]->at(i))
             err |= ioctl(fd, UI_SET_KEYBIT, i);
@@ -218,6 +218,30 @@ void OutEvent::generalSetup(QBitArray *inputBits[NUM_INPUTBITS]) {
 #endif
 }
 
+/**
+ *
+ * @param inputBits
+ */
+void OutEvent::setInputBits(QBitArray **inputBits) {
+    __u16 evType, code;
+    if (eventsSize == 0)
+        return;
+    if (srcdst == KEY__KEY) {
+        evType = event.eventChains[1][0].type;
+        code = event.eventChains[1][0].code;
+    } else {
+        evType = event.eventChain[0].type;
+        code = event.eventChain[0].code;
+    }
+    qDebug() << "setInputBits for " << evType << "  " << code;
+    inputBits[EV_CNT]->setBit(evType);
+    if (fdnum == EV_ABSJ && evType == EV_ABS)
+        inputBits[EV_ABSJ]->setBit(code);
+    else
+        inputBits[evType]->setBit(code);
+
+}
+
 uinput_user_dev *OutEvent::makeUinputUserDev(const char *name) {
     uinput_user_dev *dev;
     dev = new uinput_user_dev;
@@ -319,6 +343,8 @@ void OutEvent::send(const __s32 &value, const timeval &time) {
 void OutEvent::sendRaw(input_event &event, DType dtype) {
     write(fds[dtype], &event, sizeof(input_event));
 }
+
+
 
 
 

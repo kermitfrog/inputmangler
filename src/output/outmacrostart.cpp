@@ -85,3 +85,18 @@ void OutMacroStart::send(const __s32 &value, const timeval &time) {
 __u16 OutMacroStart::getSourceType() const {
     return macroParts[1]->getSourceType();
 }
+
+void OutMacroStart::setInputBits(QBitArray **inputBits) {
+    switch (srcdst) {
+        case KEY__:
+            for(int i = 0; i < 3; ++i)
+                if (macroParts[i] != nullptr)
+                macroParts[i]->setInputBits(inputBits);
+            break;
+        case OTHER:
+            macroParts[1]->setInputBits(inputBits);
+            break;
+        default:
+            break;
+    }
+}
