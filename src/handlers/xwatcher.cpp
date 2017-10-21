@@ -73,4 +73,4 @@ void XWatcher::run()
 	
 }
 
-#include "xwatcher.moc"
+// #include "xwatcher.moc"

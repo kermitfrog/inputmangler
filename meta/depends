@@ -1,0 +1,13 @@
+depends
+Depends:
+You should set: CPACK_DEBIAN_PACKAGE_DEPENDS
+eg.:
+   SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)")
+   Notes:
+   have a look at GET_PROPERTY(result GLOBAL ENABLED_FEATURES), this returns the successful FIND_PACKAGE() calls, maybe this can help
+   TODO: automate 'objdump -p | grep NEEDED'
+
+
+dpkg-query -S libpugixml.so.1
+
+libpugixml1v5, libqt5dbus5 (>= 5), libqt5network5 (>= 5), libqt5core5a (>= 5.9), libstdc++6 (>= 3.4), libgcc1 (>= 3.0), libc6 (>= 2.14)

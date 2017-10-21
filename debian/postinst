@@ -11,8 +11,6 @@ addgroup --system inputmangler
 cd /etc/udev/rules.d/
 /usr/share/inputmangler/make_udev_rules.sh inputmangler > /dev/null
 
-echo inputdummy > /etc/modules-load.d/inputmangler.conf
-
 echo inputmangler installed!
 echo to use it, you must do the following:
 echo edit /etc/udev/rules.d/80-inputmangler.rules and uncomment the lines describing the devices you wish inputmangler to use

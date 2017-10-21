@@ -151,4 +151,4 @@ QList< AbstractInputHandler* > DebugHandler::parseXml(pugi::xml_node &xml)
 }
 
 
-#include "debughandler.moc"
+// #include "debughandler.moc"

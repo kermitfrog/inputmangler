@@ -49,7 +49,7 @@ struct shared_data
  */
 class AbstractInputHandler : public QThread
 {
-	Q_OBJECT
+	// Q_OBJECT
 
 	// structure with information on input devices as read
 	// from /proc/bus/input/devices

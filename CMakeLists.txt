@@ -7,5 +7,5 @@ ADD_DEFINITIONS(
 )
 
 add_subdirectory(src)
-#add_subdirectory(firstrun)
+add_subdirectory(firstrun)
 
