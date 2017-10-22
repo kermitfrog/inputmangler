@@ -1,7 +1,7 @@
 /*
     This file is part of inputmangler, a programm which intercepts and
     transforms linux input events, depending on the active window.
-    Copyright (C) 2014  Arkadiusz Guzinski <kermit@ag.de1.cc>
+    Copyright (C) 2014-2017 Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,10 +27,9 @@
 /*!
  * @brief  all handlers have to register their parsing functions here.
  */
-void registerHandlers()
-{
-	AbstractInputHandler::registerParser("device",   DevHandler::parseXml);
-	AbstractInputHandler::registerParser("debug",    DebugHandler::parseXml);
-	AbstractInputHandler::registerParser("net",      NetHandler::parseXml);
-	AbstractInputHandler::registerParser("xwatcher", XWatcher::parseXml);
+void registerHandlers() {
+    AbstractInputHandler::registerParser("device", DevHandler::parseXml);
+    AbstractInputHandler::registerParser("debug", DebugHandler::parseXml);
+    AbstractInputHandler::registerParser("net", NetHandler::parseXml);
+    AbstractInputHandler::registerParser("xwatcher", XWatcher::parseXml);
 }

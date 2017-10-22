@@ -1,7 +1,7 @@
 /*
     This file is part of inputmangler, a programm which intercepts and
     transforms linux input events, depending on the active window.
-    Copyright (C) 2014  Arkadiusz Guzinski <kermit@ag.de1.cc>
+    Copyright (C) 2014-2017 Arkadiusz Guzinski <kermit@ag.de1.cc>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
