@@ -41,7 +41,7 @@ class OutSimple;
  * "g" for press g
  * "d+C" for press Ctrl-D
  * "~Seq(BTN_LEFT 1, ~s50, MOUSE_X 150, ~s50, BTN_LEFT 0 ~)" for Drag&Drop 150 pixels to the right
- * more Complex Types will be supported in the future (maybe via plugins)
+ * more Complex Types may be supported in the future (maybe via plugins)
  */
 class OutEvent 
 {
@@ -99,10 +99,7 @@ public:
 
 	size_t eventsSize;
 
-	OutType outType;
 	SrcDst srcdst;
-	ValueType valueType;
-//	int customValue = 0;  		//!< on Macro: custom value, on Wait: time in microseconds TODO get rid of it?
 	virtual void send(const __s32 &value, const timeval &time);
 	void send() {timeval t; __s32 v = 1; send(v, t);}; //!< only used by nethandler // TODO t = now? ; is this alright?
 
@@ -134,8 +131,9 @@ protected:
 
     static uinput_user_dev* makeUinputUserDev(const char *name);
 
-	__u8 fdnum;
-
+	__u8 fdnum; //<! which fds[] to write to
+	void interpretNegSource(__u16 &sourceType);
+    __s8 valueMod = 1;
 };
 
 

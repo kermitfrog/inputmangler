@@ -23,6 +23,10 @@
 
 class OutEvent;
 
+/**
+ * Represents a Simple Output event, meaning one key, button or movement on one axis
+ * like "a", "R", "TAB", "WHEEL_UP", "MOUSE_X" ...
+ */
 class OutSimple : public OutEvent {
 
 public:
@@ -31,8 +35,6 @@ public:
     ~OutSimple();
     virtual OutEvent::OutType type() const { return OutType::Simple;};
     virtual void send(const __s32 &value, const timeval &time);
-
-    void setInputBits(QBitArray **inputBits) override;
 
     __u16 getSourceType() const override;
 

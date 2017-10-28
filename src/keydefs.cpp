@@ -195,7 +195,7 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 					vtype = All;
 			}
 			
-			keymap[tmp[2]] = InputEvent(code, type, vtype);
+			keymap[tmp[2]] = InputEvent(code, type, vtype, min, max);
  			keymap_reverse[code+(10000*type)+(1000*vtype)] = tmp[2];
 		}
 		li++;

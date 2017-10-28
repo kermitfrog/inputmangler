@@ -21,6 +21,10 @@
 
 using namespace pugi;
 
+/*!
+ * @param _handlers pointer to list where configured handlers are to be stored
+ * @param _wsets pointer to list where window specific configuration is to be stored
+ */
 ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, TransformationStructure> *_wsets) {
     handlers = _handlers;
     wsets = _wsets;
@@ -39,15 +43,20 @@ ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, T
     inputBits[EV_LED] = &ledbits;
     inputBits[EV_REL] = &relbits;
     inputBits[EV_ABS] = &absbitsT;
+
+    // Absolute Axes for a Joystick may have the same codes as those for Tablets, so we must seperate them
+    // from Tablet events. Otherwise we won't know to which uinput device they belong later.
     inputBits[EV_ABSJ] = &absbitsJ;
     inputBits[EV_MSC] = &mscbits;
     inputBits[EV_SYN] = &synbits;
 
     readConf();
-//    _handlers = handlers;
-//    _wsets = wsets;
 }
 
+/*!
+ * actually reads the config
+ * @return false if pugixml can't parse the file
+ */
 bool ConfParser::readConf() {
     //parse config
     QString confPath;
@@ -74,6 +83,7 @@ bool ConfParser::readConf() {
     qDebug() << "using keymap = " << mapfileK << ", charmap = " << mapfileC << ", axismap = " << mapfileA;
     setUpKeymaps(mapfileK, mapfileC, mapfileA);
 
+    // set up all handlers
     xml_node handlersConf = conf.child("handlers");
     for (xml_node handler = handlersConf.first_child(); handler; handler = handler.next_sibling()) {
         if (AbstractInputHandler::parseMap.contains(handler.name())) {
@@ -92,6 +102,7 @@ bool ConfParser::readConf() {
         std::exit(EXIT_FAILURE);
     }
 
+    /// set up TransformationStructures
             foreach(AbstractInputHandler *a, (*handlers)) {
             a->setInputCapabilities(inputBits);
             if (!a->hasWindowSpecificSettings())
@@ -116,6 +127,17 @@ bool ConfParser::readConf() {
     return true;
 }
 
+/*!
+ * Parses one group of mappings
+ *
+ * <group> contains <window> or <group> subelements, for which this function is called recursively
+ * mappings can be defined as attribute ([ID]="definitions") or <long> element with KEY="Output"
+ * If a single key in <long> definition is omitted a defaultOutput will be used instead
+ *
+ * @param group xmlnode type "group" or "window"
+ * @param defaultOutputs outputs of the element above in the hierachy (root defined in <signal> enties)
+ * @param used
+ */
 void ConfParser::parseWindowSettings(xml_node group, QMap<QString, QVector<OutEvent *>> defaultOutputs,
                                      QMap<QString, bool> used) {
 
@@ -178,7 +200,7 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
     for (xml_node longDescription = window.child(
             "long"); longDescription; longDescription = longDescription.next_sibling("long")) {
         QString id = longDescription.attribute("id").value();
-        if (!longDescription.empty()) {
+        if (!longDescription.empty() && handlersById[id] != nullptr) {
             WindowSettings *w = wsettings[id];
             w->def = parseOutputsLong(longDescription, handlersById[id], defaultOutputs[id]);
             used[id] = true;
@@ -194,7 +216,8 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
                 continue;
             else if (ids.contains(name)) {
                 wsettings[name]->titles.append(new QRegularExpression(QString("^") + regex + "$"));
-                wsettings[name]->events.append(parseOutputsShort(attr->value(), defaultOutputs[attr->name()])); // attr->name() was attr->value() before. WTF?? is name wrong?
+                wsettings[name]->events.append(parseOutputsShort(attr->value(),
+                                                                 defaultOutputs[attr->name()])); // attr->name() was attr->value() before. WTF?? is name wrong?
                 used[name] = true;
             } else
                 qDebug() << "Warning: unexpected attribute " + name + " in element " << windowClass

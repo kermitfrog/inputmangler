@@ -43,8 +43,9 @@ public:
 	__u16 type = EV_KEY;        //!< event type (see linux/input.h)
 	__u16 code = 0;             //!< event code (see linux/input.h) 
 	ValueType valueType = All;  //!< filter for values (see definitions.h)
-	int absmin;
-	int absmax;
+	int absmin;	//!< minimal value on absolute axis
+	int absmax; //!< maximum value on absolute axis
+	__u16 sourceType() const;
 
 	void setInputEvent(input_event * ev, __s32 value);
 	__u8 getFd() const;

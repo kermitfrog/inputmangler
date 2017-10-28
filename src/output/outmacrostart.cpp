@@ -57,11 +57,20 @@ OutMacroStart::OutMacroStart(QStringList l, __u16 sourceType) {
     qDebug() << "Parsing OutMacroStart: l=" << l << ", press=" << press << ", release=" << release << ", repeat=" << repeat;
     qDebug() << "Parsing OutMacroStart: sizes: press=" << press.size() << ", release=" << release.size() << ", repeat=" << repeat.size();
 
-    
+    // this shouldn't be configured this way... but in case of copy & paste from a KEY__ to an OTHER source type,
+    // we just want to ignore repeat events and send release immediately after press
+    if (srcdst == OTHER) {
+        press += release;
+        release.clear();
+        repeat.clear();
+    }
     
     if (release.size() == 0 && repeat.size() == 0) {
-        if (press.size() > 0)
+        if (press.size() > 0) {
             macroParts[1] = MacroPartBase::parseMacro(press, sourceType);
+            macroParts[0] = nullptr;
+            macroParts[2] = nullptr;
+        }
     } else {
         if (press.size() > 0)
             macroParts[1] = MacroPartBase::parseMacro(press, sourceType);

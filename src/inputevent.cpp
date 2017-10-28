@@ -37,6 +37,8 @@ InputEvent::InputEvent(const InputEvent& other)
 	type = other.type;
 	code = other.code;
 	valueType = other.valueType;
+    absmin = other.absmin;
+    absmax = other.absmax;
 }
 
 /*!
@@ -103,12 +105,22 @@ QString InputEvent::print()
 				+ ", valueType = " + QString::number(valueType);
 }
 
+/*!
+ * Sets values of an input_event to those defined in this Object and value
+ *
+ * @param ev pointer to target
+ * @param value value to set
+ */
 void InputEvent::setInputEvent(input_event * ev, __s32 value) {
 	ev->type = type;
 	ev->code = code;
 	ev->value = value;
 }
 
+/*!
+ * Returns number of uinput device appropriate for this event
+ * @return 1: Keyboard, 2: Mouse, 3: Tablet, 4: Joystick
+ */
 __u8 InputEvent::getFd() const {
 	switch (type) {
 		case EV_KEY:
@@ -136,6 +148,12 @@ __u8 InputEvent::getFd() const {
 		default:
 			return 0;
 	}
+}
+
+__u16 InputEvent::sourceType() const {
+	if (valueType == Negative)
+		return type + NegativeModifier;
+	return type;
 }
 
 
