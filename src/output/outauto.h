@@ -20,6 +20,11 @@
 #pragma once
 #include "outsimple.h"
 
+/**
+ * Variant of OutSimple that autofires (press + release) on a repeat event from it's source
+ * only works if both, the source and the destination event are of type EV_KEY.
+ * Otherwise it behaves just like OutSimple.
+ */
 class OutAuto: public OutSimple {
 public:
     OutAuto(QStringList l, __u16 sourceType);
@@ -30,6 +35,8 @@ public:
     OutType type() const override { return OutType::Repeat;};
 
     void send(const __s32 &value, const timeval &time) override;
+
+    QString toString() const override;
 };
 
 

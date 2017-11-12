@@ -74,7 +74,7 @@ QVector< OutEvent* > TransformationStructure::getOutputs(QString window_class, Q
  */
 WindowSettings::~WindowSettings()
 {
-	foreach (QRegularExpression* r, titles)
+	for(QRegularExpression* r: titles)
 		delete r;
 }
 

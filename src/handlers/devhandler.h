@@ -47,8 +47,8 @@ protected:
 	int fd = -1;        // file descriptor
 	DType devtype; // keyboard, mouse, etc.
 	input_absinfo * absmap[ABS_CNT]; // min/max values, etc. of absolute axes
-	double absfac[ABS_CNT]; //!< multiplicator for absolute values
-	int maxVal, minVal;     //!< min/max values of absolute axes in virtual output device
+	double absfac[ABS_CNT]; //!< multiplicator for absolute values @deprecated
+	int maxVal, minVal;     //!< min/max values of absolute axes in virtual output device @deprecated
 	
 	void run();
     void sendAbsoluteValue(input_event &ev);

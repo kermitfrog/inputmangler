@@ -297,3 +297,9 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 	charmap_file.close();
 	qSort(sequence_starting_chars);
 }
+
+QString getStringForCode(__u16 code, __u16 type, __u8 fdnum) {
+	int key = code + (10000 * type);
+	return keymap_reverse[key];
+}
+

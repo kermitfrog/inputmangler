@@ -21,7 +21,7 @@
 
 OutWait::OutWait(QStringList &macroParts, __u16 sourceType) {
     QString s = macroParts.takeFirst();
-    time = s.midRef(2).toInt();
+    time = s.midRef(2).toInt() * 1000; // miliseconds -> microseconds, because we use usleep
     next = parseMacro(macroParts, sourceType);
 }
 
@@ -35,6 +35,13 @@ __u16 OutWait::getSourceType() const {
     if (next != nullptr)
         return next->getSourceType();
     return 0;
+}
+
+QString OutWait::toString() const {
+    QString r = "~s" + QString::number(time/1000);
+    if (next != nullptr)
+        r += ", " + next->toString();
+    return r;
 }
 
 

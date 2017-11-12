@@ -22,10 +22,10 @@
 ##QST## Quickstart for the very impatient #######
 
 runtime dependencies for the package can be installed with
-sudo apt-get install dkms libqt5core5a libqt5dbus5 libqt5network5 linux-libc-dev libpugixml1v5
+sudo apt-get install libqt5core5a libqt5dbus5 libqt5network5 linux-libc-dev libpugixml1v5
 
 or, for older Ubuntu variants (probably):
-sudo apt-get install dkms libqt5core5a libqt5dbus5a libqt5network5a linux-libc-dev libpugixml1v5
+sudo apt-get install libqt5core5a libqt5dbus5a libqt5network5a linux-libc-dev libpugixml1v5
 
 (Tested on KUbuntu 14.04)
 # Installation and system setup (skip the next 2 lines if you used the package)
@@ -57,12 +57,12 @@ This is done for following reasons:
 4. It can be used without X running as well.
 5. I *hate* working with the X API :( - i really tried, but when i couldn't reliably get the window title after -i don't know how many- hours, even using a code example from the internet that was supposed to do *exactly* what i wanted, i really had enough of that #&%!!.
 
-So what it actually does, is grabbing input events at their device files in /dev/input and using a custom kernel module to generate new input events inside the kernel.
+So what it actually does, is grabbing input events at their device files in /dev/input and using uinput to generate new input events inside the kernel.
 Also, it does not directly talk to X about changes of the current window, but instead offers a D-Bus interface which can be used by the window manager to inform inputmangler about these.
 While writing this, I am completely aware that except for the kde-window-manager and xmonad there might not be any window managers actually capable of doing that. See the section on configuring your desktop (##CDE##) for alternatives.
 
 WARNING:
-To transform input events from certain devices, this application needs the user to have full reading rights on these devices. This may not be a big problem on single-user systems, because if someone can hack into your one and only account, he or she can certainly find another way of doing all the nasty stuff these rights allow for, anyway. On multiuser systems however, this means that any user that is allowed to use inputmangler can log all the keystrokes (or other events) on these devices. That can also include the root password, typed on a console (the Ctrl-Alt-F1 type of console...).
+To transform input events from certain devices, this application needs the user to have full reading rights on these devices. This may not be a big problem on single-user systems, because if someone can hack into your one and only account, they can certainly find another way of doing all the nasty stuff these rights allow for, anyway. On multiuser systems however, this means that any user that is allowed to use inputmangler can log all the keystrokes (or other events) on these devices. That can also include the root password, typed on a console (the Ctrl-Alt-F1 type of console...).
 I recommend not to use it for any devices used to type in sensitive data, especially your main keyboard.
 
 
@@ -79,7 +79,7 @@ Full: keyboards, mice, touchpads, joypads and joysticks that do not need calibra
 Partial: joypads and joysticks that need calibration.
 Unsupported: tablets (theoreticaly, this seems to be working, but a practical test at painting in Krita shows otherwise...)
 
-In technical terms: So far keys and relative movements (mouse movents and wheel) are fully supported. Absolute movements (e.g. tablets, analog joystick movements) are passed through and can be generated, but not used to trigger events. The problem with tablets seems to be caused by applications not properly utilizing the virtual tablet, as all events seem to be generated as they should be. Maybe this can be solved by tweeking the capabilities reported by the kernel module, but i don't have a clue how exactly...
+In technical terms: So far keys and relative movements (mouse movents and wheel) are fully supported. Absolute movements (e.g. tablets, analog joystick movements) are passed through and can be generated, but not used to trigger events. The problem with tablets seems to be caused by applications not properly utilizing the virtual tablet, as all events seem to be generated as they should be. Maybe this can be solved by tweeking the capabilities reported by uinput, but i don't have a clue how exactly...
 Does anyone need to transform tablet events anyway?
 
 
@@ -91,11 +91,12 @@ Does anyone need to transform tablet events anyway?
 
 Basic:
 g++
-qt5 (with support for dbus, xml, network)
+qt5 (with support for dbus, network)
+pugixml
 linux-headers (for your kernel version)
 cmake
 
-On Ubuntu do
+On Ubuntu based distros do
 $ sudo apt-get install g++ cmake qtbase5-dev linux-headers-`uname -r` libpugixml-dev
 
 
@@ -109,24 +110,20 @@ $ sudo apt-get install qdbus xdotool x11-utils
 
 
 ##INS## Installation #######
-
-On (K)ubuntu, install.sh is your friend - on other Systems it might or might not work.
+packages are provided at https://aguzinski.de/pub/inputmangler/ 
+on other Systems, you could try install.sh 
 
 install.sh (mostly) automates the following steps:
 1. Building the application. (mkdir build ; cd build ; cmake -DCMAKE_BUILD_TYPE=Release .. ; make)
 2. optional: install (make install)
-3. compile and install kernel module (cd inputdummy ; make ; sudo make install)
-4. set up the system to load the kernel module at boot
-5. set up the system, so that the virtual input devices get the right permissions (copy inputdummy/40-inputdummy.rules to /etc/udev/rules.d and change the group inside the file if neccessary)
-6. generate udev rules to set the right permissions on the input devices, that inputmangler should use (needs the user to uncomment them) (using scripts/make_udev_rules.sh)
+3. set up the system, so that the virtual input devices get the right permissions (copy inputdummy/40-inputdummy.rules to /etc/udev/rules.d and change the group inside the file if neccessary)
+4. generate udev rules to set the right permissions on the input devices, that inputmangler should use (needs the user to uncomment them) (using scripts/make_udev_rules.sh)
 
-After this is done, reboot the system or set the permissions of your input devices manually and run
-$ sudo modprobe inputmangler ; chown :$GRP /dev/virtual_kbd /dev/virtual_mouse ; chmod 660 /dev/virtual_kbd /dev/virtual_mouse
-Where $GRP is the group with the necessary permissions.
+After this is done, reboot the system or set the permissions of your input devices manually (or, try $ service udev restart, which should do the trick... i just haven't seen it actually work so far)
 
 Please note, that udev does not set the permissions for PS/2 devices. You have to set them in /etc/rc.local.
 $ ls /dev/input/by-id/platform*event*
-shows you a list of canditates. Then after the line "chmod 660 /dev/virtual_kbd /dev/virtual_mouse" in /etc/rc.local insert something like
+shows you a list of canditates. Then in /etc/rc.local insert something like
 chown :$GRP /dev/input/by-id/platform-i8042-serio-1-event-mouse
 chmod 660 /dev/input/by-id/platform-i8042-serio-1-event-mouse
 
@@ -335,13 +332,12 @@ you can use any key defined in keymap (see ##KEY##)
 
 2. with modifiers
 @+MOD
-where MOD is a sequence of @ with the following restrictions:
-1. A current maximum of five modifiers can be used per shortcut.
-2. Only keys that have a one character name defined in keymap can be used (you can define multiple names for the same key). The usual modifiers are:
+where MOD is a sequence of @ with the following restriction:
+Only keys that have a one character name defined in keymap can be used (you can define multiple names for the same key). The usual modifiers are:
 A - Left Alt
 S - Left Shift
 C - Left Control
-M - Left Meta ("Windoze key")
+M - Left Meta (aka "Windows key" or "Super_L")
 G - AltGr, aka Right Alt, aka "Level 3 Shift"
 
 so "a" would just be translate a key to "a", where "f+CS" would be translated to the following sequence:
@@ -356,19 +352,18 @@ Note that you can also trigger mouse buttons, e.g.
 "BTN_LEFT+C" for Ctrl+Left Button. In the keymap file, search for "BTN_" for a list. In theory, every key and button supported by Linux should work with inputmangler.
 
 
-!! The following types must be defined inside a long notation, using only newline as seperator, or as a <signal>'s default value. !!
-
 3. Macros (Sequences)
-~Seq(@ [#], [~s#,] @ [#], ... ~)
+~Seq(@ [#], [~s#,] @ [#], ... [~|] ... ~)
 where: ~Seq( marks the start of a Sequence
        ~)    its end
+	   ~|    a seperation, depending on input value
        []    something optional
        #     a numerical value
        ~s#   a delay (in 1/1000 seconds)
              Delays are sometimes neccessary to give the application time to respond.
 
 Example, Drag & Drop to Upper Right, then press Alt-Tab:
-    a=~Seq( BTN_LEFT 1, s~50, MOUSE_X 300, MOUSE_Y -200, BTN_LEFT 0, A 1, TAB, A 0 ~)
+    a=~Seq( BTN_LEFT 1, s~50, MOUSE_X 300, MOUSE_Y -200, BTN_LEFT 0, A 1, A 0 ~)
     
     in Detail: ~Seq           Start Sequence
                BTN_LEFT 1     Press Left mouse Button
@@ -377,17 +372,45 @@ Example, Drag & Drop to Upper Right, then press Alt-Tab:
                MOUSE_Y -200   Move mouse 200 pixels to the top
                BTN_LEFT 0     Release Left mouse Button
                A 1            Press Alt
-               TAB            Press and Release Tab
                A 0            Release Alt
                ~)             End Sequence
                
-    Note that you can also use TAB+A for the last part.
-    
+    Since 2.0 it is possible to fine control the Macro, depending on input value. This is done vie the '~|' seperator.
+
+	While the above example would be triggered on a press of the 'a' key, the ones below are a bit different.
+	Example:
+    a=~Seq( BTN_LEFT 1, s~50, MOUSE_X 300, MOUSE_Y -200, BTN_LEFT 0, A 1 ~| A 0 ~)  as above, but releases Alt when a is released
+	                                                                     ^^
+
+    a=~Seq( BTN_LEFT 1, s~50, MOUSE_X 300, MOUSE_Y -200, BTN_LEFT 0, A 1 ~| A 0, A 1 ~| A 0 ~)  as above, but autofires Alt while 'a' is held down
+	                                                                     ^^          ^^
+
+   in Detail, that makes 3 possibilities:
+   ~Seq(
+   		all triggered on key press
+		~)
+
+   ~Seq(
+   		triggered on key press
+		~|
+   		triggered on key release
+		~)
+
+   ~Seq(
+   		triggered on key press
+		~|
+		triggered on key repeat (multiple times in quick succession - usually only generated by keyboard keys)
+		~|
+   		triggered on key release
+		~)
+
     WARNING: use Delays sparingly. Until a sequence is finished, all other input from the device that triggered it, is postponed.
                
 4-6 Follow a similar syntax as macros. All Parameters other than the Key are optional.
 
 4. Acceleration (trigger additional events when triggered repeatedly, e.g. scroll wheel acceleration)
+This is only properly tested with a mouse wheel, as i don't even know what use it would be otherwise.
+
 ~+(@, AccelRate, AccelMax, MaxDelay, minKeyPresses ~)
 where: ~+(            marks the start. Alternative: "~Accelerate("
        AccelRate      By how much it will get faster each time. Floating point value.
@@ -410,6 +433,7 @@ Example:
     will make Left Shift trigger repeated right mouse button presses as long as you hold it down.
 
     Since this currently relies on repeat events, it will probably not work when triggered via mouse button.
+	If it's triggered by anything other than a KEY event, it behaves as a simple output.
 
 6. Debounce (Hack to fix faulty keys/buttons)
 ~D(@, Delay ~) or ~Debounce(@, Delay ~)
@@ -567,9 +591,9 @@ Some things I want to do are:
 
 WHAT?                             | WHY?                                        | WHEN?
 ----------------------------------------------------------------------------------------------------
-Configuration GUI                 | Ease of use -> more happy linux users :)    | 2017
+Configuration GUI                 | Ease of use -> more happy linux users :)    | 2018
                                   |                                             |
-Current keymap generator          | Ease of use, successfully done something    | 2017
+Current keymap generator          | Ease of use, successfully done something    | 2017/18
                                   | similar in other project                    |
                                   |                                             |
 Making this README available as   | Because i can! ...                          | 2014? (mostly done 
@@ -579,7 +603,7 @@ man page (and maybe pdf).         | Can tex generate man pages?                 
 More complex output sequences     | Better support for Macros.                  | 2017 ?
 and maybe making output modular.  |                                             |
                                   |                                             |
-More d-bus slots.                 | Better interaction                          | maybe 2017
+More d-bus slots.                 | Better interaction                          | maybe 2018
                                   |                                             |
 Plugin architecture.              | A whole world of awesome new possibilities! | maybe 2018
 ----------------------------------------------------------------------------------------------------
@@ -598,18 +622,12 @@ Debughandler: Filter
 
 There are a few things I would appreciate help with.
 
-If you are an experienced kernel hacker (which i definitely am not...):
-The inputdummy kernel module seems to be working fine, but would you mind taking a look at the code? Do I do something terribly stupid? Could something cause problems with other kernel modules?
-input.h defines two event types, EV_SYN and EV_MSC. So far I completely ignore them (except for Absolute Movements), which does not seem to be causing any problems. Are there any reasons I should care more about them?
-
 If you are familiar with X:
 You could implement the xwatcher (see xwatcher.cpp).
 There are many different keyboard layouts, for which a keymap file could be written. 
 
-Other things:
 Packaging!
-I will build packages for whatever Distribution i use (KDE Neon at the time... and probably many years longer, considering how great it is :) ) and *may* build them for other .deb based distros, but i'm not learning to build other package formats.
-I somehow got dkms to build a package for rebuilding the kernel module when neccessary, but i'm not having the feeling i understand whats happening there...
+I will build packages for whatever Distribution i use (KDE Neon at the time... and probably many years longer, considering how great it is :) ) and *may* build them for other .deb based distros, but i'm not learning to build other package formats. Update 11/2017 - now using CPack for this. makes things a lot easier, but no rpm yet. Deb generation only tested on Neon.
 
 Just write me an e-mail if you are interested :).
 
@@ -624,6 +642,16 @@ Arkadiusz Guzinski <kermit@ag.de1.cc>
 
 
 ##CHN## Changes
+
+2.0:
+ * Switched from inputdummy to uinput. This makes setup much easier :) and does not create e.g. a 40-axis virtual joystick unless it's needed.
+ * Rewrote almost all output generation code from scratch. It is much more maintainable now and should be faster (except on parsing).
+ * Macros can now generate different events on press, release and repeat.
+ * All types of OutEvents can now be configured in short notation.
+ Knows issues:
+   * there is a non-critical memory leak :(. Fortunately it only happens when inputmangler receives a SIGHUP to trigger configuration reread, and makes it use ~140 kB more RAM. As this does not happen unless manually triggered by the user, it's not a release blocker.. still don't like it.
+   * triggering events via dbus interface only works if the event is configured to be used somewhere. This is not likely to change.
+   * At the moment all Values in a Macro definition must be specified. E.g. you have to write "TAB 1, TAB 2" instead of "TAB" and "S 1, a 1, a 0, S 0" instead of "a+S"
 
 1.3:
  * Rewrote the xml-parser *again*. This time using pugixml. Much happier now :)

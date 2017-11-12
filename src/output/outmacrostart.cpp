@@ -20,43 +20,43 @@
 #include "outmacrostart.h"
 #include "macropartbase.h"
 
-OutMacroStart::OutMacroStart(QStringList l, __u16 sourceType) {
-    qDebug() << "Parsing OutMacroStart: sourceType=" << sourceType << ", l=" << l;
+/**
+ * Constructs a Macro.
+ * Macros consist of a series of events.
+ * OutMacroStart can have up to 3 starting points (press, repeat, release). If the source is not a key event, only the
+ * press part is used internaly.
+ *
+ * @param l list of up to 3 lists of events as QStrings.
+ * @param sourceType type of the source, triggering this event
+ */
+OutMacroStart::OutMacroStart(QList<QStringList> l, __u16 sourceType) {
+    registerEvent();
     QStringList press, repeat, release;
     for (int i = 0; i < l.size(); ++i)
-        l[i] = l[i].trimmed();
+        for (int j = 0; j < l[i].size(); ++j)
+            l[i][j] = l[i][j].trimmed();
 
     if (sourceType == EV_KEY)
         srcdst = KEY__;
     else
         srcdst = OTHER;
 
-    switch (l.count(MacroValDevider)) {
-        case 0:
-            press = l;
-            break;
+    press = l[0];
+
+    switch (l.count()) {
         case 1:
-            while (l.at(0) != MacroValDevider)
-                press.append(l.takeFirst());
-            l.removeFirst();
-            release = l;
             break;
         case 2:
-            while (l.at(0) != MacroValDevider)
-                press.append(l.takeFirst());
-            l.removeFirst();
-            while (l.at(0) != MacroValDevider)
-                repeat.append(l.takeFirst());
-            l.removeFirst();
-            release = l;
+            release = l[1];
+            break;
+        case 3:
+            release = l[2];
+            repeat = l[1];
             break;
         default:
-            invalidate("too many \"" + QString(MacroValDevider) + "\" in " + l.join(", "));
+            invalidate("too many \"" + QString(MacroValDevider)); // " + QString(l);
     }
     
-    qDebug() << "Parsing OutMacroStart: l=" << l << ", press=" << press << ", release=" << release << ", repeat=" << repeat;
-    qDebug() << "Parsing OutMacroStart: sizes: press=" << press.size() << ", release=" << release.size() << ", repeat=" << repeat.size();
-
     // this shouldn't be configured this way... but in case of copy & paste from a KEY__ to an OTHER source type,
     // we just want to ignore repeat events and send release immediately after press
     if (srcdst == OTHER) {
@@ -90,7 +90,6 @@ OutMacroStart::OutMacroStart(QStringList l, __u16 sourceType) {
 }
 
 void OutMacroStart::send(const __s32 &value, const timeval &time) {
-    qDebug() << "Start with value=" << value << ", srcdst=" << srcdst;
     switch (srcdst) {
         case KEY__:
             if (macroParts[value] != nullptr)
@@ -123,4 +122,22 @@ void OutMacroStart::setInputBits(QBitArray **inputBits) {
         default:
             break;
     }
+}
+
+OutMacroStart::~OutMacroStart() {
+    for (int i = 0; i < 3; ++i)
+        if (macroParts[i] != nullptr)
+            delete macroParts[i];
+}
+
+QString OutMacroStart::toString() const {
+    QString r = "~Seq(";
+    if (macroParts[1] != nullptr)
+        r += macroParts[1]->toString();
+    if (macroParts[2] != nullptr)
+        r += " ~| " + macroParts[2]->toString();
+    if (macroParts[0] != nullptr)
+        r += " ~| " + macroParts[0]->toString();
+    r += "~)";
+    return r;
 }

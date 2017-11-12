@@ -30,9 +30,11 @@ int main(int argc, char **argv) {
 	QtSignalHandler s;		   //handles TERM, HUP, USR1 and USR2
 	QObject::connect(&dbus, SIGNAL(windowChanged(QString, QString)),
 					 &im, SLOT(activeWindowChanged(QString, QString)));
-	QObject::connect(&dbus, SIGNAL(windowTitleChanged(QString)), 
+	QObject::connect(&dbus, SIGNAL(windowTitleChanged(QString)),
 					 &im, SLOT(activeWindowTitleChanged(QString)));
-	QObject::connect(&s, SIGNAL(hupReceived()), 
+	QObject::connect(&dbus, SIGNAL(reReadConfig()),
+					 &im, SLOT(reReadConfig()));
+	QObject::connect(&s, SIGNAL(hupReceived()),
 					 &im, SLOT(reReadConfig()));
 	QObject::connect(&a, SIGNAL(aboutToQuit()), 
 					 &im, SLOT(cleanUp()));

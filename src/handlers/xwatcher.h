@@ -24,19 +24,27 @@
 // #include <X11/Xlib.h>
 // #include <X11/Xutil.h>
 
-class XWatcher : public AbstractInputHandler
-{
-    Q_OBJECT
+/**
+ * skeleton class, in case someone wants to write the code to get the current window and title from X.
+ * I, most certainly, will not.
+ */
+class XWatcher : public AbstractInputHandler {
+Q_OBJECT
 
 public:
     XWatcher();
+
     ~XWatcher();
-	static QList<AbstractInputHandler*> parseXml(pugi::xml_node &xml);
-	virtual int getType() {return 1000;};
+
+    static QList<AbstractInputHandler *> parseXml(pugi::xml_node &xml);
+
+    virtual int getType() { return 1000; };
 
 signals:
-	void windowChanged(QString wclass, QString title);
-	void windowTitleChanged(QString wtitle);
+
+    void windowChanged(QString wclass, QString title);
+
+    void windowTitleChanged(QString wtitle);
 
 protected:
     virtual void run();

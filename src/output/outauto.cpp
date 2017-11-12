@@ -23,32 +23,34 @@
 OutAuto::OutAuto(QStringList l, __u16 sourceType) {
     if (l.count() != 1) {
         eventsSize = 0;
+        registerEvent();
         return;
     }
     InputEvent e = keymap[l.at(0)];
 
-    if (sourceType == EV_KEY)
-        if (e.type == EV_KEY) {
-            event.eventChains = new input_event *[3];
-            srcdst = KEY__KEY;
-            eventsSize = 2 * sizeof(input_event);
+    if (sourceType == EV_KEY && e.type == EV_KEY) {
+        event.eventChains = new input_event *[3];
+        srcdst = KEY__KEY;
+        eventsSize = 2 * sizeof(input_event);
 
-            event.eventChains[0] = new input_event[2];
-            e.setInputEvent(event.eventChains[0], 0);
-            setSync(event.eventChains[0][1]);
+        event.eventChains[0] = new input_event[2];
+        e.setInputEvent(event.eventChains[0], 0);
+        setSync(event.eventChains[0][1]);
 
-            event.eventChains[1] = new input_event[2];
-            e.setInputEvent(event.eventChains[1], 1);
-            setSync(event.eventChains[1][1]);
+        event.eventChains[1] = new input_event[2];
+        e.setInputEvent(event.eventChains[1], 1);
+        setSync(event.eventChains[1][1]);
 
-            event.eventChains[2] = new input_event[3];
-            e.setInputEvent(event.eventChains[2], 1);
-            e.setInputEvent(&event.eventChains[2][1], 0);
-            setSync(event.eventChains[2][2]);
+        // simply write press & release on a repeat
+        event.eventChains[2] = new input_event[3];
+        e.setInputEvent(event.eventChains[2], 1);
+        e.setInputEvent(&event.eventChains[2][1], 0);
+        setSync(event.eventChains[2][2]);
 
-            fdnum = e.getFd();
-            return;
-        };
+        fdnum = e.getFd();
+        registerEvent();
+        return;
+    };
 
     init(e, sourceType);
 }
@@ -60,5 +62,9 @@ void OutAuto::send(const __s32 &value, const timeval &time) {
     }
 
     OutSimple::send(value, time);
+}
+
+QString OutAuto::toString() const {
+    return "~Auto(" + OutSimple::toString() + "~)";
 }
 

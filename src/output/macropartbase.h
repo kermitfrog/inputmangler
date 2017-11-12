@@ -24,9 +24,13 @@
 
 class OutEvent;
 
+/**
+ * Base class for any part of a macro
+ */
 class MacroPartBase : public OutEvent {
 public:
     virtual void proceed() = 0;
+    ~MacroPartBase();
     static MacroPartBase* parseMacro(QStringList &macroParts, __u16 sourceType);
 protected:
 public:

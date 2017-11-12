@@ -25,11 +25,20 @@
 
 class MacroPartBase;
 
+/**
+ * The starting Part of a Macro. "~Seq()"
+ *
+ */
 class OutMacroStart : public OutEvent{
 public:
-    OutMacroStart(QStringList l, __u16 sourceType);
+    OutMacroStart(QList<QStringList> l, __u16 sourceType);
+    ~OutMacroStart();
+
+    QString toString() const override;
+
     virtual const OutType type() { return OutType::MacroStart;}
-    MacroPartBase * macroParts[3];
+    MacroPartBase * macroParts[3]; /**<! starting points, depending on value given to send.
+                                    if sourcetype is not KEY, only macroParts[1] will be used */
 
     void send(const __s32 &value, const timeval &time) override;;
 

@@ -25,6 +25,6 @@ echo "sudo cp $FILE /etc/udev/rules.d/ ; sudo chmod 644 /etc/udev/rules.d/80-inp
 echo "" 
 echo "Please note, that udev does not set the permissions for PS/2 devices. See the README, section ##INS## on how to do that."
 echo ""
-echo "After that: to activate it reboot or set the permissions of your input devices manually and run"
+echo "After that: to activate it, reboot or set the permissions of your input devices manually and run"
 echo "sudo modprobe inputmangler ; chown :$GRP \/dev\/virtual_kbd \/dev\/virtual_mouse ; chmod 660 \/dev\/virtual_kbd \/dev\/virtual_mouse"
 

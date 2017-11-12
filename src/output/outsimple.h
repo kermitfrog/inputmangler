@@ -38,6 +38,8 @@ public:
 
     __u16 getSourceType() const override;
 
+    QString toString() const override;
+
 protected:
     void init(InputEvent& e, __u16 sourceType);
 

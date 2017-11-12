@@ -34,6 +34,7 @@ class ConfParser
 {
 public:
     ConfParser(QList<AbstractInputHandler*> *_handlers, QMap<QString, TransformationStructure> *_wsets);
+    ~ConfParser();
     QBitArray evbits;   //!< Stores flags for uinput configuration: Event types (Key, Relative Movement, ...)
     QBitArray keybits;  //!< Stores flags for uinput configuration: Keys
     QBitArray ledbits;  //!< Stores flags for uinput configuration: Leds (not used yet)
@@ -50,7 +51,7 @@ private:
 
     QStringList ids; //!< List of handler ids (as configured in <device [..] id="ID" > )
     bool readConf();
-    QVector<OutEvent*> parseOutputsShort(const QString str, QVector<OutEvent*> &vector);
+    QVector<OutEvent*> parseOutputsShort(const QString &str, QVector<OutEvent*> &vector);
     QMap<QString, AbstractInputHandler*> handlersById; //!< different than in inputmangler.cpp - needs only 1 per id
     void readWindowSettings(pugi::xml_node window, QMap<QString, QVector<OutEvent*>> defaultOutputs, QMap<QString, bool> usedIds);
 
@@ -60,7 +61,9 @@ protected:
     QVector<OutEvent*> parseOutputsLong(pugi::xml_node node, const AbstractInputHandler * handler, QVector<OutEvent*> def);
 
     QBitArray* inputBits[NUM_INPUTBITS]; //!< Bits for uinput device setup (Array storing pointers to *bits)
-
+    QStringList parseSplit(const QString &str) const;
+    QRegExp specialSeq;
+    QRegExp noWS = QRegExp("\\S");
 };
 
 

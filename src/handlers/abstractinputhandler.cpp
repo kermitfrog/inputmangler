@@ -84,7 +84,7 @@ void AbstractInputHandler::registerParser(QString id, QList< AbstractInputHandle
 	parseMap[id] = func;
 }
 
-/* 
+/**
  * parses /proc/bus/input/devices for relevant information, where relevant is:
  * I: Vendor=1395 Product=0020
  * P: Phys=usb-0000:00:1d.0-1/input3

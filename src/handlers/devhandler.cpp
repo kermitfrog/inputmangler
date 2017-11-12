@@ -208,6 +208,13 @@ QList<AbstractInputHandler *> DevHandler::parseXml(pugi::xml_node &xml) {
     return handlers;
 }
 
+/**
+ * Determines which flags uinput needs to be able to generate events for this device. This is neccessary for passing
+ * through unhandled events.
+ *
+ * @param inputBits where to set the flags; see ConfParser
+ * @return information about absolute axes (min/max values) of this device
+ */
 input_absinfo**  DevHandler::setInputCapabilities(QBitArray **inputBits) {
     qDebug() << "DevHandler::setInputCapabilities() called for " << filename;
     fd = open(filename.toLatin1(), O_NONBLOCK);

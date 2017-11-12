@@ -388,7 +388,7 @@ OutEvent::OutEvent(InputEvent& e)
  */
 void OutEvent::send(int value, __u16 sourceType, timeval &time)
 {
-    qDebug() << "void OutEvent::send(int value, __u16 sourceType, timeval &time)";
+    //qDebug() << "void OutEvent::send(int value, __u16 sourceType, timeval &time)";
 	//qDebug() << "send: (" + QString::number(value) + ", " + QString::number(sourceType) + ", *): " + QString::number(eventtype) + " " + QString::number(valueType);
 	if (eventtype == sourceType)
 	{

@@ -22,6 +22,12 @@
 #include "outwait.h"
 #include <QDebug>
 
+/**
+ * returns a MacroPart of correct type; for use in MacroStart
+ * @param macroParts
+ * @param sourceType
+ * @return
+ */
 MacroPartBase *MacroPartBase::parseMacro(QStringList &macroParts, __u16 sourceType) {
     if (macroParts.isEmpty())
         return nullptr;
@@ -45,6 +51,11 @@ MacroPartBase *MacroPartBase::parseMacro(QStringList &macroParts, __u16 sourceTy
 void MacroPartBase::setInputBits(QBitArray **inputBits) {
     if (next != nullptr)
         next->setInputBits(inputBits);
+}
+
+MacroPartBase::~MacroPartBase() {
+    if (next != nullptr)
+        delete next;
 };
 
 

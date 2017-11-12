@@ -22,15 +22,21 @@
 
 #include "macropartbase.h"
 
+/**
+ * represents the delay part of a macro.
+ * "~s [delay in milliseconds]"
+ */
 class OutWait : public MacroPartBase {
 
 public:
     OutWait(QStringList &macroParts, __u16 sourceType);
-    __s32 time;
+    __s32 time; ///<! in microseconds
 
     OutType type() const override { return OutType::Wait;};
 
     __u16 getSourceType() const override;
+
+    QString toString() const override;
 
     void proceed() override;
 };

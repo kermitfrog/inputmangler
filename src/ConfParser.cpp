@@ -50,7 +50,12 @@ ConfParser::ConfParser(QList<AbstractInputHandler *> *_handlers, QMap<QString, T
     inputBits[EV_MSC] = &mscbits;
     inputBits[EV_SYN] = &synbits;
 
+    specialSeq = QRegExp("(,|~[^,\\s])");
+
     readConf();
+}
+
+ConfParser::~ConfParser() {
 }
 
 /*!
@@ -249,9 +254,9 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
  * @param defaults the parent's output definitions.
  * @return the parsed vector of OutEvents.
  */
-QVector<OutEvent *> ConfParser::parseOutputsShort(const QString str, QVector<OutEvent *> &defaults) {
+QVector<OutEvent *> ConfParser::parseOutputsShort(const QString &str, QVector<OutEvent *> &defaults) {
     QVector<OutEvent *> vec;
-    QStringList l = str.split(",");
+    QStringList l = parseSplit(str);
     QString s;
     for (int i = 0; i < l.count(); ++i) {
         s = l.at(i);
@@ -281,7 +286,6 @@ QVector<OutEvent *> ConfParser::parseOutputsShort(const QString str, QVector<Out
 QVector<OutEvent *> ConfParser::parseOutputsLong(xml_node node, const AbstractInputHandler *handler,
                                                  QVector<OutEvent *> def) {
     QString text = node.child_value();
-    qDebug() << "parsing long: " << text;
     text = text.trimmed();
     if (text.isEmpty()) {
         qDebug() << "warning: empty <long> node!";
@@ -295,28 +299,69 @@ QVector<OutEvent *> ConfParser::parseOutputsLong(xml_node node, const AbstractIn
         splitter = QRegExp("(\n|,)");
 
     QStringList lines = text.split(splitter, QString::SkipEmptyParts);
-            foreach (QString s, lines) {
-            // we want to allow dual use of '=', e.g. <long> ==c, r== </long>
-            s = s.trimmed();
-            int pos = s.indexOf('=', 1);
-            QString left = s.left(pos);
-            QString right = s.mid(pos + 1);
-            if (left.isEmpty() || right.isEmpty())
-                continue;
-            int index = handler->getInputIndex(left);
+    for (QString s: lines) {
+        // we want to allow dual use of '=', e.g. <long> ==c, r== </long>
+        s = s.trimmed();
+        int pos = s.indexOf('=', 1);
+        QString left = s.left(pos);
+        QString right = s.mid(pos + 1);
+        if (left.isEmpty() || right.isEmpty())
+            continue;
+        int index = handler->getInputIndex(left);
 
-            if (index != -1) {
-                OutEvent *outEvent = OutEvent::createOutEvent(right, handler->getInputType(index));
-                if (outEvent != nullptr) {
-                    def[index] = outEvent;
-                    def[index]->setInputBits(inputBits);
-                }
+        if (index != -1) {
+            OutEvent *outEvent = OutEvent::createOutEvent(right, handler->getInputType(index));
+            if (outEvent != nullptr) {
+                def[index] = outEvent;
+                def[index]->setInputBits(inputBits);
             }
         }
+    }
 
     return def;
 
 
 }
+
+/**
+ * Split a configuration string as needed for parsing (considering ',', '~[^,]*(' )
+ * @param str value of [ID] attribute
+ * @return a list of trimmed strings for further parsing by OutEvent::createOutEvent()
+ */
+QStringList ConfParser::parseSplit(const QString &str) const {
+    QStringList list;
+    QString part;
+    QChar c;
+
+    int pos, lastPos = 0;
+
+    /* 3 cases: "~," "~..~)" "," but could contain whitespace chars
+     * so the rules are:
+     * lastPos is position after last seperating ','
+     * 
+     */
+    do {
+        pos = str.indexOf(noWS, lastPos);
+        if (pos < 0)
+            break;
+        if (str.at(pos) == '~') {
+            pos = str.indexOf(noWS, pos + 1);
+            if (str.at(pos) == ',')
+                list.append(str.mid(lastPos, pos - lastPos).trimmed());
+            else {
+                pos = str.indexOf("~)", pos) + 2;
+                list.append(str.mid(lastPos, pos - lastPos).trimmed());
+                pos = str.indexOf(',', pos);
+            }
+        } else {
+            pos = str.indexOf(',', pos);
+            list.append(str.mid(lastPos, pos - lastPos).trimmed());
+        }
+        lastPos = pos + 1;
+    } while (lastPos > 0);
+
+    return list;
+}
+
 
 

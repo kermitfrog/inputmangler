@@ -22,6 +22,11 @@
 
 #include "outevent.h"
 
+/**
+ * An accelerated event. If this makes sense for anything except a scroll wheel, please let me know.
+ * Supports only Relative axis events as source.
+ * Attempt to accelerate mouse scrolling. algorithm needs to be improved.
+ */
 class OutAccel: public OutEvent {
 public:
     OutAccel(QStringList l, __u16 sourceType);
@@ -32,14 +37,16 @@ public:
 
     void send(const __s32 &value, const timeval &time) override;
 
+    QString toString() const override;
+
     void setInputBits(QBitArray **inputBits) override;;
 protected:
     long int timeDiff(const timeval &newTime);
 
-    int minKeyPresses;
-    int maxDelay;
-    float accelRate;
-    float max;
+    int minKeyPresses; //!< has to be triggered at least so many times with less than maxDelay in between before we accelerate
+    int maxDelay;      //!< maximum delay before we reset the counter
+    float accelRate;   //!< by how much to accelerate (0.2 means 1 -> 1.2 -> 1.4 -> 1.6
+    float max;         //!< maximum acceleration
     float currentRate;
     float overhead = 0.0;
     int triggered;
@@ -47,6 +54,10 @@ protected:
     __s32 normValue;  // 1 or -1
     timeval lastTime;
 
+    const int MinKeyPressDefault = 2;
+    const int MaxDelayDefault = 400;
+    const float AccelRateDefault = 2.25;
+    const float MaxDefault = 15.0;
 };
 
 

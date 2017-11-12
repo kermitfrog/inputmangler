@@ -23,10 +23,18 @@
 #include "outevent.h"
 #include "macropartbase.h"
 
+/**
+ * Part of a macro. Represents a series of events, that are to be sent to the same virtual device without any other
+ * event in between
+ */
 class OutMacroPart: public MacroPartBase{
 public:
 
     OutMacroPart(QStringList &macroParts, __u16 sourceType);
+    ~OutMacroPart();
+
+    QString toString() const override;
+
     virtual const OutType type() { return OutType::MacroPart;}
     __u16 getSourceType() const override;
 

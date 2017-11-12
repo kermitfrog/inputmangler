@@ -44,3 +44,8 @@ void OutDebounce::send(const __s32 &value, const timeval &time) {
 long OutDebounce::timeDiff(const timeval &newTime) {
     return (newTime.tv_sec - lastTime.tv_sec) * 1000 + (newTime.tv_usec - lastTime.tv_usec) / 1000;
 }
+
+QString OutDebounce::toString() const {
+    return "~D(" + OutSimple::toString() + ", " + QString::number(delay) + "~)";
+}
+

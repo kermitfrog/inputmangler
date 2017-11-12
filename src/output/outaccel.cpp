@@ -20,8 +20,16 @@
 #include "../keydefs.h"
 #include "outaccel.h"
 
-
+/**
+ *
+ * @param params by order: AccelRate      By how much it will get faster each time. Floating point value.
+           AccelMax       It won't get faster than that. Floating point value.
+           MaxDelay       Milliseconds until Acceleration will reset. Integer.
+           minKeyPresses  Get faster after so many scroll steps. Integer.
+ * @param sourceType
+ */
 OutAccel::OutAccel(QStringList params, __u16 sourceType) {
+    registerEvent();
     InputEvent ie = keymap[params[0].trimmed()];
     setSrcDst(sourceType, ie.type);
 
@@ -43,27 +51,28 @@ OutAccel::OutAccel(QStringList params, __u16 sourceType) {
     if (params.size() > 1)
         accelRate = params[1].toFloat();
     else
-        accelRate = 2.25;
+        accelRate = AccelRateDefault;
 
     if (params.size() > 2)
         max = params[2].toFloat();
     else
-        max = 15.0;
+        max = MaxDefault;
 
     if (params.size() > 3)
         maxDelay = params[3].toInt();
     else
-        maxDelay = 400;
+        maxDelay = MaxDelayDefault;
 
     if (params.size() > 4)
         minKeyPresses = params[4].toInt();
     else
-        minKeyPresses = 2;
+        minKeyPresses = MinKeyPressDefault;
 
     triggered = 0;
     fdnum = ie.getFd();
 }
 
+// TODO improve algorithm, then write documentation
 void OutAccel::send(const __s32 &value, const timeval &time) {
     if (value == 0)
         return;
@@ -75,7 +84,6 @@ void OutAccel::send(const __s32 &value, const timeval &time) {
         overhead = 0.0;
         event.eventChain->value = normValue;
         write(fds[fdnum], event.eventChain, eventsSize);
-        qDebug() << "Nope";
     } else
         switch (srcdst) {
             case KEY__REL:
@@ -128,4 +136,17 @@ void OutAccel::setInputBits(QBitArray **inputBits) {
 
 long int OutAccel::timeDiff(const timeval &newTime) {
     return (newTime.tv_sec - lastTime.tv_sec) * 1000 + (newTime.tv_usec - lastTime.tv_usec) / 1000;
+}
+
+QString OutAccel::toString() const {
+    QString r = "~+(";
+    if (eventsSize == 0)
+        return "invalid";
+    r = getStringForCode(event.eventChain->code, event.eventChain->type, fdnum);
+    r += ", " + QString::number(accelRate);
+    r += ", " + QString::number(max);
+    r += ", " + QString::number(maxDelay);
+    r += ", " + QString::number(minKeyPresses);
+    r += "~)";
+    return r;
 }

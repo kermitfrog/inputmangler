@@ -126,6 +126,7 @@ void InputMangler::cleanUp()
 		delete h;
 	handlers.clear();
 	wsets.clear();
+	OutEvent::cleanUp();
 }
 
 /*!

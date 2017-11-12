@@ -15,34 +15,11 @@ if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' ]];
 	sudo make install
 fi
 
-cd ../inputdummy
-make
-echo "inputdummy however is a kernel module and should be installed system wide. Do it? [Y|n]"
-read INP
-if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo make install
-fi
-cd ..
-
-echo "Append inputdummy to the list of modules that are loaded on boot?  [Y|n]"
-read INP
-if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	echo inputdummy | sudo tee -a /etc/modules > /dev/null
-fi
-
 echo ""
 echo "which user group should have rights to access the input devices? (it will be created if neccessary) [inputmangler]"
 read GRP
 if [[ "$GRP" == "" ]] ; then
 	GRP=inputmangler
-fi
-
-echo "install udev rules for the kernel module into /etc/udev/rules.d? [Y|n]"
-read INP
-if [[ "$INP" == 'y' || "$INP" == 'y' ||  "$INP" == 'yes'  || "$INP" == 'Yes' || "$INP" == "" ]]; then
-	sudo cp inputdummy/40-inputdummy.rules /etc/udev/rules.d/
-	sed --in-place "s/inputmangler/$GRP/" /etc/udev/rules.d/40-inputdummy.rules
-
 fi
 
 echo "Done!"

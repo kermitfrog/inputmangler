@@ -20,6 +20,9 @@
 #include "outmacropart.h"
 #include "../keydefs.h"
 
+/**
+ *
+ */
 OutMacroPart::OutMacroPart(QStringList &macroParts, __u16 sourceType) {
 
     InputEvent ie;
@@ -79,12 +82,14 @@ OutMacroPart::OutMacroPart(QStringList &macroParts, __u16 sourceType) {
 
 }
 
+/**
+ * sends this part of the macro and calls proceed() of its successor
+ */
 void OutMacroPart::proceed() {
-    qDebug() << "Type is " << srcdst;
     write(fds[fdnum], event.eventChain, eventsSize);
-    for (int i = 0; i < eventsSize / sizeof(input_event); ++i)
+    /*for (int i = 0; i < eventsSize / sizeof(input_event); ++i)
         qDebug() << "In MacroPart, sending event: type=" << event.eventChain[i].type << ", code="
-                 << event.eventChain[i].code << ", value=" << event.eventChain[i].value;
+                 << event.eventChain[i].code << ", value=" << event.eventChain[i].value;*/
     if (next != nullptr)
         next->proceed();
 }
@@ -111,4 +116,19 @@ void OutMacroPart::setInputBits(QBitArray **inputBits) {
             inputBits[evType]->setBit(code);
     }
 
+}
+
+OutMacroPart::~OutMacroPart() {
+    delete[] event.eventChain;
+}
+
+QString OutMacroPart::toString() const {
+    QString r;
+    if (eventsSize == 0)
+        return "invalid";
+    r = getStringForCode(event.eventChain->code, event.eventChain->type, fdnum);
+    r += " " + QString::number(event.eventChain->value);
+    if (next != nullptr)
+        r += ", " + next->toString();
+    return r;
 }

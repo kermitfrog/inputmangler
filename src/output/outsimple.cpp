@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <keydefs.h>
 #include "outsimple.h"
 
 /**
@@ -49,7 +50,7 @@ void OutSimple::send(const __s32 &value, const timeval &time) {
             break;
         case REL__REL:
             event.eventChain[0].value = value * valueMod;
-            write(fds[fdnum], event.eventChain, eventsSize);
+            write(fds[fdnum], event.eventChain, eventsSize); // TODO valgrind says something about "points to uninitialized byte(s)" no idea yet
             break;
         case ABS__ABS:
             event.eventChain[0].value = value;
@@ -69,12 +70,14 @@ OutSimple::~OutSimple() {
         case KEY__KEY:
             delete[] event.eventChains[2];
             delete[] event.eventChains[1];
+            delete[] event.eventChains[0];
+            delete[] event.eventChains;
+            break;
         case ABS__ABS:
         case KEY__REL:
         case REL__KEY:
         case REL__REL:
-            delete[] event.eventChains[0];
-            delete[] event.eventChains;
+            delete[] event.eventChain;
             break;
         default:
             break;
@@ -98,6 +101,7 @@ __u16 OutSimple::getSourceType() const {
  * @param sourceType
  */
 void OutSimple::init(InputEvent &e, __u16 sourceType) {
+    registerEvent();
     interpretNegSource(sourceType);
     // as a general rule, events are pregenerated as far as feasible
     switch (sourceType) {
@@ -149,13 +153,13 @@ void OutSimple::init(InputEvent &e, __u16 sourceType) {
                      * If the event should only be triggered on + or -, the handler has to take care
                      * of that (and use sendRaw() otherwise).
                      * Mice rarely send something other than 1|-1 anyway, so we don't care about the
-                     * exact value. Doing that probably would'nt offer any real value anyway.
+                     * exact value. Doing that probably would offer no real benefit anyway.
                      */
                     srcdst = REL__KEY;
                     eventsSize = 3 * sizeof(input_event);
                     event.eventChain = new input_event[3];
                     e.setInputEvent(&event.eventChain[0], 1);
-                    e.setInputEvent(&event.eventChain[1], 2);
+                    e.setInputEvent(&event.eventChain[1], 0);
                     setSync(event.eventChain[2]);
                     break;
                 case EV_REL:
@@ -171,7 +175,7 @@ void OutSimple::init(InputEvent &e, __u16 sourceType) {
                     break;
                 case EV_ABS:
                     // not implemented
-                    // possible use: no idea. Why would anyone do that???
+                    // possible use: no idea. Why would anyone do that??? maybe simulate a joystick with a mouse???
                     eventsSize = 0;
                     srcdst = REL__ABS;
                     break;
@@ -210,6 +214,14 @@ void OutSimple::init(InputEvent &e, __u16 sourceType) {
     };
 
     fdnum = e.getFd();
+}
+
+QString OutSimple::toString() const {
+    if (eventsSize == 0)
+        return "invalid";
+    if (srcdst == KEY__KEY)
+        return getStringForCode(event.eventChains[1]->code, event.eventChains[1]->type, fdnum);
+    return getStringForCode(event.eventChain->code, event.eventChain->type, fdnum);
 }
 
 

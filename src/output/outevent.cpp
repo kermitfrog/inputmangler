@@ -32,6 +32,7 @@
 #include "macropartbase.h"
 
 int OutEvent::fds[5];
+QList<OutEvent*> OutEvent::registeredEvents;
 
 /*!
  * @brief opens virtual devices for output
@@ -230,7 +231,6 @@ void OutEvent::setInputBits(QBitArray **inputBits) {
         evType = event.eventChain[0].type;
         code = event.eventChain[0].code;
     }
-    qDebug() << "setInputBits for " << evType << "  " << code;
     inputBits[EV_CNT]->setBit(evType);
     if (fdnum == EV_ABSJ && evType == EV_ABS)
         inputBits[EV_ABSJ]->setBit(code);
@@ -297,17 +297,23 @@ OutEvent *OutEvent::createOutEvent(QString s, __u16 sourceType) {
         }
         QString otype = s.mid(1, brackPos - 1);
         s.remove(0, brackPos + 1);
-        parts = s.left(s.indexOf("~)")).split(',', QString::SkipEmptyParts);
-        for (int i = 0; i < parts.size(); ++i)
-            parts[i] = parts[i].trimmed();
-        if (otype == "Seq")
-            return new OutMacroStart(parts, sourceType);
-        if (otype == "+")
-            return new OutAccel(parts, sourceType);
-        if (otype.startsWith("A"))
-            return new OutAuto(parts, sourceType);
-        if (otype.startsWith("D"))
-            return new OutDebounce(parts, sourceType);
+        if (otype == "Seq") {
+            QList<QStringList> mParts;
+            QStringList list = s.left(s.indexOf("~)")).split(MacroValDevider, QString::SkipEmptyParts);
+            while (!list.isEmpty())
+                mParts.append(list.takeFirst().split(',', QString::SkipEmptyParts));
+            return new OutMacroStart(mParts, sourceType);
+        } else {
+            parts = s.left(s.indexOf("~)")).split(',', QString::SkipEmptyParts);
+            for (int i = 0; i < parts.size(); ++i)
+                parts[i] = parts[i].trimmed();
+            if (otype == "+")
+                return new OutAccel(parts, sourceType);
+            if (otype.startsWith("A"))
+                return new OutAuto(parts, sourceType);
+            if (otype.startsWith("D"))
+                return new OutDebounce(parts, sourceType);
+        }
     }
 
     return nullptr;
@@ -327,28 +333,38 @@ OutEvent *OutEvent::createOutEvent(InputEvent &s, __u16 sourceType) {
  * @brief translates a split Combo configuration String to a Macro configuration String (
  * Example:
  * "a+S" == ["a","S"] -> ["S 1", "a 1", "~|", "a 2", "~|", "a 0", "S 0"]
- * @param list split Combo configuration String
+ * @param list split Combo configuration String in format ["KEY", "ACS"], where each letter of "ACS" is one Modifier
  * @return split Macro configuration String
  */
-QStringList OutEvent::comboToMacro(QStringList list) {
-    QStringList macro;
+QList<QStringList> OutEvent::comboToMacro(QStringList list) {
+    QList<QStringList> macro;
+    QStringList part;
     QString s;
     int i;
 
+    // press modifiers
     s = list.at(1);
     for (i = 0; i < s.length(); ++i) {
-        macro.append(QString(s.at(i)) + " 1");
+        part.append(QString(s.at(i)) + " 1");
     }
-    macro.append(list.at(0) + " 1"); // TODO what happens if list.at(0) is not EV_KEY?
-    macro.append(MacroValDevider);
-    macro.append(list.at(0) + " 2");
-    macro.append(MacroValDevider);
-    macro.append(list.at(0) + " 0");
+    // press KEY
+    part.append(list.at(0) + " 1"); // TODO what happens if list.at(0) is not EV_KEY?
+    macro.append(part);
+    part.clear();
 
+    // repeat KEY only
+    part.append(list.at(0) + " 2");
+    macro.append(part);
+    part.clear();
 
+    // release KEY
+    part.append(list.at(0) + " 0");
+
+    // release modifiers
     for (i = s.length() - 1; i >= 0; --i) {
-        macro.append(QString(s.at(i)) + " 0");
+        part.append(QString(s.at(i)) + " 0");
     }
+    macro.append(part);
 
     return macro;
 }
@@ -372,12 +388,76 @@ void OutEvent::sendRaw(input_event &event, DType dtype) {
     write(fds[dtype], &event, sizeof(input_event));
 }
 
+/**
+ * sets valueMod to -1 if needed.
+ * This is neccessary if the source is a negative axis
+ * see OutSimple::init() for an example
+ * @param sourceType
+ */
 void OutEvent::interpretNegSource(__u16 &sourceType) {
     if (sourceType > NegativeModifier) {
         sourceType -= NegativeModifier;
         valueMod = -1;
     }
 }
+
+/**
+ * Send an input event to uinput through inputmangler. For use through DBUS.
+ * @param type
+ * @param code
+ * @param value
+ * @param dtype
+ */
+void OutEvent::sendRawSafe(__u16 type, __u16 code, __s32 value, DType dtype) {
+    qDebug() << "void OutEvent::sendRawSafe(__u16 type, __u16 code, __s32 value, DType dtype)";
+    input_event e;
+    e.type = type;
+    e.code = code;
+    e.value = value;
+    __u8 fd;
+    switch (dtype)
+    {
+        case Keyboard:
+        case Mouse:
+        case Tablet:
+        case Joystick:
+            fd = dtype;
+            break;
+        case Auto:
+            if (code >= BTN_MOUSE)
+                if (fds[Mouse])
+                    fd = Mouse;
+                else
+                if (fds[e.type])
+                    fd = dtype;
+            break;
+        case TabletOrJoystick:
+            if (fds[Tablet])
+                fd = Tablet;
+            else if (fds[Joystick])
+                fd = Joystick;
+            break;
+        default:
+            return;
+    };
+    if (fds[fd]) {
+        sendRaw(e, (DType)fd);
+        setSync(e);
+        sendRaw(e, (DType)fd);
+    }
+}
+
+
+void OutEvent::registerEvent() {
+    registeredEvents.append(this);
+}
+
+void OutEvent::cleanUp() {
+    qDebug() << registeredEvents.count() << " events will be deleted";
+    while (!registeredEvents.empty())
+        delete registeredEvents.takeFirst();
+}
+
 
 
 
