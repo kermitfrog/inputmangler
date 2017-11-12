@@ -99,7 +99,7 @@ void OutAccel::send(const __s32 &value, const timeval &time) {
                     // TODO does this work in *all* applications???
                     event.eventChain->value = normValue * (int) (currentRate + 0.5);
                     write(fds[fdnum], event.eventChain, eventsSize);
-                    qDebug() << "Value = " << event.eventChain->value;
+                    // qDebug() << "Value = " << event.eventChain->value;
                 }
                 break;
             default:
