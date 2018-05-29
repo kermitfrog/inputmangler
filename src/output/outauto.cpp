@@ -18,7 +18,7 @@
 */
 
 #include "outauto.h"
-#include "keydefs.h"
+#include "../../shared/keydefs.h"
 
 OutAuto::OutAuto(QStringList l, __u16 sourceType) {
     if (l.count() != 1) {

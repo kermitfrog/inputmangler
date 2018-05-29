@@ -38,9 +38,9 @@ FILE(GLOB handlers_srcs "${CMAKE_CURRENT_SOURCE_DIR}/handlers/*.cpp")
 FILE(GLOB output_srcs "${CMAKE_CURRENT_SOURCE_DIR}/output/*.cpp")
 set(INPUTMANGLER_SRCS
         imdbusinterface.cpp
-        inputevent.cpp
+        ../shared/inputevent.cpp
         inputmangler.cpp
-        keydefs.cpp
+        ../shared/keydefs.cpp
         main.cpp
         output/outevent.cpp
         qtsignalhandler.cpp

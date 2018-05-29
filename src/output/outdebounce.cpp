@@ -18,7 +18,7 @@
 */
 
 #include "outdebounce.h"
-#include "keydefs.h"
+#include "../../shared/keydefs.h"
 
 OutDebounce::OutDebounce(QStringList l, __u16 sourceType) {
     if (l.count() < 1)

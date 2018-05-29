@@ -17,8 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
+#include <QDebug>
+#include <QtCore/QDir>
 #include "keydefs.h"
-#include "handlers/abstractinputhandler.h"
+#include "definitions.h"
+//#include "handlers/abstractinputhandler.h"
 
 QHash<QString, InputEvent> keymap;
 QHash<char, OutEvent*> charmap;
@@ -264,7 +269,7 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 		// case 1. "$"
 		if (tmp.size() == 1)
 		{
-			charmap[tmp[0][0].toLatin1()] = OutEvent::createOutEvent(keymap[tmp[0]], EV_REL); // TODO is EV_REL a good choice?
+			charmap[tmp[0][0]] = OutEvent::createOutEvent(keymap[tmp[0]], EV_REL); // TODO is EV_REL a good choice?
 #ifdef DEBUGME
 			qDebug() << tmp[0] << "=" << tmp[0] << " --> " << charmap[tmp[0][0].toLatin1()].print();
 #endif
@@ -275,7 +280,7 @@ void setUpKeymaps(QString keymap_path, QString charmap_path, QString axis_path)
 			// case 2. "^ @+S"
 			if(left.size() == 1)
 			{
-				charmap[left[0].toLatin1()] = OutEvent::createOutEvent(right, EV_REL); // TODO is EV_REL a good choice?
+				charmap[left[0]] = OutEvent::createOutEvent(right, EV_REL); // TODO is EV_REL a good choice?
 	#ifdef DEBUGME
 				qDebug() << tmp[0] << "=" << "s" << " --> " << charmap[tmp[0][0].toLatin1()].print() ;
 	#endif

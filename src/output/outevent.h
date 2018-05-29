@@ -20,8 +20,8 @@
 #pragma once
 
 
-#include "inputevent.h"
-#include "definitions.h"
+#include "../../shared/inputevent.h"
+#include "../../shared/definitions.h"
 #include <linux/input.h> //__u16...
 #include <QString>
 #include <QVector>

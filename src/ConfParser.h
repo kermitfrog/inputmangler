@@ -24,7 +24,7 @@
 #include <handlers/abstractinputhandler.h>
 #include <pugixml.hpp>
 #include <linux/input-event-codes.h>
-#include "definitions.h"
+#include "../shared/definitions.h"
 #include <QBitArray>
 
 /*!

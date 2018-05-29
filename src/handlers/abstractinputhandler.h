@@ -26,8 +26,8 @@ class TransformationStructure;
 
 #include <QThread>
 #include "inputmangler.h"
-#include "inputevent.h"
-#include "definitions.h"
+#include "../../shared/inputevent.h"
+#include "../../shared/definitions.h"
 #include <linux/input.h>
 #include <QVector>
 #include <unistd.h> //@TODO: still needed here?

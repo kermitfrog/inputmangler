@@ -18,7 +18,7 @@
 */
 
 #include "outmacropart.h"
-#include "../keydefs.h"
+#include "../../shared/keydefs.h"
 
 /**
  *
@@ -50,7 +50,7 @@ OutMacroPart::OutMacroPart(QStringList &macroParts, __u16 sourceType) {
             return;
         }
         ie = keymap[mPart.first()];
-        if (ie.getFd() == dtype) {
+		if (ie.getFd() == dtype && ie.type == ies.first().type) {
             ies.append(ie);
             values.append((__s32) mPart.last().toLong());
             macroParts.removeFirst();

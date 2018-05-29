@@ -31,7 +31,7 @@ const int buffer_size = 4;
  * events according to previosly set rules.
  */
 void DevHandler::run() {
-    //TODO toLatin1 works... always? why not UTF-8?
+    // TODO toLatin1 works... always? why not UTF-8?
     fd = open(filename.toLatin1(), O_RDONLY);
     if (fd == -1) {
         qDebug() << "?could (not?) open " << filename;
@@ -52,7 +52,7 @@ void DevHandler::run() {
 
     input_event buf[buffer_size];
     while (true) {
-        //wait until there is data or 1.5 seconds have passed to look at sd.terminating
+        // wait until there is data or 1.5 seconds have passed to look at sd.terminating
         ret = poll(&p, 1, 1500);
         if (p.revents & (POLLERR | POLLHUP | POLLNVAL)) {
             qDebug() << "Device " << _id << "was removed or other error occured!"

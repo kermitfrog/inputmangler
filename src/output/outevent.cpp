@@ -21,7 +21,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <QList>
-#include "keydefs.h"
+#include "../../shared/keydefs.h"
 #include "outsimple.h"
 #include "outmacrostart.h"
 #include "outwait.h"

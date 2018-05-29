@@ -231,7 +231,7 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
         for (xml_node longDescription = title.child(
                 "long"); longDescription; longDescription = longDescription.next_sibling("long")) {
             QString id = longDescription.attribute("id").value();
-            if (!longDescription.empty()) {
+			if (ids.contains(id) && !longDescription.empty()) {
                 wsettings[id]->titles.append(new QRegularExpression(QString("^") + regex + "$"));
                 wsettings[id]->events.append(parseOutputsLong(longDescription, handlersById[id], defaultOutputs[id]));
                 used[id] = true;

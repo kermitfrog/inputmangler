@@ -19,7 +19,7 @@
 
 
 #pragma once
-#include "keydefs.h"
+#include "../shared/keydefs.h"
 
 class AbstractInputHandler;
 
