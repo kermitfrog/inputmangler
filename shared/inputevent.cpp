@@ -124,19 +124,21 @@ void InputEvent::setInputEvent(input_event * ev, __s32 value) {
 __u8 InputEvent::getFd() const {
 	switch (type) {
 		case EV_KEY:
-			if (code < BTN_MOUSE)
+			if (code < BTN_MOUSE) // Basic Keyboard Keys and Misc Buttons
 				return 1;
-			else if (code < BTN_DIGI)
-				return 2;
-			else if (code < KEY_OK)
-				return 3;
-			else if (code < BTN_DPAD_UP)
-				return 1;
-			else if (code < KEY_ALS_TOGGLE)
+            else if (code < BTN_JOYSTICK) // Mouse Buttons
+                return 2;
+			else if (code < BTN_DIGI) // Basic Joystick and Gamepad Buttons
 				return 4;
-			else if (code < BTN_TRIGGER_HAPPY)
+			else if (code < KEY_OK) // Tablet Buttons
+				return 3;
+			else if (code < BTN_DPAD_UP) // Extra Keyboard Keys
 				return 1;
-			else
+			else if (code < KEY_ALS_TOGGLE) // DPAD (this is joystick stuff, right?)
+				return 4;
+			else if (code < BTN_TRIGGER_HAPPY) // More Extra Keyboard Keys
+				return 1;
+			else               // Extra Buttons
 				return 4;
 		case EV_REL:
 			return 2;

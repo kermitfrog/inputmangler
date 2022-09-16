@@ -56,6 +56,7 @@ public:
         Repeat,        //!< Autofire / Repeat
         Accelerate, //!< For mouse wheel acceleration (additional presses, if triggered fast)
         Debounce,   //!< Hack for broken buttons
+        AbsRel,     //!< Experiment - for Joystick to Mouse in Ambermoon
         Custom,        //!< Handle via plugin. Not yet implemented.
         Invalid     //!< Returned on error in createOutEvent()
     };
@@ -64,9 +65,9 @@ public:
      */
     enum SrcDst { // TODO values should depend on definitions in linux_input.h
         KEY__ABS = 0,
-        REL__ABS = 0,
+        REL__ABS = 0b1011,
         ABS__KEY = 0,
-        ABS__REL = 0,
+        ABS__REL = 0b1110,
         KEY__KEY = 0b0101,
         KEY__REL = 0b0110,
         REL__KEY = 0b1001,
@@ -119,7 +120,7 @@ public:
     static void sendRawSafe(__u16 type, __u16 code, __s32 value, DType dtype = Auto); // TODO
 //    static void sync(int device);
 
-    bool isValid() { return true; }; // TODO actually implement
+    virtual bool isValid() { return true; }; // TODO actually implement
 
     static void generalSetup(QBitArray *inputBits[]);
 

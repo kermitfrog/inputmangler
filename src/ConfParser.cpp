@@ -18,6 +18,7 @@
 */
 
 #include "ConfParser.h"
+#include "keydefs_charmap.h"
 
 using namespace pugi;
 
@@ -86,7 +87,8 @@ bool ConfParser::readConf() {
     mapfileC = mapfiles.attribute("charmap").value();
     mapfileA = mapfiles.attribute("axismap").value();
     qDebug() << "using keymap = " << mapfileK << ", charmap = " << mapfileC << ", axismap = " << mapfileA;
-    setUpKeymaps(mapfileK, mapfileC, mapfileA);
+    setUpKeymaps(mapfileK, mapfileA);
+    setUpCharmap(mapfileC);
 
     // set up all handlers
     xml_node handlersConf = conf.child("handlers");
@@ -153,7 +155,7 @@ void ConfParser::parseWindowSettings(xml_node group, QMap<QString, QVector<OutEv
             QString s;
             QMap<QString, bool> usedIds = used;
             QMap<QString, QVector<OutEvent *>> outputs = defaultOutputs;
-                    foreach (QString id, ids) {
+                    for (QString &id : ids) {
                     s = entry.attribute(id.toUtf8().data()).value();
                     if (!s.isEmpty()) {
                         outputs[id] = parseOutputsShort(s, defaultOutputs[id]);
@@ -191,9 +193,9 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
         return;
 
     // create WindowSettings
-            foreach(QString id, ids)wsettings.insert(id, new WindowSettings());
+            for(const QString &id : ids)wsettings.insert(id, new WindowSettings());
 
-            foreach (QString id, ids) {
+            for (const QString &id : ids) {
             s = window.attribute(id.toUtf8().data()).value();
             if (!s.isEmpty()) {
                 wsettings[id]->def = parseOutputsShort(s, defaultOutputs[id]);
@@ -238,10 +240,10 @@ void ConfParser::readWindowSettings(xml_node window, QMap<QString, QVector<OutEv
             }
         }
     }
-            foreach(QString id, ids) {
-            if (used[id] == true) {
+            for(const QString &id : ids) {
+            if (used[id]) {
                 wsets->operator[](id).addWindowSettings(windowClass, wsettings[id]);
-                if (wsettings[id]->def.size() == 0)
+                if (wsettings[id]->def.empty())
                     wsettings[id]->def = defaultOutputs[id];
             } else
                 delete wsettings.take(id);
@@ -335,7 +337,7 @@ QStringList ConfParser::parseSplit(const QString &str) const {
 
     int pos, lastPos = 0;
 
-    /* 3 cases: "~," "~..~)" "," but could contain whitespace chars
+    /* 4 cases: "~," "~..~)" "," "~$" but could contain whitespace chars
      * so the rules are:
      * lastPos is position after last seperating ','
      * 
@@ -346,6 +348,10 @@ QStringList ConfParser::parseSplit(const QString &str) const {
             break;
         if (str.at(pos) == '~') {
             pos = str.indexOf(noWS, pos + 1);
+            if (pos == -1) {
+                list.append("~");
+                break;
+            }
             if (str.at(pos) == ',')
                 list.append(str.mid(lastPos, pos - lastPos).trimmed());
             else {

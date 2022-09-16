@@ -17,12 +17,22 @@ set(IMGUI_UIS
 set(IMGUI_SRCS
         inputmanglerui.cpp
         main.cpp
-        imconfmodel.cpp imconfmodel.h)
+        imconfmodel.cpp
+        ../shared/keydefs.cpp
+        ../shared/inputevent.cpp
+        inoutbox.cpp inoutbox.h)
+
+#set(IMGUI_HEADERS
+#        inputmanglerui.h
+#        imconfmodel.h
+#        ../shared/keydefs.h
+#        ../shared/inputevent.h
+#        )
 
 qt5_wrap_ui(${IMGUI_UIS})
 find_library(PUGIXML_LIB pugixml)
 #add_library(pugixml SHARED IMPORTED)
-add_executable(inputmangler_ui ${IMGUI_SRCS} ${IMGUI_UIS})
+add_executable(inputmangler_ui ${IMGUI_SRCS} ${IMGUI_UIS} ${IMGUI_HEADERS})
 target_link_libraries(inputmangler_ui pugixml)
 
 install(TARGETS inputmangler_ui RUNTIME DESTINATION bin)

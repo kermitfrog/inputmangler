@@ -48,7 +48,7 @@ set(INPUTMANGLER_SRCS
         ${handlers_srcs}
         ${output_srcs}
         ConfParser.cpp
-		)
+        keydefs_charmap.cpp output/outabsrel.cpp output/outabsrel.h)
 
 find_library(PUGIXML_LIB pugixml)
 #add_library(pugixml SHARED IMPORTED)

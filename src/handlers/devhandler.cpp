@@ -72,7 +72,8 @@ void DevHandler::run() {
                 matches = false;
                 // Key/Button and movements(relative and absolute) only
                 // We do not handle misc and sync events
-                if (buf[i].type >= EV_KEY && buf[i].type <= EV_REL)
+                // new: ABS passthrough (and some experimental modification)
+                if (buf[i].type >= EV_KEY && buf[i].type <= EV_ABS)
                     for (int j = 0; j < outputs.size(); j++) {
                         //qDebug() << j << " of " << outputs.size() << " in " << id();
                         if (inputs[j] == buf[i]) {
@@ -85,9 +86,10 @@ void DevHandler::run() {
                         }
                     }
                 // Pass through - absolute movements need translation
-                if (buf[i].type == EV_ABS)
+                /*if (buf[i].type == EV_ABS)
                     sendAbsoluteValue(buf[i]);
-                else if (!matches)
+                else */
+                if (!matches)
                     OutEvent::sendRaw(buf[i], devtype);
 // 				qDebug("type: %d, code: %d, value: %d", buf[i].type, buf[i].code, buf[i].value );
             }
@@ -108,9 +110,9 @@ void DevHandler::run() {
  */
 void DevHandler::sendAbsoluteValue(input_event &ev) {
 // 	qDebug() << "sendAbsoluteValue: orig = "  << value;
-    ev.value -= absmap[ev.code]->minimum;
+/*    ev.value -= absmap[ev.code]->minimum;
     ev.value *= absfac[ev.code];
-    ev.value += minVal;
+    ev.value += minVal;*/
 // 	if (devtype == Tablet)
 // 		qDebug() << "sendAbsoluteValue(" << type << code << orig
 // 		  << ") min1: " << absmap[code]->minimum << "fac: " << absfac[code] 

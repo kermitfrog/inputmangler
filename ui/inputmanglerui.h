@@ -6,6 +6,7 @@
 
 #include "ui_inputmanglerui.h"
 #include <QMainWindow>
+#include "imconfmodel.h"
 
 class InputmanglerUI : public QMainWindow {
     Q_OBJECT
@@ -16,6 +17,7 @@ public:
 
 protected:
     Ui_InputmanglerUI *ui;
+    IMConfModel *model;
 
 };
 

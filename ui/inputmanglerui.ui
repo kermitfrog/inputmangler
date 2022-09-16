@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QLineEdit" name="windowFilterEdit">
@@ -35,6 +35,18 @@
        </layout>
       </widget>
       <widget class="QScrollArea" name="eventArea">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="widgetResizable">
         <bool>true</bool>
        </property>
@@ -43,7 +55,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>470</width>
+          <width>196</width>
           <height>264</height>
          </rect>
         </property>
@@ -89,6 +101,12 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>windowTreeView</tabstop>
+  <tabstop>windowFilterEdit</tabstop>
+  <tabstop>eventArea</tabstop>
+  <tabstop>pushButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

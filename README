@@ -175,7 +175,7 @@ More a hack than a solution: use the included script trackCurrentWindow.sh. It c
 You can use the included script to set a default keymap and copy a example config into inputmanglers config directory (~/.config/inputMangler).
 $ ./setupHelper.sh
 
-Inputmanglers configuration consists of 3 files in its config directory: keymap, charmap and config.xml.
+Inputmanglers configuration consists of 4 files in its config directory: keymap, axismap, charmap and config.xml.
 
 keymap:
 Describes your keyboard layout. Since inputmangler works at a very low level, it is not aware of your keyboard layout settings and needs its own definition. If you use a German(de), US(us) or Programmer Dvorak(dvp) layout, just copy the one you like from the keymaps directory to ~/.config/inputMangler/keymap (or let ./setupHelper.sh do it for you). It is not necessary to use the correct keymap, but it makes configuration more intuitive. See the section on Editing the keymap (##KEY##) on how to modify it, or just use the one most similar to yours.
@@ -575,7 +575,7 @@ $ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.A
 Print class and title of current Window, as seen by inputmangler. (You might want to start it in a shell loop for tracking)
 $ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.printWinInfo 
 
-Generate an input event. Do not use this, unless you know what you're doing!
+Generate an input event. Do not use this unless you know what you're doing!
 $ qdbus org.inputManglerInterface /org/inputMangler/Interface org.inputMangler.API.Interface.sendRaw $type $code $value $device
 All Paramenters are integers. See linux/input.h or linux/input-event-codes.h for $type $code and $value
 $device is  0 Keyboard
@@ -591,21 +591,21 @@ Some things I want to do are:
 
 WHAT?                             | WHY?                                        | WHEN?
 ----------------------------------------------------------------------------------------------------
-Configuration GUI                 | Ease of use -> more happy linux users :)    | 2018
+Configuration GUI                 | Ease of use -> more happy linux users :)    | 2023
                                   |                                             |
-Current keymap generator          | Ease of use, successfully done something    | 2017/18
+Current keymap generator          | Ease of use, successfully done something    | 2023?
                                   | similar in other project                    |
                                   |                                             |
 Making this README available as   | Because i can! ...                          | 2014? (mostly done 
 man page (and maybe pdf).         | Can tex generate man pages?                 | - not happy 
                                   |                                             | with the result.)
                                   |                                             | 
-More complex output sequences     | Better support for Macros.                  | 2017 ?
+More complex output sequences     | Better support for Macros.                  | 2017 ??
 and maybe making output modular.  |                                             |
                                   |                                             |
-More d-bus slots.                 | Better interaction                          | maybe 2018
+More d-bus slots.                 | Better interaction                          | maybe 2023
                                   |                                             |
-Plugin architecture.              | A whole world of awesome new possibilities! | maybe 2018
+Plugin architecture.              | A whole world of awesome new possibilities! | maybe 2022/23
 ----------------------------------------------------------------------------------------------------
 
 Ideas:

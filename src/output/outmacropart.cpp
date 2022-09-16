@@ -110,7 +110,7 @@ void OutMacroPart::setInputBits(QBitArray **inputBits) {
     for (int i = 0; i < num; ++i) {
         code = event.eventChain[i].code;
         inputBits[EV_CNT]->setBit(evType);
-        if (fdnum == EV_ABSJ && evType == EV_ABS)
+        if (fdnum == 4 && evType == EV_ABS)
             inputBits[EV_ABSJ]->setBit(code);
         else
             inputBits[evType]->setBit(code);

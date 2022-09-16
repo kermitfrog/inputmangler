@@ -21,6 +21,7 @@
 #pragma once
 
 #include "abstractinputhandler.h"
+#include "keydefs_charmap.h"
 #include <QTcpServer>
 #include <QHostAddress>
 

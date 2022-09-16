@@ -30,6 +30,7 @@
 #include "outdebounce.h"
 #include "outmacropart.h"
 #include "macropartbase.h"
+#include "outabsrel.h"
 
 int OutEvent::fds[5];
 QList<OutEvent*> OutEvent::registeredEvents;
@@ -197,8 +198,13 @@ void OutEvent::generalSetup(QBitArray *inputBits[NUM_INPUTBITS]) {
                 if (inputBits[EV_ABSJ]->at(i)) {
                     err |= ioctl(fd, UI_SET_ABSBIT, i);
                     InputEvent ie = keymap[keymap_reverse[absBase + i]];
-                    dev->absmin[i] = ie.absmin;
-                    dev->absmax[i] = ie.absmax;
+//                    dev->absmin[i] = ie.absmin;
+//                    dev->absmax[i] = ie.absmax;
+                    // as this does not work properly... set to SpaceMouse values for now
+                    dev->absmin[i] = -350;
+                    dev->absmax[i] = 350;
+                    dev->absflat[i] = 5 ;
+                    dev->absfuzz[i] = 0;
                 }
             err |= (write(fd, dev, sizeof(*dev)) < 0);
             err |= ioctl(fd, UI_DEV_CREATE);
@@ -212,7 +218,7 @@ void OutEvent::generalSetup(QBitArray *inputBits[NUM_INPUTBITS]) {
 
 #ifdef DEBUGME
     qDebug() << "kbd: " << OutEvent::fds[1] << ", mouse: " << OutEvent::fds[2];
-    qDebug() << "tablet: " << OutEvent::fds[4] << ", joystick: " << OutEvent::fds[4];
+    qDebug() << "tablet: " << OutEvent::fds[3] << ", joystick: " << OutEvent::fds[4];
 #endif
 }
 
@@ -232,7 +238,7 @@ void OutEvent::setInputBits(QBitArray **inputBits) {
         code = event.eventChain[0].code;
     }
     inputBits[EV_CNT]->setBit(evType);
-    if (fdnum == EV_ABSJ && evType == EV_ABS)
+    if (fdnum == 4 && evType == EV_ABS)
         inputBits[EV_ABSJ]->setBit(code);
     else
         inputBits[evType]->setBit(code);
@@ -273,6 +279,7 @@ void OutEvent::closeVirtualDevices() {
  *      ~+
  *      ~A | ~Auto
  *      ~D | ~Debounce
+ *      ~Rel      (Absolute to Relative)
  *
  * @param s configuration String
  * @param sourceType type of the event that triggers this OutEvent (as configured in <signal key= >)
@@ -313,6 +320,8 @@ OutEvent *OutEvent::createOutEvent(QString s, __u16 sourceType) {
                 return new OutAuto(parts, sourceType);
             if (otype.startsWith("D"))
                 return new OutDebounce(parts, sourceType);
+            if (otype.startsWith("R"))
+                return new OutAbsRel(parts, sourceType);
         }
     }
 

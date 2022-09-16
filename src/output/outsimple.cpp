@@ -52,6 +52,10 @@ void OutSimple::send(const __s32 &value, const timeval &time) {
             event.eventChain[0].value = value * valueMod;
             write(fds[fdnum], event.eventChain, eventsSize); // TODO valgrind says something about "points to uninitialized byte(s)" no idea yet
             break;
+        case REL__ABS:
+            event.eventChain[0].value = value * valueMod; //TODO set valueMod
+            write(fds[fdnum], event.eventChain, eventsSize);
+            break;
         case ABS__ABS:
             event.eventChain[0].value = value;
             write(fds[fdnum], event.eventChain, eventsSize);
@@ -73,10 +77,11 @@ OutSimple::~OutSimple() {
             delete[] event.eventChains[0];
             delete[] event.eventChains;
             break;
-        case ABS__ABS:
         case KEY__REL:
         case REL__KEY:
         case REL__REL:
+        case REL__ABS:
+        case ABS__ABS:
             delete[] event.eventChain;
             break;
         default:
@@ -174,10 +179,12 @@ void OutSimple::init(InputEvent &e, __u16 sourceType) {
                     setSync(event.eventChain[1]);
                     break;
                 case EV_ABS:
-                    // not implemented
-                    // possible use: no idea. Why would anyone do that??? maybe simulate a joystick with a mouse???
-                    eventsSize = 0;
                     srcdst = REL__ABS;
+                    // possible use: map SpaceMouse to Joystick
+                    eventsSize = 2 * sizeof(input_event);
+                    event.eventChain = new input_event[2];
+                    e.setInputEvent(event.eventChain, 0);
+                    setSync(event.eventChain[1]);
                     break;
             };
             break;
