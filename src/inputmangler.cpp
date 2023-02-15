@@ -89,6 +89,7 @@ bool InputMangler::readConf()
  */
 void InputMangler::activeWindowChanged(QString wclass, QString title)
 {
+    qDebug() << "active Window is now " << wclass << " : " << title;
 	if (AbstractInputHandler::sd.terminating)
 		return;
 		

@@ -106,7 +106,8 @@ void OutEvent::generalSetup(QBitArray *inputBits[NUM_INPUTBITS]) {
             for (int i = BTN_MISC; i < BTN_JOYSTICK; i++)
                 if (inputBits[EV_KEY]->at(i))
                     err |= ioctl(fd, UI_SET_KEYBIT, i);
-            for (int i = REL_X; i < REL_CNT; i++)
+//            for (int i = REL_X; i < REL_CNT; i++)  TODO this is a workaround for double wheel events:
+            for (int i = REL_X; i < REL_RESERVED; i++)
                 if (inputBits[EV_REL]->at(i))
                     err |= ioctl(fd, UI_SET_RELBIT, i);
             dev = makeUinputUserDev("Virtual Mouse");

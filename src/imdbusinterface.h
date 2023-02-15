@@ -39,7 +39,7 @@ public:
     virtual ~imDbusInterface();
 
 public slots:
-	Q_NOREPLY void activeWindowChanged(QByteArray wclass, QString title) {
+	Q_NOREPLY void activeWindowChanged(QString wclass, QString title) {
 		emit windowChanged(QString(wclass), title);
 	};
 	Q_NOREPLY void activeWindowTitleChanged(QString wclass) {

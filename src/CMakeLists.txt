@@ -16,17 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #project(inputmangler)
-#cmake_minimum_required(VERSION 2.8.11)
 
+find_package(Qt5 COMPONENTS Core DBus Network Test REQUIRED)
 
-find_package(Qt5Core)
-find_package(Qt5DBus)
-find_package(Qt5Network)
-find_package(Qt5Test)
-#find_package(X11)
-#find_package(Qt5Widgets)
 #SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-lX11")
 #SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-lX11")
+
+
 
 
 # Find includes in corresponding build directories
@@ -53,7 +49,7 @@ set(INPUTMANGLER_SRCS
 find_library(PUGIXML_LIB pugixml)
 #add_library(pugixml SHARED IMPORTED)
 add_executable(inputmangler ${INPUTMANGLER_SRCS})
-target_link_libraries(inputmangler pugixml)
+target_link_libraries(inputmangler pugixml Qt5::Core Qt5::Network Qt5::DBus Qt5::Test)
 
 # files to install
 install(TARGETS inputmangler RUNTIME DESTINATION bin)
@@ -71,7 +67,6 @@ INSTALL(FILES "${CMAKE_SOURCE_DIR}/kwinscript/kwinNotifyOnWindowChange/contents/
 INSTALL(FILES "${CMAKE_SOURCE_DIR}/kwinscript/kwinNotifyOnWindowChange/metadata.desktop" DESTINATION "share/kwin/scripts/kwinNotifyOnWindowChange/")
 INSTALL(FILES "${CMAKE_SOURCE_DIR}/kwinscript/kwin-script-notifyonwindowchange.desktop" DESTINATION "share/kservices5/")
 
-qt5_use_modules(inputmangler Core DBus Network Test)
 
 
 #add_definitions( -DDEBUGME )
