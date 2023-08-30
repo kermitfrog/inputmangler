@@ -173,9 +173,8 @@ void AbstractInputHandler::idevs::readAttributes(pugi::xml_node attr)
  * @brief Returns true if o is a match to the current objects attributes.
  * Implemented for use in QList::count(), QList::indexOf().
  */
-bool AbstractInputHandler::idevs::operator==(AbstractInputHandler::idevs o) const
-{
-	return (phys == o.phys || ( vendor == o.vendor && product == o.product) );
+bool AbstractInputHandler::idevs::operator==(const AbstractInputHandler::idevs o ) const {
+    return (!phys.isEmpty() && phys == o.phys) || (vendor == o.vendor && product == o.product);
 }
 
 /*!

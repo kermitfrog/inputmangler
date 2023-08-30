@@ -167,10 +167,10 @@ QList<AbstractInputHandler *> DevHandler::parseXml(pugi::xml_node &xml) {
         int idx = availableDevices.indexOf(d);
         // copy information obtained from /proc/bus/input/devices to complete
         // the data in the idevs object used to construct the DevHandler
-        d.event = availableDevices.at(idx).event;
-        d.type = availableDevices.at(idx).type;
+        idevs found = availableDevices.takeAt(idx);
+        d.event = found.event;
+        d.type = found.type;
         DevHandler *devhandler = new DevHandler(d);
-        availableDevices.removeAt(idx);
         handlers.append(devhandler);
     }
 
