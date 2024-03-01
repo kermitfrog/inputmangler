@@ -11,7 +11,8 @@ function onCaptionChange() {
   }
 }
 
-workspace.clientActivated.connect(function(client) {
+workspace.windowActivated.connect(function(client) {
+  print("starting")
   if (client == null)
   {
     return
@@ -28,8 +29,8 @@ workspace.clientActivated.connect(function(client) {
     }
   }
   activeclient = client;
-//  print("class = " + client.resourceClass)
-//  print(client.caption + " is activated")
+  //print("class = " + client.resourceClass)
+  //print(client.caption + " is activated")
   try {
     callDBus("org.inputManglerInterface", 
 	     "/org/inputMangler/Interface",

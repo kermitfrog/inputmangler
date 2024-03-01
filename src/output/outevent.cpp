@@ -188,7 +188,8 @@ void OutEvent::generalSetup(QBitArray *inputBits[NUM_INPUTBITS]) {
                 qDebug() << "Unable to open /dev/uinput - Error: " << fd;
                 exit(EXIT_FAILURE);
             }
-            dev = makeUinputUserDev("Virtual Joystick/Gamepad");
+            // pretend to be "Logitech Logitech Attack 3"
+            dev = makeUinputUserDev("Virtual Joystick/Gamepad", 0x046d, 0xc214);
             const int absBase = 10000 * EV_ABS + 1000 * ValueType::JoystickAxis;
             err = ioctl(fd, UI_SET_EVBIT, EV_KEY) | ioctl(fd, UI_SET_EVBIT, EV_ABS)
                   | ioctl(fd, UI_SET_EVBIT, EV_SYN);
@@ -250,12 +251,13 @@ void OutEvent::setInputBits(QBitArray **inputBits) {
  * @param name identifies device later (e.g. in /proc/bus/devices)
  * @return
  */
-uinput_user_dev *OutEvent::makeUinputUserDev(const char *name) {
+uinput_user_dev *OutEvent::makeUinputUserDev(const char *name, __u16 vId, __u16 pId) {
     uinput_user_dev *dev;
     dev = new uinput_user_dev;
     memset(dev, 0, sizeof(*dev));
     dev->id.bustype = BUS_USB;
-    dev->id.vendor = dev->id.product = 0;
+    dev->id.vendor = vId;
+    dev->id.product = pId;
     dev->id.version = 1;
     snprintf(dev->name, UINPUT_MAX_NAME_SIZE, "%s", name);
     return dev;

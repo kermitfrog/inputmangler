@@ -1,0 +1,21 @@
+{
+	"KPlugin": {
+		"Name": "Window Change Notifier",
+		"Description": "Notify InputMangler on Window or Title change",
+		"Icon": "preferences-system-windows-script-keepaboverestored",
+
+		"Authors": [
+			{
+				"Name": "Arkadiusz Guzinski",
+				"Email": "kermit@aguzinski.de"
+			}
+		],
+		"Id": "NotifyOnWindowChange",
+		"Version": "1.3",
+		"License": "GPLv3"
+	},
+	"X-Plasma-API": "javascript",
+	"X-Plasma-MainScript": "code/main.js",
+ 	"KPackageStructure": "KWin/Script"
+}
+

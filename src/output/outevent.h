@@ -153,7 +153,7 @@ protected:
 
     static QList<QStringList> comboToMacro(QStringList list);
 
-    static uinput_user_dev *makeUinputUserDev(const char *name);
+    static uinput_user_dev *makeUinputUserDev(const char *name, __u16 vId = 0, __u16 pId = 0);
 
     __u8 fdnum; //<! which fds[] to write to
     void interpretNegSource(__u16 &sourceType);
